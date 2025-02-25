@@ -37,4 +37,31 @@ class ProcessController extends Controller
             ], 500);
         }
     }
+
+    public function index()
+    {
+        $procesos = Proceso::all();
+        return response()->json(['procesos' => $procesos], 200);
+    }
+
+    public function show($id)
+    {
+        $proceso = Proceso::findOrFail($id);
+        return response()->json(['proceso' => $proceso], 200);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $proceso = Proceso::findOrFail($id);
+        //Me falta la validacion
+        $proceso->update($request->all());
+        return response()->json(['proceso' => $proceso], 200);
+    }
+
+    public function destroy($id)
+    {
+        $proceso = Proceso::findOrFail($id);
+        $proceso->delete();
+        return response()->json(['proceso' => $proceso], 200);
+    }
 }
