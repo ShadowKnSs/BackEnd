@@ -44,7 +44,8 @@ class IndicadorConsolidadoController extends Controller
             $origen = $indicador->origenIndicador;
             if ($origen === 'Encuesta') {
                 DB::table('encuesta')->insert([
-                    'idIndicador' => $analisis->idAnalisisDatos,
+                    // Aquí usamos $analisis->idIndicador, que es la clave primaria autoincremental de analisisdatos
+                    'idIndicador' => $analisis->idIndicador,
                     'malo' => 0,
                     'regular' => 0,
                     'excelenteBueno' => 0,
@@ -52,15 +53,15 @@ class IndicadorConsolidadoController extends Controller
                 ]);
             } elseif ($origen === 'Retroalimentacion') {
                 DB::table('retroalimentacion')->insert([
-                    'idIndicador' => $analisis->idAnalisisDatos,
-                    'metodo' => '', // Valor por defecto o vacío
+                    'idIndicador' => $analisis->idIndicador,
+                    'metodo' => $request->get('metodo') ?? '',
                     'cantidadFelicitacion' => 0,
                     'cantidadSugerencia' => 0,
                     'cantidadQueja' => 0,
                 ]);
             } elseif ($origen === 'EvaluaProveedores') {
                 DB::table('evaluaProveedores')->insert([
-                    'idIndicador' => $analisis->idAnalisisDatos,
+                    'idIndicador' => $analisis->idIndicador,
                     'confiable' => 0,
                     'condicionado' => 0,
                     'noConfiable' => 0,
