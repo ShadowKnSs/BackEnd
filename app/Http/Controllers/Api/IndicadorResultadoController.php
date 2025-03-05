@@ -22,26 +22,28 @@ class IndicadorResultadoController extends Controller
             $indicadorPeriod = $request->get('periodicidad') ?? "Semestral"; 
 
             // Inicializa variables para los resultados
-            if ($indicadorPeriod === 'Semestral') {
-                $resultado1 = isset($data['Ene-Jun']['resultado']) && $data['Ene-Jun']['resultado'] !== ""
-                    ? (int)$data['Ene-Jun']['resultado']
+             // Extraer los resultados según la periodicidad
+             if ($indicadorPeriod === "Semestral") {
+                $resultadoSemestral1 = isset($data['resultadoSemestral1']) && $data['resultadoSemestral1'] !== ""
+                    ? (int)$data['resultadoSemestral1']
                     : null;
-                $resultado2 = isset($data['Jul-Dic']['resultado']) && $data['Jul-Dic']['resultado'] !== ""
-                    ? (int)$data['Jul-Dic']['resultado']
+                $resultadoSemestral2 = isset($data['resultadoSemestral2']) && $data['resultadoSemestral2'] !== ""
+                    ? (int)$data['resultadoSemestral2']
                     : null;
             } else {
-                $resultado1 = isset($data['result']) && $data['result'] !== ""
+                // Para otros casos (por ejemplo, indicadores anuales), se puede esperar un solo resultado
+                $resultadoSemestral1 = isset($data['result']) && $data['result'] !== ""
                     ? (int)$data['result']
                     : null;
-                $resultado2 = null;
+                $resultadoSemestral2 = null;
             }
 
             // Crear o actualizar el registro en analisisdatos
             $analisis = AnalisisDatos::updateOrCreate(
                 ['idIndicadorConsolidado' => $idIndicadorConsolidado],
                 [
-                    'resultadoSemestral1' => $resultado1,
-                    'resultadoSemestral2' => $resultado2,
+                    'resultadoSemestral1' => $resultadoSemestral1,
+                    'resultadoSemestral2' => $resultadoSemestral2,
                 ]
             );
 
@@ -49,7 +51,7 @@ class IndicadorResultadoController extends Controller
             Log::info("AnalisisDatos creado/actualizado", ['analisis' => $analisis]);
 
             // Verificamos que se obtuvo un id válido
-            if (!$analisis->idAnalisisDatos) {
+            if (!$analisis->idIndicador) {
                 Log::error("No se pudo obtener idAnalisisDatos para el indicador", ['idIndicadorConsolidado' => $idIndicadorConsolidado]);
                 return response()->json([
                     'message' => 'Error al registrar el resultado: ID de análisis no obtenido'

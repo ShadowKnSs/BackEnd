@@ -4,12 +4,14 @@ use App\Http\Controllers\Api\MacroProcesoController;
 use App\Http\Controllers\Api\EntidadDependenciaController;
 use App\Http\Controllers\Api\ProcessController;
 use App\Http\Controllers\Api\LiderController;
-use App\Http\Controllers\Api\EventosController;
 use App\Http\Controllers\Api\IndicadorConsolidadoController;
 use App\Http\Controllers\Api\IndicadorResultadoController;
 use App\Http\Controllers\Api\RetroalimentacionController;
 use App\Http\Controllers\Api\EncuestaController;
 use App\Http\Controllers\Api\EvaluaProveedoresController;
+use App\Http\Controllers\Api\NoticiasController;
+use App\Http\Controllers\Api\EventosAvisosController;
+
 
 
 Route::get('macroprocesos', [MacroProcesoController::class, 'index']);
@@ -18,7 +20,6 @@ Route::get('lideres', [LiderController::class, 'index']);
 // Route::get('procesos', action: [ProcessController::class, 'index']); 
 // Route::post('procesos', [ProcessController::class, 'store']);
 Route::apiResource('procesos', controller: ProcessController::class);
-Route::apiResource('eventos', EventosController::class);
 Route::apiResource('indicadoresconsolidados', IndicadorConsolidadoController::class);
 Route::post('evalua-proveedores/{idIndicador}/resultados', [EvaluaProveedoresController::class, 'store']);
 Route::get('evalua-proveedores/{idIndicador}/resultados', [EvaluaProveedoresController::class, 'show']);
@@ -29,6 +30,7 @@ Route::get('indicadoresconsolidados/{idIndicadorConsolidado}/resultados', [Indic
 // Para retroalimentación:
 Route::post('retroalimentacion/{idIndicador}/resultados', [RetroalimentacionController::class, 'store']);
 Route::post('encuesta/{idIndicador}/resultados', [EncuestaController::class, 'store']);
+Route::get('encuesta/{idIndicador}/resultados', [EncuestaController::class, 'show']);
 
-
-
+Route::apiResource('noticias', NoticiasController::class);
+Route::apiResource('eventos-avisos', EventosAvisosController::class);
