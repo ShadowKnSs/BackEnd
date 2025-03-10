@@ -27,10 +27,32 @@ Route::get('evalua-proveedores/{idIndicador}/resultados', [EvaluaProveedoresCont
 Route::post('indicadoresconsolidados/{idIndicadorConsolidado}/resultados', [IndicadorResultadoController::class, 'store']);
 Route::get('indicadoresconsolidados/{idIndicadorConsolidado}/resultados', [IndicadorResultadoController::class, 'show']);
 
-// Para retroalimentación:
-Route::post('retroalimentacion/{idIndicador}/resultados', [RetroalimentacionController::class, 'store']);
-Route::post('encuesta/{idIndicador}/resultados', [EncuestaController::class, 'store']);
-Route::get('encuesta/{idIndicador}/resultados', [EncuestaController::class, 'show']);
+
+// Retroalimentación
+
+Route::get('/indicadores/retroalimentacion', [IndicadorConsolidadoController::class, 'indexRetroalimentacion']);
+Route::prefix('retroalimentacion')->group(function () {
+    Route::post('{idIndicadorConsolidado}/resultados', [RetroalimentacionController::class, 'store']);
+    Route::get('{idIndicadorConsolidado}/resultados', [RetroalimentacionController::class, 'show']);
+
+    //Encuestas
+});Route::prefix('encuesta')->group(function () {
+    // Guardar (POST) resultados de la encuesta con idIndicadorConsolidado
+    Route::post('{idIndicadorConsolidado}/resultados', [EncuestaController::class, 'store']);
+    // Obtener (GET) resultados de la encuesta con idIndicadorConsolidado
+    Route::get('{idIndicadorConsolidado}/resultados', [EncuestaController::class, 'show']);
+});
+
+
+// Retroalimentación
+Route::prefix('evalua-proveedores')->group(function () {
+    Route::post('{idIndicadorConsolidado}/resultados', [RetroalimentacionController::class, 'store']);
+    Route::get('{idIndicadorConsolidado}/resultados', [RetroalimentacionController::class, 'show']);
+});
 
 Route::apiResource('noticias', NoticiasController::class);
 Route::apiResource('eventos-avisos', EventosAvisosController::class);
+
+//Ruta para obtener resultados de los resultados de plan de control
+Route::get('/plan-control', [IndicadorResultadoController::class, 'getResultadosPlanControl']);
+

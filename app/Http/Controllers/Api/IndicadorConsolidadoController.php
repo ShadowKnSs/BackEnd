@@ -5,8 +5,11 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use App\Models\IndicadorConsolidado;
+use App\Models\Retroalimentacion;
+use App\Models\Encuesta;
+use App\Models\EvaluaProveedores;
 use App\Models\AnalisisDatos;
+use App\Models\IndicadorConsolidado;
 use Illuminate\Support\Facades\Log;
 
 class IndicadorConsolidadoController extends Controller
@@ -92,15 +95,86 @@ class IndicadorConsolidadoController extends Controller
 
     public function update(Request $request, $id)
     {
-        $indicador = IndicadorConsolidado::findOrFail($id);
-        $indicador->update($request->all());
-        return response()->json(['indicador' => $indicador], 200);
-    }
+        // 1) Actualizas la parte de indicadoresconsolidados
+        \DB::beginTransaction();
+        try {
+            // 1) Actualizar la tabla indicadoresconsolidados
+            $indicador = IndicadorConsolidado::findOrFail($id);
+    
+            // Solo los campos que quieres actualizar
+            $indicador->update($request->only([
+                'nombreIndicador',
+        'descripcionIndicador',
+        'origenIndicador',
+        'periodicidad'
+            ]));
+    
+            // 2) Obtenemos el registro de analisisdatos
+            $analisis = AnalisisDatos::where('idIndicadorConsolidado', $id)->first();
+            if (!$analisis) {
+                // Si no existe, podría ser un error
+                throw new \Exception("No se encontró 'analisisdatos' para este indicadorConsolidado $id");
+            }
+    
+            $realId = $analisis->idIndicador;  // Este es el ID real en la tabla analisisdatos
+    
+            // 3) Dependiendo del origenIndicador, actualizar la tabla correspondiente
+            switch ($indicador->origenIndicador) {
+                case 'Retroalimentacion':
+                    // Tomamos 'metodo' si viene, sino 'N/A'
+                    $metodo = $request->get('metodo') ?? 'N/A';
+                    Retroalimentacion::updateOrCreate(
+                        ['idIndicador' => $realId],
+                        [
+                            'metodo' => $metodo,
+                            // Si deseas ponerlos en 0 cuando se edita:
+                            'cantidadFelicitacion' => 0,
+                            'cantidadSugerencia' => 0,
+                            'cantidadQueja' => 0,
+                        ]
+                    );
+                    break;
+    
+                case 'Encuesta':
+                    // Podrías hacer algo similar
+                    Encuesta::updateOrCreate(
+                        ['idIndicador' => $realId],
+                        [
+                            'malo' => 0,
+                            'regular' => 0,
+                            'excelenteBueno' => 0,
+                            'noEncuestas' => 0,
+                        ]
+                    );
+                    break;
+    
+                case 'EvaluaProveedores':
+                    EvaluaProveedores::updateOrCreate(
+                        ['idIndicador' => $realId],
+                        [
+                            'confiable' => 0,
+                            'condicionado' => 0,
+                            'noConfiable' => 0,
+                        ]
+                    );
+                    break;
+    
+                default:
+                    // Si no es ninguno de esos, no hacemos nada especial
+                    break;
+            }
+    
+            \DB::commit();
+            return response()->json(['indicador' => $indicador], 200);
+    
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            \Log::error("Error al actualizar indicador $id: ".$e->getMessage());
+            return response()->json([
+                'message' => 'Error al actualizar el indicador',
+                'error' => $e->getMessage()
+            ], 500);
+        }
 
-    public function destroy($id)
-    {
-        $indicador = IndicadorConsolidado::findOrFail($id);
-        $indicador->delete();
-        return response()->json(['indicador' => $indicador], 200);
-    }
+}
 }

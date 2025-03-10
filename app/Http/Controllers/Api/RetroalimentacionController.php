@@ -55,10 +55,6 @@ class RetroalimentacionController extends Controller
             
             $data = $request->get('result');
             
-            // Si no se recibe un valor para 'metodo' o viene vacío, asignamos un valor por defecto, por ejemplo, "N/A"
-            $metodo = isset($data['metodo']) && trim($data['metodo']) !== ""
-                ? $data['metodo']
-                : "N/A";
             
             // Convertir los demás valores a enteros o asignar 0 si no se especifican
             $cantidadFelicitacion = isset($data['cantidadFelicitacion']) && $data['cantidadFelicitacion'] !== "" 
@@ -71,6 +67,14 @@ class RetroalimentacionController extends Controller
                 ? (int)$data['cantidadQueja']
                 : 0;
             
+
+                $existingRetro = Retroalimentacion::where('idIndicador', $realIdIndicador)->first();
+
+            // Si no se recibe un valor para 'metodo' o viene vacío, asignamos un valor por defecto, por ejemplo, "N/A"
+            $metodo = isset($data['metodo']) && trim($data['metodo']) !== ""
+            ? $data['metodo']
+            
+            : ($existingRetro ? $existingRetro->metodo : "N/A");
             // Crear o actualizar la retroalimentación usando el idIndicador real
             $retro = Retroalimentacion::updateOrCreate(
                 ['idIndicador' => $realIdIndicador],
@@ -92,6 +96,43 @@ class RetroalimentacionController extends Controller
             Log::error("Error al registrar retroalimentación para indicador consolidado {$idIndicadorConsolidado}: " . $e->getMessage());
             return response()->json([
                 'message' => 'Error al registrar la retroalimentación',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+
+    public function show($idIndicadorConsolidado)
+    {
+        try {
+            // 1. Buscar la fila en analisisdatos
+            $analisisRegistro = AnalisisDatos::where('idIndicadorConsolidado', $idIndicadorConsolidado)->first();
+            if (!$analisisRegistro) {
+                Log::info("No se encontró registro en analisisdatos para idIndicadorConsolidado: {$idIndicadorConsolidado}");
+                return response()->json([
+                    'message' => 'No se encontró la encuesta (analisisdatos).'
+                ], 404);
+            }
+
+            // 2. Obtenemos el idIndicador real
+            $realIdIndicador = $analisisRegistro->idIndicador;
+
+            // 3. Buscar la encuesta
+            $retroalimentacion = Retroalimentacion::where('idIndicador', $realIdIndicador)->first();
+            if (!$retroalimentacion) {
+                Log::info("No se encontró encuesta para idIndicador: {$realIdIndicador}");
+                return response()->json([
+                    'message' => 'No se encontró la retroalimentación.'
+                ], 404);
+            }
+
+            return response()->json([
+                'retroalimentacion' => $retroalimentacion
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error("Error al obtener la encuesta para idIndicadorConsolidado {$idIndicadorConsolidado}: " . $e->getMessage());
+            return response()->json([
+                'message' => 'Error al obtener la encuesta.',
                 'error' => $e->getMessage()
             ], 500);
         }
