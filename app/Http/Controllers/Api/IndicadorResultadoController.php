@@ -129,7 +129,7 @@ class IndicadorResultadoController extends Controller
 
     public function getResultadosPlanControl()
     {
-        $resultados = DB::table('indicadoresconsolidados as ic')
+        $resultados = DB::table('IndicadoresConsolidados as ic')
         ->join('analisisdatos as ad', 'ic.idIndicadorConsolidado', '=', 'ad.idIndicadorConsolidado')
         ->where('ic.origenIndicador', '=', 'ActividadControl')
         ->select('ic.nombreIndicador', 'ad.resultadoSemestral1', 'ad.resultadoSemestral2')
@@ -138,7 +138,7 @@ class IndicadorResultadoController extends Controller
     }
 
     public function getResultadosIndMapaProceso(){
-        $resultados = DB::table('indicadoresconsolidados as ic')
+        $resultados = DB::table('IndicadoresConsolidados as ic')
         ->join('analisisdatos as ad', 'ic.idIndicadorConsolidado', '=', 'ad.idIndicadorConsolidado')
         ->where('ic.origenIndicador', '=', 'MapaProceso')
         ->select('ic.nombreIndicador', 'ad.resultadoSemestral1', 'ad.resultadoSemestral2')
@@ -147,7 +147,7 @@ class IndicadorResultadoController extends Controller
     }
 
     public function getResutadosRiesgos(){
-        $resultados = DB::table('indicadoresconsolidados as ic')
+        $resultados = DB::table('IndicadoresConsolidados as ic')
         ->join('analisisdatos as ad', 'ic.idIndicadorConsolidado', '=', 'ad.idIndicadorConsolidado')
         ->where('ic.origenIndicador', '=', 'GestionRiesgo')
         ->select('ic.nombreIndicador', 'ad.resultadoSemestral1', 'ad.resultadoSemestral2')
