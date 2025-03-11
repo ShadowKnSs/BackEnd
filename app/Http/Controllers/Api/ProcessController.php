@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Proceso; // Import the Process model
 use Illuminate\Support\Facades\Log;
+
+
 class ProcessController extends Controller
 {
     public function store(Request $request)
@@ -37,4 +39,43 @@ class ProcessController extends Controller
             ], 500);
         }
     }
+
+    public function index()
+    {
+        $procesos = Proceso::all();
+        return response()->json(['procesos' => $procesos], 200);
+    }
+
+    public function show($id)
+    {
+        $proceso = Proceso::findOrFail($id);
+        return response()->json(['proceso' => $proceso], 200);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $proceso = Proceso::findOrFail($id);
+        //Me falta la validacion
+        $proceso->update($request->all());
+        return response()->json(['proceso' => $proceso], 200);
+    }
+
+    public function destroy($id)
+    {
+        $proceso = Proceso::findOrFail($id);
+        $proceso->delete();
+        return response()->json(['proceso' => $proceso], 200);
+    }
+    public function obtenerProcesosPorEntidad($idEntidad)
+{
+    // Obtener todos los procesos de la entidad específica
+    $procesos = Proceso::where('idEntidad', $idEntidad)->get();
+
+    if ($procesos->isEmpty()) {
+        return response()->json(['message' => 'No se encontraron procesos para esta entidad'], 404);
+    }
+
+    return response()->json($procesos);
+}
+
 }
