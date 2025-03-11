@@ -136,4 +136,22 @@ class IndicadorResultadoController extends Controller
         ->get();
         return response()->json([$resultados]);
     }
+
+    public function getResultadosIndMapaProceso(){
+        $resultados = DB::table('indicadoresconsolidados as ic')
+        ->join('analisisdatos as ad', 'ic.idIndicadorConsolidado', '=', 'ad.idIndicadorConsolidado')
+        ->where('ic.origenIndicador', '=', 'MapaProceso')
+        ->select('ic.nombreIndicador', 'ad.resultadoSemestral1', 'ad.resultadoSemestral2')
+        ->get();
+        return response()->json([$resultados]);
+    }
+
+    public function getResutadosRiesgos(){
+        $resultados = DB::table('indicadoresconsolidados as ic')
+        ->join('analisisdatos as ad', 'ic.idIndicadorConsolidado', '=', 'ad.idIndicadorConsolidado')
+        ->where('ic.origenIndicador', '=', 'GestionRiesgo')
+        ->select('ic.nombreIndicador', 'ad.resultadoSemestral1', 'ad.resultadoSemestral2')
+        ->get();
+        return response()->json([$resultados]);
+    }
 }

@@ -44,10 +44,10 @@ Route::prefix('retroalimentacion')->group(function () {
 });
 
 
-// Retroalimentación
+// Evaluacion de Proeveedores
 Route::prefix('evalua-proveedores')->group(function () {
-    Route::post('{idIndicadorConsolidado}/resultados', [RetroalimentacionController::class, 'store']);
-    Route::get('{idIndicadorConsolidado}/resultados', [RetroalimentacionController::class, 'show']);
+    Route::post('{idIndicadorConsolidado}/resultados', [EvaluaProveedoresController::class, 'store']);
+    Route::get('{idIndicadorConsolidado}/resultados', [EvaluaProveedoresController::class, 'show']);
 });
 
 Route::apiResource('noticias', NoticiasController::class);
@@ -55,4 +55,7 @@ Route::apiResource('eventos-avisos', EventosAvisosController::class);
 
 //Ruta para obtener resultados de los resultados de plan de control
 Route::get('/plan-control', [IndicadorResultadoController::class, 'getResultadosPlanControl']);
+Route::get('/mapa-proceso', [IndicadorResultadoController::class, 'getResultadosIndMapaProceso']);
+Route::get('/gestion-riesgos', [IndicadorResultadoController::class, 'getResutadosRiesgos']);
+
 

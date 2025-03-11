@@ -70,7 +70,7 @@ class IndicadorConsolidadoController extends Controller
                     'noConfiable' => 0,
                 ]);
             }
-            
+
             DB::commit();
             Log::info('Indicador creado exitosamente', [
                 'id' => $indicador->idIndicadorConsolidado,
@@ -100,24 +100,24 @@ class IndicadorConsolidadoController extends Controller
         try {
             // 1) Actualizar la tabla indicadoresconsolidados
             $indicador = IndicadorConsolidado::findOrFail($id);
-    
+
             // Solo los campos que quieres actualizar
             $indicador->update($request->only([
                 'nombreIndicador',
-        'descripcionIndicador',
-        'origenIndicador',
-        'periodicidad'
+                'descripcionIndicador',
+                'origenIndicador',
+                'periodicidad'
             ]));
-    
+
             // 2) Obtenemos el registro de analisisdatos
             $analisis = AnalisisDatos::where('idIndicadorConsolidado', $id)->first();
             if (!$analisis) {
                 // Si no existe, podría ser un error
                 throw new \Exception("No se encontró 'analisisdatos' para este indicadorConsolidado $id");
             }
-    
+
             $realId = $analisis->idIndicador;  // Este es el ID real en la tabla analisisdatos
-    
+
             // 3) Dependiendo del origenIndicador, actualizar la tabla correspondiente
             switch ($indicador->origenIndicador) {
                 case 'Retroalimentacion':
@@ -134,7 +134,7 @@ class IndicadorConsolidadoController extends Controller
                         ]
                     );
                     break;
-    
+
                 case 'Encuesta':
                     // Podrías hacer algo similar
                     Encuesta::updateOrCreate(
@@ -147,7 +147,7 @@ class IndicadorConsolidadoController extends Controller
                         ]
                     );
                     break;
-    
+
                 case 'EvaluaProveedores':
                     EvaluaProveedores::updateOrCreate(
                         ['idIndicador' => $realId],
@@ -158,23 +158,82 @@ class IndicadorConsolidadoController extends Controller
                         ]
                     );
                     break;
-    
+
                 default:
                     // Si no es ninguno de esos, no hacemos nada especial
                     break;
             }
-    
+
             \DB::commit();
             return response()->json(['indicador' => $indicador], 200);
-    
+
         } catch (\Exception $e) {
             \DB::rollBack();
-            \Log::error("Error al actualizar indicador $id: ".$e->getMessage());
+            \Log::error("Error al actualizar indicador $id: " . $e->getMessage());
             return response()->json([
                 'message' => 'Error al actualizar el indicador',
                 'error' => $e->getMessage()
             ], 500);
         }
 
-}
+    }
+
+    public function destroy($id)
+    {
+        DB::beginTransaction();
+        try {
+            // 1) Buscar el registro en indicadoresconsolidados
+            $indicador = IndicadorConsolidado::findOrFail($id);
+
+            // 2) Buscar en analisisdatos por idIndicadorConsolidado
+            $analisis = AnalisisDatos::where('idIndicadorConsolidado', $id)->first();
+            if (!$analisis) {
+                // Si no existe, quizá no se creó correctamente o se manipuló la BD
+                // Decidimos si lanzamos excepción o devolvemos error
+                throw new \Exception("No se encontró registro en 'analisisdatos' para este indicadorConsolidado ($id).");
+            }
+
+            // 3) Borrar el registro en la tabla hija según origenIndicador
+            switch ($indicador->origenIndicador) {
+                case 'Encuesta':
+                    Encuesta::where('idIndicador', $analisis->idIndicador)->delete();
+                    break;
+
+                case 'Retroalimentacion':
+                    Retroalimentacion::where('idIndicador', $analisis->idIndicador)->delete();
+                    break;
+
+                case 'EvaluaProveedores':
+                    EvaluaProveedores::where('idIndicador', $analisis->idIndicador)->delete();
+                    break;
+
+                default:
+                    // Otros orígenes no tienen tabla hija adicional
+                    break;
+            }
+
+            // 4) Borrar el registro en analisisdatos
+            $analisis->delete();
+
+            // 5) Borrar el registro en indicadoresconsolidados
+            $indicador->delete();
+
+            DB::commit();
+
+            Log::info("IndicadorConsolidado $id y sus registros asociados fueron eliminados correctamente.");
+
+            return response()->json([
+                'message' => 'Indicador y sus registros asociados eliminados correctamente.',
+                'indicador' => $indicador
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Error al eliminar indicadorConsolidado $id: " . $e->getMessage());
+            return response()->json([
+                'message' => 'Error al eliminar el indicador.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }
