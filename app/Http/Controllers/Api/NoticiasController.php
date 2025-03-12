@@ -18,7 +18,7 @@ class NoticiasController extends Controller
 
         $noticias = Noticia::all();
 
-        Log::info('[NoticiasController@index] Se cargaron ' . count($noticias) . ' noticias.');
+        Log::info('[NoticiasController@index] Se cargaron ' . count($noticias) . 'Noticias.');
 
         return response()->json($noticias, 200);
     }

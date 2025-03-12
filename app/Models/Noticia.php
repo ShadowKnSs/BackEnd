@@ -11,7 +11,7 @@ class Noticia extends Model
 {
     use HasFactory;
 
-    protected $table = 'noticias';
+    protected $table = 'Noticias';
     protected $primaryKey = 'idNoticias';
 
     public $timestamps = false;
