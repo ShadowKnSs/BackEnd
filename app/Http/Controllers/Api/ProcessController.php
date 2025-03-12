@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Proceso; // Import the Process model
 use Illuminate\Support\Facades\Log;
+
+
 class ProcessController extends Controller
 {
     public function store(Request $request)
