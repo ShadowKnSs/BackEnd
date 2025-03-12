@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\EncuestaController;
 use App\Http\Controllers\Api\EvaluaProveedoresController;
 use App\Http\Controllers\Api\NoticiasController;
 use App\Http\Controllers\Api\EventosAvisosController;
+use App\Http\Controllers\ControlCambioController;
 
 
 
@@ -34,3 +35,6 @@ Route::get('encuesta/{idIndicador}/resultados', [EncuestaController::class, 'sho
 
 Route::apiResource('noticias', NoticiasController::class);
 Route::apiResource('eventos-avisos', EventosAvisosController::class);
+
+// Para Manual Operativo
+Route::apiResource('controlcambios', ControlCambioController::class);
