@@ -11,9 +11,7 @@ use App\Http\Controllers\Api\EncuestaController;
 use App\Http\Controllers\Api\EvaluaProveedoresController;
 use App\Http\Controllers\Api\NoticiasController;
 use App\Http\Controllers\Api\EventosAvisosController;
-use App\Http\Controllers\ControlCambioController;
-
-
+use App\Http\Controllers\Api\ControlCambioController;
 
 Route::get('macroprocesos', [MacroProcesoController::class, 'index']);
 Route::get('entidades', [EntidadDependenciaController::class, 'index']);
