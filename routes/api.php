@@ -15,6 +15,9 @@ use App\Http\Controllers\Api\EvaluaProveedoresController;
 use App\Http\Controllers\Api\NoticiasController;
 use App\Http\Controllers\Api\EventosAvisosController;
 
+// Controlador de Plan Correctivo
+use App\Http\Controllers\Api\PlanCorrectivoController;
+
 
 
 Route::get('macroprocesos', [MacroProcesoController::class, 'index']);
@@ -29,10 +32,6 @@ Route::get('/procesos/entidad/{idEntidad}', [ProcessController::class, 'obtenerP
 Route::post('/registros', [RegistrosController::class, 'store']); // Ruta para crear un nuevo registro
 Route::get('/registros/{idProceso}', [RegistrosController::class, 'index']); // Ruta para obtener registros por idProceso
 Route::post('minutas', [MinutaController::class, 'store']); // crear minuta
-
-
-
-
 
 
 // Route::get('procesos', action: [ProcessController::class, 'index']); 
@@ -76,4 +75,19 @@ Route::get('/plan-control', [IndicadorResultadoController::class, 'getResultados
 Route::get('/mapa-proceso', [IndicadorResultadoController::class, 'getResultadosIndMapaProceso']);
 Route::get('/gestion-riesgos', [IndicadorResultadoController::class, 'getResutadosRiesgos']);
 
+//Ruta para los planes correctivos
+Route::get('/plan-correctivos', [PlanCorrectivoController::class, 'index']);
+//Ruta para obtener la informacion de un plan
+Route::get('/plan-correctivo/{id}', [PlanCorrectivoController::class,'show']);
+//Ruta para crear un nuevo plan
+Route::post('/plan-correctivo', [PlanCorrectivoController::class,'store']);
+//Ruta para actualizar un plan
+Route::put('/plan-correctivo/{id}', [PlanCorrectivoController::class,'update']);
+//Ruta para eliminar un plan
+Route::delete('/plan-correctivo/{id}', [PlanCorrectivoController::class,'destroy']);
+
+//Rutas para el manejo de las actividades
+Route::post('/actividades', [PlanCorrectivoController::class,'createActividad']);
+Route::put('/actividades/{idActividadPlan}', [PlanCorrectivoController::class,'updateActividad']);
+Route::delete('/actividades/{idActividadPlan}', [PlanCorrectivoController::class,'deleteActividad']);
 
