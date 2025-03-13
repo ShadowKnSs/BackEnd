@@ -21,7 +21,10 @@ class Encuesta extends Model
         'noEncuestas',
         'idformAnalisisDatos',
         'necesidad',
-        'interpretacion'
+        'interpretacion',
+        'bueno',
+        'excelente',
+        'noEncuestas'
     ];
     public function formAnalisisDatos()
     {
