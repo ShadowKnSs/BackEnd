@@ -4,24 +4,23 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class GestionRiesgos extends Model
+class FormAnalisisDatos extends Model
 {
     // Indicamos la tabla en la base de datos donde se almacenan los datos
-    protected $table = 'gestionriesgos';
+    protected $table = 'formAnalisisDatos';
 
     // Indicamos la clave primaria personalizada
-    protected $primaryKey = 'idGesRies';
+    protected $primaryKey = 'id_formAnalisisDatos';
 
     // Especificamos los campos que se pueden asignar masivamente
     protected $fillable = [
-        'idregistro',
-        'elaboro',
-        'fechaelaboracion',
+        'idRegistro',
+        'periodoEva',
     ];
 
-    // Relación con registro
+    // Relación con la tabla registros
     public function registro()
     {
-        return $this->belongsTo(Registro::class, 'idRegistro', 'idregistro');
+        return $this->belongsTo(Registro::class, 'idRegistro', 'idRegistro');
     }
 }

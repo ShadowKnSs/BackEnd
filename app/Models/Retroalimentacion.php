@@ -18,9 +18,15 @@ class Retroalimentacion extends Model
         'metodo',           // Debe ser uno de los valores del ENUM ('Buzón Virtual', 'Encuesta', 'Buzón Físico')
         'cantidadFelicitacion',
         'cantidadSugerencia',
-        'cantidadQueja'
+        'cantidadQueja',
+        'idformAnalisisDatos',
+        'necesidad',
+        'interpretacion'
     ];
-
+    public function formAnalisisDatos()
+    {
+        return $this->belongsTo(formAnalisisDatos::class, 'id_formAnalisisDatos', 'idformAnalisisDatos');
+    }
     // Relación: cada registro de retroalimentación pertenece a un indicador.
     public function indicador()
     {

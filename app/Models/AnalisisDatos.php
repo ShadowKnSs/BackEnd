@@ -19,12 +19,21 @@ class AnalisisDatos extends Model
         'resultadoSemestral2',
         'interpretacion',
         'necesidad',
-        'meta'
+        'meta',
+        'idformAnalisisDatos',
+        'descripcionIndicador',
+        'nombreIndicador',
+        'origenIndicador',
+        'periocidad'
     ];
 
     // Relación inversa: cada análisis pertenece a un indicador consolidado.
     public function indicadorConsolidado()
     {
         return $this->belongsTo(IndicadorConsolidado::class, 'idIndicadorConsolidado', 'idIndicadorConsolidado');
+    }
+    public function formAnalisisDatos()
+    {
+        return $this->belongsTo(formAnalisisDatos::class, 'id_formAnalisisDatos', 'idformAnalisisDatos');
     }
 }

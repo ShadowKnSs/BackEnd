@@ -18,6 +18,13 @@ class Encuesta extends Model
         'malo',
         'regular',
         'excelenteBueno',
-        'noEncuestas'
+        'noEncuestas',
+        'idformAnalisisDatos',
+        'necesidad',
+        'interpretacion'
     ];
+    public function formAnalisisDatos()
+    {
+        return $this->belongsTo(formAnalisisDatos::class, 'id_formAnalisisDatos', 'idformAnalisisDatos');
+    }
 }
