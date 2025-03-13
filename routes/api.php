@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\EvaluaProveedoresController;
 use App\Http\Controllers\Api\NoticiasController;
 use App\Http\Controllers\Api\EventosAvisosController;
 use App\Http\Controllers\Api\ControlCambioController;
+use App\Http\Controllers\Api\MapaProcesoController;
 
 Route::get('macroprocesos', [MacroProcesoController::class, 'index']);
 Route::get('entidades', [EntidadDependenciaController::class, 'index']);
@@ -36,3 +37,4 @@ Route::apiResource('eventos-avisos', EventosAvisosController::class);
 
 // Para Manual Operativo
 Route::apiResource('controlcambios', ControlCambioController::class);
+Route::apiResource('mapaproceso', MapaProcesoController::class);
