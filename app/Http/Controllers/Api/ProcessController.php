@@ -74,11 +74,10 @@ class ProcessController extends Controller
         $nombres = Proceso::pluck('nombreProceso');
         return response()->json(['procesos' => $nombres], 200);
     }
-    }
+    
 
-    public function obtenerProcesosPorEntidad($idEntidad)
-{
-    // Obtener todos los procesos de la entidad específica
+    public function obtenerProcesosPorEntidad($idEntidad){
+         // Obtener todos los procesos de la entidad específica
     $procesos = Proceso::where('idEntidad', $idEntidad)->get();
 
     if ($procesos->isEmpty()) {
@@ -86,5 +85,7 @@ class ProcessController extends Controller
     }
 
     return response()->json($procesos);
+    }
+   
 }
-}
+
