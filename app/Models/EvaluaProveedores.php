@@ -9,7 +9,7 @@ class EvaluaProveedores extends Model
 {
     use HasFactory;
 
-    protected $table = 'evaluaproveedores'; // Ajusta el nombre si es necesario
+    protected $table = 'evaluaProveedores'; // Ajusta el nombre si es necesario
     protected $primaryKey = 'idEvaProveedores';
     public $timestamps = false; // Si no usas timestamps
 
@@ -17,6 +17,13 @@ class EvaluaProveedores extends Model
         'idIndicador',
         'confiable',
         'condicionado',
-        'noConfiable'
+        'noConfiable',
+        'idformAnalisisDatos',
+        'necesidad',
+        'interpretacion'
     ];
+    public function formAnalisisDatos()
+    {
+        return $this->belongsTo(formAnalisisDatos::class, 'id_formAnalisisDatos', 'idformAnalisisDatos');
+    }
 }

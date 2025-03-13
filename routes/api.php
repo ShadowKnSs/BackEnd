@@ -14,6 +14,9 @@ use App\Http\Controllers\Api\EncuestaController;
 use App\Http\Controllers\Api\EvaluaProveedoresController;
 use App\Http\Controllers\Api\NoticiasController;
 use App\Http\Controllers\Api\EventosAvisosController;
+use App\Http\Controllers\Api\GestionRiesgoController;
+use App\Http\Controllers\Api\RiesgoController;
+use App\Http\Controllers\Api\FormAnalisisDatosController;
 
 
 use App\Http\Controllers\Api\ActividadMejoraController;
@@ -86,6 +89,16 @@ Route::prefix('evalua-proveedores')->group(function () {
 
 Route::apiResource('noticias', NoticiasController::class);
 Route::apiResource('eventos-avisos', EventosAvisosController::class);
+Route::get('gestionriesgos/{idGesRies}/riesgos', [GestionRiesgoController::class, 'getRiesgosByGesRies']);
+
+Route::post('gestionriesgos/{idGesRies}/riesgos', [GestionRiesgoController::class, 'store']);
+
+Route::put('gestionriesgos/{idGesRies}/riesgos/{idRiesgo}', [GestionRiesgoController::class, 'update']);
+
+Route::delete('gestionriesgos/{idGesRies}/riesgos/{idRiesgo}', [GestionRiesgoController::class, 'delete']);
+
+Route::get('analisisDatos/{idformAnalisisDatos}/analisis', [FormAnalisisDatosController::class, 'show']);
+Route::put('analisisDatos/{idformAnalisisDatos}/necesidad-interpretacion', [FormAnalisisDatosController::class, 'updateNecesidadInterpretacion']);
 
 //Ruta para obtener resultados de los resultados de plan de control
 Route::get('/plan-control', [IndicadorResultadoController::class, 'getResultadosPlanControl']);
