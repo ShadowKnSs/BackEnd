@@ -14,6 +14,10 @@ use App\Http\Controllers\Api\EncuestaController;
 use App\Http\Controllers\Api\EvaluaProveedoresController;
 use App\Http\Controllers\Api\NoticiasController;
 use App\Http\Controllers\Api\EventosAvisosController;
+use App\Http\Controllers\Api\ControlCambioController;
+use App\Http\Controllers\Api\MapaProcesoController;
+use App\Http\Controllers\Api\IndMapaProcesoController;
+use App\Http\Controllers\Api\ActividadControlController;
 use App\Http\Controllers\Api\GestionRiesgoController;
 use App\Http\Controllers\Api\RiesgoController;
 use App\Http\Controllers\Api\FormAnalisisDatosController;
@@ -89,6 +93,12 @@ Route::prefix('evalua-proveedores')->group(function () {
 
 Route::apiResource('noticias', NoticiasController::class);
 Route::apiResource('eventos-avisos', EventosAvisosController::class);
+
+// Para Manual Operativo
+Route::apiResource('controlcambios', ControlCambioController::class);
+Route::apiResource('mapaproceso', MapaProcesoController::class);
+Route::apiResource('indmapaproceso', IndMapaProcesoController::class);
+Route::apiResource('actividadcontrol', ActividadControlController::class);
 Route::get('gestionriesgos/{idGesRies}/riesgos', [GestionRiesgoController::class, 'getRiesgosByGesRies']);
 
 Route::post('gestionriesgos/{idGesRies}/riesgos', [GestionRiesgoController::class, 'store']);
