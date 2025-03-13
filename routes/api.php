@@ -14,6 +14,9 @@ use App\Http\Controllers\Api\EncuestaController;
 use App\Http\Controllers\Api\EvaluaProveedoresController;
 use App\Http\Controllers\Api\NoticiasController;
 use App\Http\Controllers\Api\EventosAvisosController;
+use App\Http\Controllers\Api\CronogramaController;
+
+
 use App\Http\Controllers\Api\ControlCambioController;
 use App\Http\Controllers\Api\MapaProcesoController;
 use App\Http\Controllers\Api\IndMapaProcesoController;
@@ -93,6 +96,22 @@ Route::prefix('evalua-proveedores')->group(function () {
 
 Route::apiResource('noticias', NoticiasController::class);
 Route::apiResource('eventos-avisos', EventosAvisosController::class);
+
+//Route::apiResource('cronogramas', CronogramaController::class);
+Route::get('entidad-nombres', [EntidadDependenciaController::class, 'getNombres']);
+Route::get('procesos-nombres', [ProcessController::class, 'getNombres']);
+Route::get('cronograma', [CronogramaController::class, 'index']);
+Route::post('cronograma', [CronogramaController::class, 'store']);
+Route::put('cronograma/{id}', [CronogramaController::class, 'update']);
+
+
+
+
+
+
+
+
+
 
 // Para Manual Operativo
 Route::apiResource('controlcambios', ControlCambioController::class);
