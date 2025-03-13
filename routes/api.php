@@ -11,6 +11,9 @@ use App\Http\Controllers\Api\EncuestaController;
 use App\Http\Controllers\Api\EvaluaProveedoresController;
 use App\Http\Controllers\Api\NoticiasController;
 use App\Http\Controllers\Api\EventosAvisosController;
+use App\Http\Controllers\Api\CronogramaController;
+
+
 
 
 
@@ -34,3 +37,19 @@ Route::get('encuesta/{idIndicador}/resultados', [EncuestaController::class, 'sho
 
 Route::apiResource('noticias', NoticiasController::class);
 Route::apiResource('eventos-avisos', EventosAvisosController::class);
+
+//Route::apiResource('cronogramas', CronogramaController::class);
+Route::get('entidad-nombres', [EntidadDependenciaController::class, 'getNombres']);
+Route::get('procesos-nombres', [ProcessController::class, 'getNombres']);
+Route::get('cronograma', [CronogramaController::class, 'index']);
+Route::post('cronograma', [CronogramaController::class, 'store']);
+Route::put('cronograma/{id}', [CronogramaController::class, 'update']);
+
+
+
+
+
+
+
+
+
