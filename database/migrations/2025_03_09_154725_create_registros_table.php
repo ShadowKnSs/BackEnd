@@ -15,7 +15,9 @@ return new class extends Migration
                 $table->id('idRegistro');
                 $table->foreignId('idProceso')->constrained('proceso')->onDelete('cascade');
                 $table->integer('año');
+                $table->string('Apartado');
                 $table->timestamps();
+               
             });
         }
     }    
