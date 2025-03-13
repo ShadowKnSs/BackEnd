@@ -22,6 +22,7 @@ use App\Http\Controllers\Api\PlanCorrectivoController;
 // Controlador de Plan Trabajo
 use App\Http\Controllers\Api\PlanTrabajoController;
 use App\Http\Controllers\Api\FuentePtController;
+use App\Http\Controllers\Api\ProyectoMejoraController;
 
 
 
@@ -112,5 +113,9 @@ Route::get('/plan-correctivos/registro/{idRegistro}', [PlanCorrectivoController:
 Route::apiResource('plantrabajo', PlanTrabajoController::class);
 Route::apiResource('actividadmejora', ActividadMejoraController::class);
 Route::apiResource('fuentept', FuentePtController::class);
+Route::get('/plantrabajo/registro/{idRegistro}', [PlanTrabajoController::class, 'getByRegistro']);
+Route::post('/proyecto-mejora', [ProyectoMejoraController::class, 'store']);
+
+
 
 

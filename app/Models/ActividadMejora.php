@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class ActividadMejora extends Model
 {
-    protected $table = 'actividadmejora'; // nombre de la tabla en minúsculas (según convención)
+    protected $table = 'ActividadMejora'; // nombre de la tabla en minúsculas (según convención)
     protected $primaryKey = 'idActividadMejora';
     public $timestamps = false;
 
