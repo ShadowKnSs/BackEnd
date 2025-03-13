@@ -66,4 +66,16 @@ class ProcessController extends Controller
         $proceso->delete();
         return response()->json(['proceso' => $proceso], 200);
     }
+
+    public function obtenerProcesosPorEntidad($idEntidad)
+{
+    // Obtener todos los procesos de la entidad específica
+    $procesos = Proceso::where('idEntidad', $idEntidad)->get();
+
+    if ($procesos->isEmpty()) {
+        return response()->json(['message' => 'No se encontraron procesos para esta entidad'], 404);
+    }
+
+    return response()->json($procesos);
+}
 }

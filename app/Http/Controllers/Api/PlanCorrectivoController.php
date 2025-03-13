@@ -19,8 +19,7 @@ class PlanCorrectivoController extends Controller
     }
 
     public function store(Request $request){
-           // Valida los campos necesarios 
-           $request->validate([
+        $request->validate([
             'fechaInicio'          => 'required|date',
             'origenConformidad'    => 'required|string|max:510',
             'equipoMejora'         => 'required|string|max:255',
@@ -29,22 +28,32 @@ class PlanCorrectivoController extends Controller
             'evidencia'            => 'required|string|max:510',
             'coordinadorPlan'      => 'required|string|max:255'
         ]);
-
-        // Crea un nuevo plan correctivo con los datos del request
-        //Se va crear un plan con todos los atributos definidos por el modelo
+    
         $plan = PlanCorrectivo::create($request->all());
-
-        //Si se envia un arreglo de actividades, las crea asociads al plan
-        if($request->has('activdades')){
-            foreach ($request->input('actividades') as $act) {
+    
+        // Si se envían actividades de reacción, guardarlas
+        if($request->has('reaccion')){
+            foreach ($request->input('reaccion') as $act) {
                 $act['idPlanCorrectivo'] = $plan->idPlanCorrectivo;
+                $act['descripcionAct'] = isset($act['actividad']) ? $act['actividad'] : null;
+                $act['tipo'] = 'reaccion';
                 ActividadPlan::create($act);
             }
         }
-
+        
+        // Si se envían actividades del plan de acción, guardarlas
+        if($request->has('planAccion')){
+            foreach ($request->input('planAccion') as $act) {
+                $act['idPlanCorrectivo'] = $plan->idPlanCorrectivo;
+                $act['descripcionAct'] = isset($act['actividad']) ? $act['actividad'] : null;
+                $act['tipo'] = 'planaccion';
+                ActividadPlan::create($act);
+            }
+        }
+    
         return response()->json($plan, 201);
-
     }
+    
 
     public function show($id){
         $plan = PlanCorrectivo::with('actividades')->find($id);
@@ -59,8 +68,34 @@ class PlanCorrectivoController extends Controller
         if(!$plan){
             return response()->json(['message' => 'Plan no encontrado'], 404);
         }
-
+        
+        // Actualizamos el plan principal
         $plan->update($request->all());
+        
+        // Eliminamos las actividades actuales asociadas al plan
+        $plan->actividades()->delete();
+        
+        // Creamos las nuevas actividades de reacción
+        if($request->has('reaccion')){
+            foreach ($request->input('reaccion') as $act) {
+                $act['idPlanCorrectivo'] = $plan->idPlanCorrectivo;
+                // Mapeamos el campo 'actividad' al campo 'descripcionAct'
+                $act['descripcionAct'] = isset($act['actividad']) ? $act['actividad'] : null;
+                $act['tipo'] = 'reaccion';
+                ActividadPlan::create($act);
+            }
+        }
+        
+        // Creamos las nuevas actividades del plan de acción
+        if($request->has('planAccion')){
+            foreach ($request->input('planAccion') as $act) {
+                $act['idPlanCorrectivo'] = $plan->idPlanCorrectivo;
+                $act['descripcionAct'] = isset($act['actividad']) ? $act['actividad'] : null;
+                $act['tipo'] = 'planaccion';
+                ActividadPlan::create($act);
+            }
+        }
+        
         return response()->json($plan);
     }
 
@@ -100,4 +135,15 @@ class PlanCorrectivoController extends Controller
         $actividad->delete();
         return response()->json(['message' => 'Actividad eliminada']);
     }
+
+    public function getByRegistro($idRegistro)
+{
+    // Buscar los planes correctivos donde idRegistro coincida, incluyendo las actividades asociadas
+    $plans = PlanCorrectivo::with('actividades')->where('idRegistro', $idRegistro)->get();
+
+    if ($plans->isEmpty()) {
+        return response()->json(['message' => 'No se encontraron planes de acción para este registro.'], 404);
+    }
+    return response()->json($plans);
+}
 }
