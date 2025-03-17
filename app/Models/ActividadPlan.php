@@ -14,7 +14,8 @@ class ActividadPlan extends Model
         'idPlanCorrectivo',
         'responsable',
         'descripcionAct',
-        'fechaProgramada'
+        'fechaProgramada',
+        'tipo'
     ];
 
     public function planCorrectivo()

@@ -18,8 +18,16 @@ use App\Http\Controllers\Api\GestionRiesgoController;
 use App\Http\Controllers\Api\RiesgoController;
 use App\Http\Controllers\Api\FormAnalisisDatosController;
 
+
+use App\Http\Controllers\Api\ActividadMejoraController;
 // Controlador de Plan Correctivo
 use App\Http\Controllers\Api\PlanCorrectivoController;
+// Controlador de Plan Trabajo
+use App\Http\Controllers\Api\PlanTrabajoController;
+use App\Http\Controllers\Api\FuentePtController;
+
+
+
 
 
 
@@ -32,9 +40,17 @@ Route::get('lideres', [LiderController::class, 'index']);
 Route::post('/procesos', [ProcessController::class, 'store']);
 
 Route::get('/procesos/entidad/{idEntidad}', [ProcessController::class, 'obtenerProcesosPorEntidad']);
-Route::post('/registros', [RegistrosController::class, 'store']); // Ruta para crear un nuevo registro
-Route::get('/registros/{idProceso}', [RegistrosController::class, 'index']); // Ruta para obtener registros por idProceso
-Route::post('minutas', [MinutaController::class, 'store']); // crear minuta
+/*Route::post('/registros', [RegistrosController::class, 'store']); // Ruta para crear un nuevo registro
+Route::get('/registros/{idProceso}', [RegistrosController::class, 'index']); // Ruta para obtener registros por idProceso*/
+
+Route::post('minutasAdd', [MinutaController::class, 'store']); // crear minuta
+Route::get('/minutas/registro/{idRegistro}', [MinutaController::class, 'getMinutasByRegistro']); //obtener todad las minutas de un proceso en un año 
+Route::put('/minutas/{id}', [MinutaController::class, 'update']); //actualizar una minuta
+Route::delete('/minutasDelete/{id}', [MinutaController::class, 'destroy']);
+
+Route::post('/registros', [RegistrosController::class, 'store']); //crear carpeta
+Route::put('/registros{id}', [RegistrosController::class, 'update']);//actualizar update
+Route::post('/registros/filtrar', [RegistrosController::class, 'obtenerRegistrosPorProcesoYApartado']); // obtener carpetas por proceso de un apartado
 
 
 // Route::get('procesos', action: [ProcessController::class, 'index']); 
@@ -93,7 +109,7 @@ Route::get('/plan-correctivos', [PlanCorrectivoController::class, 'index']);
 //Ruta para obtener la informacion de un plan
 Route::get('/plan-correctivo/{id}', [PlanCorrectivoController::class,'show']);
 //Ruta para crear un nuevo plan
-Route::post('/plan-correctivo', [PlanCorrectivoController::class,'store']);
+Route::post('/plan-correctivos', [PlanCorrectivoController::class,'store']);
 //Ruta para actualizar un plan
 Route::put('/plan-correctivo/{id}', [PlanCorrectivoController::class,'update']);
 //Ruta para eliminar un plan
@@ -103,4 +119,11 @@ Route::delete('/plan-correctivo/{id}', [PlanCorrectivoController::class,'destroy
 Route::post('/actividades', [PlanCorrectivoController::class,'createActividad']);
 Route::put('/actividades/{idActividadPlan}', [PlanCorrectivoController::class,'updateActividad']);
 Route::delete('/actividades/{idActividadPlan}', [PlanCorrectivoController::class,'deleteActividad']);
+
+Route::get('/plan-correctivos/registro/{idRegistro}', [PlanCorrectivoController::class, 'getByRegistro']);
+
+Route::apiResource('plantrabajo', PlanTrabajoController::class);
+Route::apiResource('actividadmejora', ActividadMejoraController::class);
+Route::apiResource('fuentept', FuentePtController::class);
+
 

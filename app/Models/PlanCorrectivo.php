@@ -22,7 +22,9 @@ class PlanCorrectivo extends Model
         'causaRaiz',
         'estadoSimilares',
         'estadoConformidad',
-        'coordinadorPlan'
+        'coordinadorPlan',
+        'entidad',
+        'codigo'
     ];
 
     public function actividades()
