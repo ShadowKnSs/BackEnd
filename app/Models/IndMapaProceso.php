@@ -13,11 +13,11 @@ class IndMapaProceso extends Model
     protected $primaryKey = 'idIndicadorMP'; // Primary Key
 
     protected $fillable = [
-        'idMapaProceso',
-        'idResponsable',
-        'idIndicador',
+        'idProceso',
         'descripcion',
         'formula',
-        'periodoMed'
+        'periodoMed',
+        'responsable',
+        'meta'
     ];
 }

@@ -4,154 +4,118 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use App\Models\GestionRiesgos;
-use App\Models\Riesgo;
-use Illuminate\Support\Facades\Log; // Importar Log para depuración
+use App\Models\Registros;
 
 class GestionRiesgoController extends Controller
 {
     /**
-     * Muestra los riesgos de ambas tablas basados en el idGesRies.
+     * 1) Obtener datos generales (entidad, macroproceso, proceso) según el idRegistro.
+     *    Supongamos que esta información está en la tabla 'registro' o en otra parte.
+     *    Ajusta la lógica según tu base de datos real.
+     *
+     *    GET /api/gestionriesgos/{idRegistro}/datos-generales
      */
-    public function getRiesgosByGesRies($idGesRies)
+    public function getDatosGenerales($idRegistro)
     {
-        // Buscar el registro en gestionriesgos por el idGesRies
-        $gestionRiesgos = GestionRiesgos::where('idGesRies', $idGesRies)->first();
-
-        // Si no se encuentra el registro en gestionriesgos, devolver error
-        if (!$gestionRiesgos) {
-            return response()->json(['message' => 'Gestión de riesgos no encontrada'], 404);
+        // Ejemplo: si tu tabla 'registro' tiene columnas 'entidad', 'macroproceso', 'proceso', etc.
+        $registro = Registros::find($idRegistro);
+        if (!$registro) {
+            return response()->json(['message' => 'No existe el registro especificado'], 404);
         }
 
-        // Consultar los riesgos asociados al idGesRies
-        $riesgos = Riesgo::where('idGesRies', $idGesRies)->get();
+        // Ajusta el shape del JSON según tu conveniencia
+        $datos = [
+            'entidad'       => $registro->entidad ?? '', 
+            'macroproceso'  => $registro->macroproceso ?? '',
+            'proceso'       => $registro->proceso ?? '',
+            // ... cualquier otro campo que quieras exponer
+        ];
 
-        // Devolver los resultados de ambas tablas
-        return response()->json([
-            'gestionRiesgos' => $gestionRiesgos,
-            'riesgos' => $riesgos
-        ]);
+        return response()->json($datos, 200);
     }
 
     /**
-     * Almacena un nuevo riesgo asociado a una gestión de riesgos.
+     * 2) Verificar si ya existe un registro en gestionriesgos asociado a un idRegistro.
+     *    GET /api/gestionriesgos/{idRegistro}
+     *    - Si no existe, retornar 404.
+     *    - Si existe, retornar la fila.
      */
-    public function store(Request $request, $idGesRies)
+    public function showByRegistro($idRegistro)
     {
-        // Depuración en consola y logs
-        Log::info('Entrando al método store', ['idGesRies' => $idGesRies, 'data' => $request->all()]);
-        error_log('Entrando al método store con idGesRies: ' . $idGesRies . ' y datos: ' . json_encode($request->all()));
+        // Buscar si hay una fila en gestionriesgos con ese idRegistro
+        $gestion = GestionRiesgos::where('idRegistro', $idRegistro)->first();
+        if (!$gestion) {
+            return response()->json(['message' => 'No existe un registro en gestionriesgos para este idRegistro'], 404);
+        }
 
-        $request->validate([
-            'responsable' => 'required|string|max:255',
-            'fuente' => 'nullable|string|max:255',
-            'tipoRiesgo' => 'required|string|max:255',
-            'descripcion' => 'required|string',
-            'consecuencias' => 'nullable|string',
-            'valorSeveridad' => 'required|integer|min:1|max:10',
-            'valorOcurrencia' => 'required|integer|min:1|max:10',
-            'valorNRP' => 'required|integer',
-            'actividades' => 'nullable|string',
-            'accionMejora' => 'nullable|string',
-            'fechaImp' => 'nullable|date',
-            'fechaEva' => 'nullable|date',
-            'reevaluacionSeveridad' => 'nullable|integer|min:1|max:10',
-            'reevaluacionOcurrencia' => 'nullable|integer|min:1|max:10',
-            'reevaluacionNRP' => 'nullable|integer',
-            'reevaluacionEfectividad' => 'nullable|integer|min:1|max:10',
-            'analisisEfectividad' => 'nullable|string'
-        ]);
-
-        // Crear el riesgo asignando el idGesRies desde la URL
-        $riesgo = Riesgo::create(array_merge($request->all(), ['idGesRies' => $idGesRies]));
-
-        // Confirmación en consola y logs
-        Log::info('Riesgo almacenado correctamente', ['riesgo' => $riesgo]);
-        error_log('Riesgo almacenado correctamente: ' . json_encode($riesgo));
-
-        return response()->json([
-            'message' => 'Riesgo almacenado correctamente',
-            'riesgo' => $riesgo
-        ], 201);
+        return response()->json($gestion, 200);
     }
 
     /**
-     * Actualiza un riesgo existente.
+     * 3) Crear un nuevo registro en la tabla gestionriesgos.
+     *    POST /api/gestionriesgos
+     *    - Esperamos en el body: { "idRegistro": X, "elaboro": "...", "fechaelaboracion": "YYYY-MM-DD" }
      */
-    public function update(Request $request, $idGesRies, $idRiesgo)
+    public function store(Request $request)
     {
-        // Depuración en consola y logs
-        Log::info('Entrando al método update', ['idGesRies' => $idGesRies, 'idRiesgo' => $idRiesgo, 'data' => $request->all()]);
-        error_log('Entrando al método update con idGesRies: ' . $idGesRies . ', idRiesgo: ' . $idRiesgo . ' y datos: ' . json_encode($request->all()));
+        DB::beginTransaction();
+        try {
+            // Validar los campos mínimos
+            $data = $request->validate([
+                'idRegistro'       => 'required|integer',
+                'elaboro'          => 'nullable|string',
+                'fechaelaboracion' => 'nullable|date',
+            ]);
 
-        // Validar los datos de entrada
-        $request->validate([
-            'responsable' => 'sometimes|string|max:255',
-            'fuente' => 'nullable|string|max:255',
-            'tipoRiesgo' => 'sometimes|string|max:255',
-            'descripcion' => 'sometimes|string',
-            'consecuencias' => 'nullable|string',
-            'valorSeveridad' => 'sometimes|integer|min:1|max:10',
-            'valorOcurrencia' => 'sometimes|integer|min:1|max:10',
-            'valorNRP' => 'sometimes|integer',
-            'actividades' => 'nullable|string',
-            'accionMejora' => 'nullable|string',
-            'fechaImp' => 'nullable|date',
-            'fechaEva' => 'nullable|date',
-            'reevaluacionSeveridad' => 'nullable|integer|min:1|max:10',
-            'reevaluacionOcurrencia' => 'nullable|integer|min:1|max:10',
-            'reevaluacionNRP' => 'nullable|integer',
-            'reevaluacionEfectividad' => 'nullable|integer|min:1|max:10',
-            'analisisEfectividad' => 'nullable|string'
-        ]);
+            // Crear el registro
+            $gestion = GestionRiesgos::create($data);
 
-        // Buscar el riesgo específico asociado al idGesRies
-        $riesgo = Riesgo::where('idGesRies', $idGesRies)->find($idRiesgo);
-
-        // Si no se encuentra el riesgo, devolver error
-        if (!$riesgo) {
-            return response()->json(['message' => 'Riesgo no encontrado'], 404);
+            DB::commit();
+            return response()->json($gestion, 201);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error("Error al crear gestionriesgos: " . $e->getMessage());
+            return response()->json([
+                'message' => 'Error al crear el registro en gestionriesgos',
+                'error'   => $e->getMessage(),
+            ], 500);
         }
-
-        // Actualizar el riesgo con los datos proporcionados
-        $riesgo->update($request->all());
-
-        // Confirmación en consola y logs
-        Log::info('Riesgo actualizado correctamente', ['riesgo' => $riesgo]);
-        error_log('Riesgo actualizado correctamente: ' . json_encode($riesgo));
-
-        return response()->json([
-            'message' => 'Riesgo actualizado correctamente',
-            'riesgo' => $riesgo
-        ]);
     }
 
     /**
-     * Elimina un riesgo existente.
+     * 4) Actualizar un registro en gestionriesgos (ya existente).
+     *    PUT /api/gestionriesgos/{idGesRies}
+     *    - Body: { "elaboro": "...", "fechaelaboracion": "YYYY-MM-DD" }
      */
-    public function delete($idGesRies, $idRiesgo)
+    public function update(Request $request, $idGesRies)
     {
-        // Depuración en consola y logs
-        Log::info('Entrando al método delete', ['idGesRies' => $idGesRies, 'idRiesgo' => $idRiesgo]);
-        error_log('Entrando al método delete con idGesRies: ' . $idGesRies . ' y idRiesgo: ' . $idRiesgo);
+        DB::beginTransaction();
+        try {
+            $gestion = GestionRiesgos::find($idGesRies);
+            if (!$gestion) {
+                return response()->json(['message' => 'No se encontró el registro en gestionriesgos'], 404);
+            }
 
-        // Buscar el riesgo específico asociado al idGesRies
-        $riesgo = Riesgo::where('idGesRies', $idGesRies)->find($idRiesgo);
+            // Validar datos que se pueden actualizar
+            $data = $request->validate([
+                'elaboro'          => 'nullable|string',
+                'fechaelaboracion' => 'nullable|date',
+            ]);
+            // También podrías permitir cambiar el idRegistro si lo requieres
 
-        // Si no se encuentra el riesgo, devolver error
-        if (!$riesgo) {
-            return response()->json(['message' => 'Riesgo no encontrado'], 404);
+            $gestion->update($data);
+
+            DB::commit();
+            return response()->json($gestion, 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error("Error al actualizar gestionriesgos: " . $e->getMessage());
+            return response()->json([
+                'message' => 'Error al actualizar el registro en gestionriesgos',
+                'error'   => $e->getMessage(),
+            ], 500);
         }
-
-        // Eliminar el riesgo
-        $riesgo->delete();
-
-        // Confirmación en consola y logs
-        Log::info('Riesgo eliminado correctamente', ['idRiesgo' => $idRiesgo]);
-        error_log('Riesgo eliminado correctamente: ' . $idRiesgo);
-
-        return response()->json([
-            'message' => 'Riesgo eliminado correctamente'
-        ], 204);
     }
 }
