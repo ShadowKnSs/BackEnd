@@ -10,30 +10,17 @@ class AnalisisDatos extends Model
     use HasFactory;
 
     protected $table = 'analisisdatos'; // Ajusta el nombre según tu migración
-    protected $primaryKey = 'idIndicador';
+    protected $primaryKey = 'idAnalisisDatoa';
 
     public $timestamps = false;
     protected $fillable = [
-        'idIndicadorConsolidado',
-        'resultadoSemestral1',
-        'resultadoSemestral2',
+        'idRegistro',
         'interpretacion',
-        'necesidad',
-        'meta',
-        'idformAnalisisDatos',
-        'descripcionIndicador',
-        'nombreIndicador',
-        'origenIndicador',
-        'periocidad'
+        'necesidad'
     ];
 
-    // Relación inversa: cada análisis pertenece a un indicador consolidado.
-    public function indicadorConsolidado()
+    public function registro()
     {
-        return $this->belongsTo(IndicadorConsolidado::class, 'idIndicadorConsolidado', 'idIndicadorConsolidado');
-    }
-    public function formAnalisisDatos()
-    {
-        return $this->belongsTo(formAnalisisDatos::class, 'id_formAnalisisDatos', 'idformAnalisisDatos');
+        return $this->belongsTo(Registro::class, 'idRegistro', 'idRegistro');
     }
 }

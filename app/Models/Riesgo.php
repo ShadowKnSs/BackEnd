@@ -13,6 +13,7 @@ class Riesgo extends Model
     // Indicamos la clave primaria personalizada
     protected $primaryKey = 'idRiesgo';
 
+
     // Especificamos los campos que se pueden asignar masivamente
     protected $fillable = [
         'idGesRies',
@@ -32,7 +33,7 @@ class Riesgo extends Model
         'reevaluacionOcurrencia',
         'reevaluacionNRP',
         'reevaluacionEfectividad',
-        'analisisEfectividad'
+        'analisisEfectividad',
     ];
 
     // Relación con Proceso

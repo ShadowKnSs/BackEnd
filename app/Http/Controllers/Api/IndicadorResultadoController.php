@@ -4,154 +4,220 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\AnalisisDatos;
 use App\Models\IndicadorConsolidado;
 use App\Models\Encuesta;
 use App\Models\Retroalimentacion;
 use App\Models\EvaluaProveedores;
+use App\Models\ResultadoIndi;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
- 
 
 class IndicadorResultadoController extends Controller
 {
-    public function store(Request $request, $idIndicadorConsolidado)
+    /**
+     * Guarda los resultados de un indicador consolidado en su tabla correspondiente.
+     */
+    public function store(Request $request, $idIndicador)
     {
         try {
-            // Obtiene el payload enviado en 'result'
-            $data = $request->get('result');
-            // Obtiene la periodicidad enviada o usa "Semestral" por defecto
-            $indicadorPeriod = $request->get('periodicidad') ?? "Semestral";
+            Log::info("📌 Datos recibidos en backend:", ['request' => $request->all()]);
 
-            // Inicializa variables para los resultados
-            // Extraer los resultados según la periodicidad
-            if ($indicadorPeriod === "Semestral") {
-                $resultadoSemestral1 = isset($data['resultadoSemestral1']) && $data['resultadoSemestral1'] !== ""
-                    ? (int) $data['resultadoSemestral1']
-                    : null;
-                $resultadoSemestral2 = isset($data['resultadoSemestral2']) && $data['resultadoSemestral2'] !== ""
-                    ? (int) $data['resultadoSemestral2']
-                    : null;
-            } else {
-                // Para otros casos (por ejemplo, indicadores anuales), se puede esperar un solo resultado
-                $resultadoSemestral1 = isset($data['result']) && $data['result'] !== ""
-                    ? (int) $data['result']
-                    : null;
-                $resultadoSemestral2 = null;
+            if (!is_numeric($idIndicador)) {
+                Log::error("❌ ID de indicador no válido", ['idIndicador' => $idIndicador]);
+                return response()->json(['message' => 'ID de indicador no válido'], 400);
             }
 
-            // Crear o actualizar el registro en analisisdatos
-            $analisis = AnalisisDatos::updateOrCreate(
-                ['idIndicadorConsolidado' => $idIndicadorConsolidado],
-                [
-                    'resultadoSemestral1' => $resultadoSemestral1,
-                    'resultadoSemestral2' => $resultadoSemestral2,
-                ]
-            );
+            $data = $request->get('result') ?? [];  // Evita error si result es null
+            Log::info("📌 Datos procesados en backend:", ['data' => $data]);
 
-            // Log para verificar que se creó el registro y tiene id
-            Log::info("AnalisisDatos creado/actualizado", ['analisis' => $analisis]);
-
-            // Verificamos que se obtuvo un id válido
-            if (!$analisis->idIndicador) {
-                Log::error("No se pudo obtener idAnalisisDatos para el indicador", ['idIndicadorConsolidado' => $idIndicadorConsolidado]);
-                return response()->json([
-                    'message' => 'Error al registrar el resultado: ID de análisis no obtenido'
-                ], 500);
+            $indicador = IndicadorConsolidado::find($idIndicador);
+            if (!$indicador) {
+                Log::error("❌ Indicador no encontrado", ['idIndicador' => $idIndicador]);
+                return response()->json(['message' => 'Indicador no encontrado'], 404);
             }
 
-            // Obtenemos el indicador consolidado para determinar el origen
-            $indicador = IndicadorConsolidado::findOrFail($idIndicadorConsolidado);
+            $origen = $indicador->origenIndicador;
+            Log::info("📌 Procesando resultado para origen: " . $origen);
 
-            // Según el origenIndicador, actualizamos la tabla correspondiente
-            switch ($indicador->origenIndicador) {
+            switch ($origen) {
                 case 'Encuesta':
-                    $encuesta = Encuesta::updateOrCreate(
-                        ['idIndicador' => $analisis->idIndicador],
+                    $resultado = Encuesta::updateOrCreate(
+                        ['idIndicador' => $idIndicador],
                         [
-                            'malo' => isset($data['malo']) ? (int) $data['malo'] : null,
-                            'regular' => isset($data['regular']) ? (int) $data['regular'] : null,
-                            'excelenteBueno' => isset($data['excelenteBueno']) ? (int) $data['excelenteBueno'] : null,
-                            'noEncuestas' => isset($data['noEncuestas']) ? (int) $data['noEncuestas'] : null,
+                            'malo' => intval($data['malo'] ?? 0),
+                            'regular' => intval($data['regular'] ?? 0),
+                            'bueno' => intval($data['bueno'] ?? 0),
+                            'excelente' => intval($data['excelente'] ?? 0),
+                            'noEncuestas' => intval($data['noEncuestas'] ?? 0),
                         ]
                     );
-                    Log::info("Encuesta registrada para indicador", ['idIndicadorConsolidado' => $idIndicadorConsolidado]);
                     break;
+
                 case 'Retroalimentacion':
-                    $retro = Retroalimentacion::updateOrCreate(
-                        ['idIndicador' => $analisis->idIndicador],
+                    $resultado = Retroalimentacion::updateOrCreate(
+                        ['idIndicador' => $idIndicador],
                         [
-                            'metodo' => $request->get('metodo'),
-                            'cantidadFelicitacion' => isset($data['cantidadFelicitacion']) ? (int) $data['cantidadFelicitacion'] : null,
-                            'cantidadSugerencia' => isset($data['cantidadSugerencia']) ? (int) $data['cantidadSugerencia'] : null,
-                            'cantidadQueja' => isset($data['cantidadQueja']) ? (int) $data['cantidadQueja'] : null,
+                            'cantidadFelicitacion' => intval($data['cantidadFelicitacion'] ?? 0),
+                            'cantidadSugerencia' => intval($data['cantidadSugerencia'] ?? 0),
+                            'cantidadQueja' => intval($data['cantidadQueja'] ?? 0),
                         ]
                     );
-                    Log::info("Retroalimentación registrada para indicador", ['idIndicadorConsolidado' => $idIndicadorConsolidado]);
                     break;
+
                 case 'EvaluaProveedores':
-                    $evalua = EvaluaProveedores::updateOrCreate(
-                        ['idIndicador' => $analisis->idIndicador],
+                    $resultado = EvaluaProveedores::updateOrCreate(
+                        ['idIndicador' => $idIndicador],
                         [
-                            'confiable' => isset($data['confiable']) ? (int) $data['confiable'] : null,
-                            'noConfiable' => isset($data['noConfiable']) ? (int) $data['noConfiable'] : null,
-                            'condicionado' => isset($data['condicionado']) ? (int) $data['condicionado'] : null,
+                            'resultadoConfiableSem1' => intval($data['confiableSem1'] ?? 0),
+                            'resultadoConfiableSem2' => intval($data['confiableSem2'] ?? 0),
+                            'resultadoCondicionadoSem1' => intval($data['condicionadoSem1'] ?? 0),
+                            'resultadoCondicionadoSem2' => intval($data['condicionadoSem2'] ?? 0),
+                            'resultadoNoConfiableSem1' => intval($data['noConfiableSem1'] ?? 0),
+                            'resultadoNoConfiableSem2' => intval($data['noConfiableSem2'] ?? 0),
                         ]
                     );
-                    Log::info("Evaluación de proveedores registrada para indicador", ['idIndicadorConsolidado' => $idIndicadorConsolidado]);
                     break;
+
+                case 'ActividadControl':
+                case 'MapaProceso':
+                case 'GestionRiesgo':
+                    $resultado = ResultadoIndi::updateOrCreate(
+                        ['idIndicador' => $idIndicador],
+                        [
+                            'resultadoAnual' => isset($data['resultadoAnual']) ? intval($data['resultadoAnual']) : null,
+                            'resultadoSemestral1' => isset($data['resultadoSemestral1']) ? intval($data['resultadoSemestral1']) : null,
+                            'resultadoSemestral2' => isset($data['resultadoSemestral2']) ? intval($data['resultadoSemestral2']) : null,
+                        ]
+                    );
+                    break;
+
                 default:
-                    // No se requiere acción extra para otros orígenes
-                    break;
+                    Log::error("❌ Origen del indicador desconocido", ['origen' => $origen]);
+                    return response()->json(['message' => 'Origen del indicador desconocido'], 400);
             }
+
+            Log::info("✅ Resultado guardado con éxito", ['idIndicador' => $idIndicador, 'resultado' => $resultado]);
 
             return response()->json([
                 'message' => 'Resultado registrado exitosamente',
-                'analisis' => $analisis
+                'resultado' => $resultado
             ], 200);
+
         } catch (\Exception $e) {
-            Log::error("Error al registrar resultado para indicador {$idIndicadorConsolidado}: " . $e->getMessage());
-            return response()->json([
-                'message' => 'Error al registrar el resultado',
-                'error' => $e->getMessage()
-            ], 500);
+            Log::error("❌ Error al registrar resultado", ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Error al registrar el resultado'], 500);
         }
     }
 
-    public function show($idIndicadorConsolidado)
+
+
+    /**
+     * Muestra los resultados de un indicador en su tabla correspondiente.
+     */
+    public function show($idIndicador)
     {
-        $analisis = AnalisisDatos::where('idIndicadorConsolidado', $idIndicadorConsolidado)->first();
-        return response()->json(['analisis' => $analisis], 200);
+        try {
+            $indicador = IndicadorConsolidado::find($idIndicador);
+
+            if (!$indicador) {
+                Log::warning("❌ Indicador no encontrado", ['id' => $idIndicador]);
+                return response()->json(['message' => 'Indicador no encontrado'], 404);
+            }
+
+            $origen = $indicador->origenIndicador;
+            $resultado = null;
+
+            switch ($origen) {
+                case 'Encuesta':
+                    $resultado = Encuesta::where('idIndicador', $idIndicador)->first();
+                    break;
+
+                case 'Retroalimentacion':
+                    $resultado = Retroalimentacion::where('idIndicador', $idIndicador)->first();
+                    break;
+
+                case 'EvaluaProveedores':
+                    $resultado = EvaluaProveedores::where('idIndicador', $idIndicador)->first();
+                    break;
+
+                case 'ActividadControl':
+                case 'MapaProceso':
+                case 'GestionRiesgo':
+                    $resultado = ResultadoIndi::where('idIndicador', $idIndicador)->first();
+                    break;
+
+                default:
+                    Log::warning("❌ Tipo de indicador desconocido", ['origenIndicador' => $origen]);
+                    return response()->json(['message' => 'Tipo de indicador no reconocido'], 400);
+            }
+
+            if (!$resultado) {
+                Log::warning("❌ No se encontraron resultados", ['idIndicador' => $idIndicador]);
+                return response()->json(['message' => 'No se encontraron resultados para este indicador'], 404);
+            }
+
+            Log::info("✅ Resultados obtenidos", [
+                'idIndicador' => $idIndicador,
+                'resultado' => $resultado
+            ]);
+
+            return response()->json(['resultado' => $resultado], 200);
+
+        } catch (\Exception $e) {
+            Log::error("❌ Error al obtener los resultados", [
+                'idIndicador' => $idIndicador,
+                'error' => $e->getMessage()
+            ]);
+            return response()->json(['message' => 'Error al obtener los resultados'], 500);
+        }
     }
-
-
-    //Funcion para obtener los resultados de los indicadores de Plan de Conteol
 
     public function getResultadosPlanControl()
     {
-        $resultados = DB::table('IndicadoresConsolidados as ic')
-        ->join('analisisdatos as ad', 'ic.idIndicadorConsolidado', '=', 'ad.idIndicadorConsolidado')
-        ->where('ic.origenIndicador', '=', 'ActividadControl')
-        ->select('ic.nombreIndicador', 'ad.resultadoSemestral1', 'ad.resultadoSemestral2')
-        ->get();
-        return response()->json([$resultados]);
+        try {
+            $resultados = DB::table('IndicadoresConsolidados as ic')
+                ->join('ResultadoIndi as ri', 'ic.idIndicadorConsolidado', '=', 'ri.idIndicador')
+                ->where('ic.origenIndicador', '=', 'ActividadControl')
+                ->select('ic.nombreIndicador', 'ri.resultadoSemestral1', 'ri.resultadoSemestral2')
+                ->get();
+
+            return response()->json([$resultados], 200);
+        } catch (\Exception $e) {
+            Log::error("Error al obtener los resultados de Plan de Control", ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Error al obtener los resultados de Plan de Control'], 500);
+        }
     }
 
-    public function getResultadosIndMapaProceso(){
-        $resultados = DB::table('IndicadoresConsolidados as ic')
-        ->join('analisisdatos as ad', 'ic.idIndicadorConsolidado', '=', 'ad.idIndicadorConsolidado')
-        ->where('ic.origenIndicador', '=', 'MapaProceso')
-        ->select('ic.nombreIndicador', 'ad.resultadoSemestral1', 'ad.resultadoSemestral2')
-        ->get();
-        return response()->json([$resultados]);
+    public function getResultadosIndMapaProceso()
+    {
+        try {
+            $resultados = DB::table('IndicadoresConsolidados as ic')
+                ->join('ResultadoIndi as ri', 'ic.idIndicadorConsolidado', '=', 'ri.idIndicador')
+                ->where('ic.origenIndicador', '=', 'MapaProceso')
+                ->select('ic.nombreIndicador', 'ri.resultadoSemestral1', 'ri.resultadoSemestral2')
+                ->get();
+
+            return response()->json([$resultados], 200);
+        } catch (\Exception $e) {
+            Log::error("Error al obtener los resultados de Mapa de Proceso", ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Error al obtener los resultados de Mapa de Proceso'], 500);
+        }
     }
 
-    public function getResutadosRiesgos(){
-        $resultados = DB::table('IndicadoresConsolidados as ic')
-        ->join('analisisdatos as ad', 'ic.idIndicadorConsolidado', '=', 'ad.idIndicadorConsolidado')
-        ->where('ic.origenIndicador', '=', 'GestionRiesgo')
-        ->select('ic.nombreIndicador', 'ad.resultadoSemestral1', 'ad.resultadoSemestral2')
-        ->get();
-        return response()->json([$resultados]);
+    public function getResutadosRiesgos()
+    {
+        try {
+            $resultados = DB::table('IndicadoresConsolidados as ic')
+                ->join('ResultadoIndi as ri', 'ic.idIndicadorConsolidado', '=', 'ri.idIndicador')
+                ->where('ic.origenIndicador', '=', 'GestionRiesgo')
+                ->select('ic.nombreIndicador', 'ri.resultadoAnual', 'ri.resultadoSemestral1', 'ri.resultadoSemestral2')
+                ->get();
+
+            return response()->json([$resultados], 200);
+        } catch (\Exception $e) {
+            Log::error("Error al obtener los resultados de Gestión de Riesgos", ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Error al obtener los resultados de Gestión de Riesgos'], 500);
+        }
     }
+
 }

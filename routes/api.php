@@ -14,6 +14,13 @@ use App\Http\Controllers\Api\EncuestaController;
 use App\Http\Controllers\Api\EvaluaProveedoresController;
 use App\Http\Controllers\Api\NoticiasController;
 use App\Http\Controllers\Api\EventosAvisosController;
+use App\Http\Controllers\Api\CronogramaController;
+
+
+use App\Http\Controllers\Api\ControlCambioController;
+use App\Http\Controllers\Api\MapaProcesoController;
+use App\Http\Controllers\Api\IndMapaProcesoController;
+use App\Http\Controllers\Api\ActividadControlController;
 use App\Http\Controllers\Api\GestionRiesgoController;
 use App\Http\Controllers\Api\RiesgoController;
 use App\Http\Controllers\Api\FormAnalisisDatosController;
@@ -25,6 +32,7 @@ use App\Http\Controllers\Api\PlanCorrectivoController;
 // Controlador de Plan Trabajo
 use App\Http\Controllers\Api\PlanTrabajoController;
 use App\Http\Controllers\Api\FuentePtController;
+use App\Http\Controllers\Api\ProyectoMejoraController;
 
 
 
@@ -56,45 +64,87 @@ Route::post('/registros/filtrar', [RegistrosController::class, 'obtenerRegistros
 // Route::get('procesos', action: [ProcessController::class, 'index']); 
 // Route::post('procesos', [ProcessController::class, 'store']);
 Route::apiResource('procesos', controller: ProcessController::class);
+// Rutas principales de Indicadores Consolidados
 Route::apiResource('indicadoresconsolidados', IndicadorConsolidadoController::class);
-Route::post('evalua-proveedores/{idIndicador}/resultados', [EvaluaProveedoresController::class, 'store']);
-Route::get('evalua-proveedores/{idIndicador}/resultados', [EvaluaProveedoresController::class, 'show']);
-// Para registrar resultados:
-Route::post('indicadoresconsolidados/{idIndicadorConsolidado}/resultados', [IndicadorResultadoController::class, 'store']);
-Route::get('indicadoresconsolidados/{idIndicadorConsolidado}/resultados', [IndicadorResultadoController::class, 'show']);
 
+// Registrar y obtener resultados por tipo de indicador
+Route::prefix('indicadoresconsolidados')->group(function () {
+    Route::post('{idIndicador}/resultados', [IndicadorResultadoController::class, 'store']);
+    Route::get('{idIndicador}/resultados', [IndicadorResultadoController::class, 'show']);
+});
 
-// Retroalimentación
-
-Route::get('/indicadores/retroalimentacion', [IndicadorConsolidadoController::class, 'indexRetroalimentacion']);
+// Rutas específicas para Retroalimentación
 Route::prefix('retroalimentacion')->group(function () {
-    Route::post('{idIndicadorConsolidado}/resultados', [RetroalimentacionController::class, 'store']);
-    Route::get('{idIndicadorConsolidado}/resultados', [RetroalimentacionController::class, 'show']);
-
-    //Encuestas
-});Route::prefix('encuesta')->group(function () {
-    // Guardar (POST) resultados de la encuesta con idIndicadorConsolidado
-    Route::post('{idIndicadorConsolidado}/resultados', [EncuestaController::class, 'store']);
-    // Obtener (GET) resultados de la encuesta con idIndicadorConsolidado
-    Route::get('{idIndicadorConsolidado}/resultados', [EncuestaController::class, 'show']);
+    Route::post('{idIndicador}/resultados', [RetroalimentacionController::class, 'store']);
+    Route::get('{idIndicador}/resultados', [RetroalimentacionController::class, 'show']);
 });
 
+// Rutas específicas para Encuestas
+Route::prefix('encuesta')->group(function () {
+    Route::post('{idIndicador}/resultados', [EncuestaController::class, 'store']);
+    Route::get('{idIndicador}/resultados', [EncuestaController::class, 'show']);
+});
 
-// Evaluacion de Proeveedores
+// Rutas específicas para Evaluación de Proveedores
 Route::prefix('evalua-proveedores')->group(function () {
-    Route::post('{idIndicadorConsolidado}/resultados', [EvaluaProveedoresController::class, 'store']);
-    Route::get('{idIndicadorConsolidado}/resultados', [EvaluaProveedoresController::class, 'show']);
+    Route::post('{idIndicador}/resultados', [EvaluaProveedoresController::class, 'store']);
+    Route::get('{idIndicador}/resultados', [EvaluaProveedoresController::class, 'show']);
 });
+
+// Ruta para obtener solo indicadores de tipo retroalimentación
+Route::get('/indicadores/retroalimentacion', [IndicadorConsolidadoController::class, 'indexRetroalimentacion']);
+
 
 Route::apiResource('noticias', NoticiasController::class);
 Route::apiResource('eventos-avisos', EventosAvisosController::class);
-Route::get('gestionriesgos/{idGesRies}/riesgos', [GestionRiesgoController::class, 'getRiesgosByGesRies']);
 
-Route::post('gestionriesgos/{idGesRies}/riesgos', [GestionRiesgoController::class, 'store']);
+//Route::apiResource('cronogramas', CronogramaController::class);
+Route::get('entidad-nombres', [EntidadDependenciaController::class, 'getNombres']);
+Route::get('procesos-nombres', [ProcessController::class, 'getNombres']);
+Route::get('cronograma', [CronogramaController::class, 'index']);
+Route::post('cronograma', [CronogramaController::class, 'store']);
+Route::put('cronograma/{id}', [CronogramaController::class, 'update']);
 
-Route::put('gestionriesgos/{idGesRies}/riesgos/{idRiesgo}', [GestionRiesgoController::class, 'update']);
 
-Route::delete('gestionriesgos/{idGesRies}/riesgos/{idRiesgo}', [GestionRiesgoController::class, 'delete']);
+//*********************************************************/
+//                  Para Manual Operativo
+//*********************************************************/
+Route::apiResource('controlcambios', ControlCambioController::class);
+Route::apiResource('mapaproceso', MapaProcesoController::class);
+Route::apiResource('indmapaproceso', IndMapaProcesoController::class);
+Route::apiResource('actividadcontrol', ActividadControlController::class);
+
+
+
+// 1) GET datos-generales
+Route::get('gestionriesgos/{idRegistro}/datos-generales', [GestionRiesgoController::class, 'getDatosGenerales']);
+
+// 2) GET /api/gestionriesgos/{idRegistro} => showByRegistro
+Route::get('gestionriesgos/{idRegistro}', [GestionRiesgoController::class, 'showByRegistro']);
+
+// 3) POST /api/gestionriesgos => store
+Route::post('gestionriesgos', [GestionRiesgoController::class, 'store']);
+
+// 4) PUT /api/gestionriesgos/{idGesRies} => update
+Route::put('gestionriesgos/{idGesRies}', [GestionRiesgoController::class, 'update']);
+Route::post('gestionriesgos/{idGesRies}/riesgos', [RiesgoController::class, 'store']);
+
+
+// Listar riesgos de una gestión
+Route::get('gestionriesgos/{idGesRies}/riesgos', [RiesgoController::class, 'index']);
+
+// Crear un nuevo riesgo
+Route::post('gestionriesgos/{idGesRies}/riesgos', [RiesgoController::class, 'store']);
+
+// Mostrar un riesgo específico
+Route::get('gestionriesgos/{idGesRies}/riesgos/{idRiesgo}', [RiesgoController::class, 'show']);
+
+// Actualizar un riesgo
+Route::put('gestionriesgos/{idGesRies}/riesgos/{idRiesgo}', [RiesgoController::class, 'update']);
+
+// Eliminar un riesgo
+Route::delete('gestionriesgos/{idGesRies}/riesgos/{idRiesgo}', [RiesgoController::class, 'destroy']);
+
 
 Route::get('analisisDatos/{idformAnalisisDatos}/analisis', [FormAnalisisDatosController::class, 'show']);
 Route::put('analisisDatos/{idformAnalisisDatos}/necesidad-interpretacion', [FormAnalisisDatosController::class, 'updateNecesidadInterpretacion']);
@@ -125,5 +175,9 @@ Route::get('/plan-correctivos/registro/{idRegistro}', [PlanCorrectivoController:
 Route::apiResource('plantrabajo', PlanTrabajoController::class);
 Route::apiResource('actividadmejora', ActividadMejoraController::class);
 Route::apiResource('fuentept', FuentePtController::class);
+Route::get('/plantrabajo/registro/{idRegistro}', [PlanTrabajoController::class, 'getByRegistro']);
+Route::post('/proyecto-mejora', [ProyectoMejoraController::class, 'store']);
+
+
 
 

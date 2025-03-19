@@ -20,7 +20,7 @@ class PlanTrabajoController extends Controller
         return response()->json($planTrabajos, 200);
     }
 
-    // Crear un plan de trabajo, junto con la actividad de mejora (si no se provee) y las fuentes asociadas
+    // Crear un plan de trabajo, junto con la actividad de mejora (si no se envía idActividadMejora) y las fuentes asociadas
     public function store(Request $request)
     {
         Log::info("Iniciando creación de plan de trabajo.", $request->all());
@@ -29,8 +29,9 @@ class PlanTrabajoController extends Controller
             'planTrabajo.fechaElaboracion' => 'required|date',
             'planTrabajo.objetivo' => 'required|string|max:255',
             'planTrabajo.revisadoPor' => 'required|string|max:100',
-            // Si no se envía idActividadMejora, se espera recibir datos para crearla:
-            'actividadMejora.idRegistro' => 'sometimes|required|integer',
+            'planTrabajo.responsable' => 'required|string|max:100',
+            // Validamos el objeto actividadMejora, esperando que contenga idRegistro
+            'planTrabajo.actividadMejora.idRegistro' => 'required|integer',
             'fuentes' => 'required|array|min:1',
             'fuentes.*.responsable' => 'required|string|max:255',
             'fuentes.*.fechaInicio' => 'required|date',
@@ -43,19 +44,24 @@ class PlanTrabajoController extends Controller
         ]);
 
         if ($validator->fails()) {
-            Log::error("Error de validación en store: ", $validator->errors()->toArray());
+            Log::error("Error de validación en store:", $validator->errors()->toArray());
             return response()->json($validator->errors(), 422);
         }
 
         $planData = $request->input('planTrabajo');
         Log::info("Datos del plan recibidos", $planData);
 
-        // Si no se envía idActividadMejora, crear una nueva actividad de mejora
-        if (!isset($planData['idActividadMejora'])) {
-            Log::info("No se envió idActividadMejora, se creará una nueva actividad de mejora.");
-            $actividadData = $request->input('actividadMejora');
-            Log::info("Datos de actividad de mejora recibidos", $actividadData);
-            $actividad = ActividadMejora::create($actividadData);
+        // Si el objeto actividadMejora no contiene un idRegistro válido, creamos una nueva actividad
+        if (!isset($planData['actividadMejora']['idRegistro']) || empty($planData['actividadMejora']['idRegistro'])) {
+            Log::info("No se envió idRegistro en actividadMejora, se creará una nueva actividad de mejora.");
+            // En este caso, decidimos qué valor utilizar; sin embargo, dado que el flujo indica que se debe recibir el idRegistro desde la vista Carpetas,
+            // este error no debería ocurrir. Si ocurre, puedes lanzar un error o asignar un valor por defecto.
+            return response()->json(['message' => 'No se recibió el idRegistro en actividadMejora'], 422);
+        } else {
+            // Si se envía idRegistro, creamos la actividad de mejora y asignamos su id a planData.
+            $actividadData = $planData['actividadMejora']; // debe tener idRegistro
+            Log::info("Creando actividad de mejora con idRegistro:", $actividadData);
+            $actividad = ActividadMejora::create(['idRegistro' => $actividadData['idRegistro']]);
             Log::info("Actividad de mejora creada", ['idActividadMejora' => $actividad->idActividadMejora]);
             $planData['idActividadMejora'] = $actividad->idActividadMejora;
         }
@@ -108,10 +114,11 @@ class PlanTrabajoController extends Controller
             'planTrabajo.fechaElaboracion' => 'sometimes|required|date',
             'planTrabajo.objetivo' => 'sometimes|required|string|max:255',
             'planTrabajo.revisadoPor' => 'sometimes|required|string|max:100',
+            'planTrabajo.responsable' => 'sometimes|required|string|max:100',
         ]);
 
         if ($validator->fails()) {
-            Log::error("Error de validación en update: ", $validator->errors()->toArray());
+            Log::error("Error de validación en update:", $validator->errors()->toArray());
             return response()->json($validator->errors(), 422);
         }
 
@@ -134,7 +141,7 @@ class PlanTrabajoController extends Controller
         ], 200);
     }
 
-    // Eliminar un plan de trabajo (y por cascada sus fuentes)
+    // Eliminar un plan de trabajo (y sus fuentes, en cascada)
     public function destroy($id)
     {
         Log::info("Eliminando plan de trabajo con id: " . $id);
@@ -147,4 +154,20 @@ class PlanTrabajoController extends Controller
         Log::info("Plan de trabajo eliminado exitosamente, id: " . $id);
         return response()->json(['message' => 'Plan de trabajo eliminado exitosamente'], 200);
     }
+
+    public function getByRegistro($idRegistro)
+{
+    Log::info("Obteniendo plan de trabajo por idRegistro: " . $idRegistro);
+    $plan = PlanTrabajo::with('actividadMejora', 'fuentes')
+        ->whereHas('actividadMejora', function($q) use ($idRegistro) {
+            $q->where('idRegistro', $idRegistro);
+        })->first();
+
+    if (!$plan) {
+        Log::warning("Plan de trabajo no encontrado para idRegistro: " . $idRegistro);
+        return response()->json(['message' => 'Plan de trabajo no encontrado'], 404);
+    }
+    return response()->json($plan, 200);
+}
+
 }

@@ -8,14 +8,16 @@ class PlanTrabajo extends Model
 {
     protected $table = 'plantrabajo';
     protected $primaryKey = 'idPlanTrabajo';
-    public $timestamps = true; // se usarán created_at y updated_at
+    public $timestamps = false; // se usarán created_at y updated_at
 
     protected $fillable = [
         'idActividadMejora',
+        'responsable',
         'fechaElaboracion',
         'objetivo',
         'fechaRevision',
         'revisadoPor'
+        
     ];
 
     // Cada plan de trabajo pertenece a una actividad de mejora

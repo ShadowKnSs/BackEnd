@@ -12,9 +12,12 @@ class GestionRiesgos extends Model
     // Indicamos la clave primaria personalizada
     protected $primaryKey = 'idGesRies';
 
+    public $timestamps = false;
+
+
     // Especificamos los campos que se pueden asignar masivamente
     protected $fillable = [
-        'idregistro',
+        'idRegistro',
         'elaboro',
         'fechaelaboracion',
     ];
@@ -22,6 +25,6 @@ class GestionRiesgos extends Model
     // Relación con registro
     public function registro()
     {
-        return $this->belongsTo(Registro::class, 'idRegistro', 'idregistro');
+        return $this->belongsTo(Registros::class, 'idRegistro', 'idRegistro');
     }
 }

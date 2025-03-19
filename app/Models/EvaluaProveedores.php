@@ -2,28 +2,35 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class EvaluaProveedores extends Model
 {
     use HasFactory;
 
-    protected $table = 'evaluaProveedores'; // Ajusta el nombre si es necesario
+    protected $table = 'evaluaProveedores';
     protected $primaryKey = 'idEvaProveedores';
-    public $timestamps = false; // Si no usas timestamps
+    public $timestamps = false;
 
     protected $fillable = [
         'idIndicador',
         'confiable',
-        'condicionado',
         'noConfiable',
-        'idformAnalisisDatos',
-        'necesidad',
-        'interpretacion'
+        'condicionado',
+        'metaCondicionado',
+        'metaNoConfiable',
+        'resultadoConfiableSem1',
+        'resultadoConfiableSem2',
+        'resultadoCondicionadoSem1',
+        'resultadoCondicionadoSem2',
+        'resultadoNoConfiableSem1',
+        'resultadoNoConfiableSem2'
+
     ];
-    public function formAnalisisDatos()
+
+    public function indicador()
     {
-        return $this->belongsTo(formAnalisisDatos::class, 'id_formAnalisisDatos', 'idformAnalisisDatos');
+        return $this->belongsTo(IndicadorConsolidado::class, 'idIndicador', 'idIndicador');
     }
 }

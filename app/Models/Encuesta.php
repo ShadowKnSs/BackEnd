@@ -2,32 +2,28 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class Encuesta extends Model
 {
     use HasFactory;
 
-    protected $table = 'encuesta'; // Asegúrate de que coincida con el nombre real de la tabla
+    protected $table = 'encuesta';
     protected $primaryKey = 'idEncuesta';
-    public $timestamps = false; // Si no tienes timestamps
+    public $timestamps = false;
 
     protected $fillable = [
-        'idIndicador',         // FK que relaciona con la tabla AnalisisDatos o Indicadores
+        'idIndicador',
         'malo',
         'regular',
-        'excelenteBueno',
-        'noEncuestas',
-        'idformAnalisisDatos',
-        'necesidad',
-        'interpretacion',
         'bueno',
         'excelente',
         'noEncuestas'
     ];
-    public function formAnalisisDatos()
+
+    public function indicador()
     {
-        return $this->belongsTo(formAnalisisDatos::class, 'id_formAnalisisDatos', 'idformAnalisisDatos');
+        return $this->belongsTo(IndicadorConsolidado::class, 'idIndicador', 'idIndicador');
     }
 }
