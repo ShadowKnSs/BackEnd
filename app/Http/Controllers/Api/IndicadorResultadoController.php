@@ -176,7 +176,7 @@ class IndicadorResultadoController extends Controller
     {
         try {
             $resultados = DB::table('IndicadoresConsolidados as ic')
-                ->join('ResultadoIndi as ri', 'ic.idIndicadorConsolidado', '=', 'ri.idIndicador')
+                ->join('ResultadoIndi as ri', 'ic.idIndicador', '=', 'ri.idIndicador')
                 ->where('ic.origenIndicador', '=', 'ActividadControl')
                 ->select('ic.nombreIndicador', 'ri.resultadoSemestral1', 'ri.resultadoSemestral2')
                 ->get();
@@ -192,7 +192,7 @@ class IndicadorResultadoController extends Controller
     {
         try {
             $resultados = DB::table('IndicadoresConsolidados as ic')
-                ->join('ResultadoIndi as ri', 'ic.idIndicadorConsolidado', '=', 'ri.idIndicador')
+                ->join('ResultadoIndi as ri', 'ic.idIndicador', '=', 'ri.idIndicador')
                 ->where('ic.origenIndicador', '=', 'MapaProceso')
                 ->select('ic.nombreIndicador', 'ri.resultadoSemestral1', 'ri.resultadoSemestral2')
                 ->get();
@@ -208,7 +208,7 @@ class IndicadorResultadoController extends Controller
     {
         try {
             $resultados = DB::table('IndicadoresConsolidados as ic')
-                ->join('ResultadoIndi as ri', 'ic.idIndicadorConsolidado', '=', 'ri.idIndicador')
+                ->join('ResultadoIndi as ri', 'ic.idIndicador', '=', 'ri.idIndicador')
                 ->where('ic.origenIndicador', '=', 'GestionRiesgo')
                 ->select('ic.nombreIndicador', 'ri.resultadoAnual', 'ri.resultadoSemestral1', 'ri.resultadoSemestral2')
                 ->get();

@@ -20,7 +20,8 @@ class MapaProceso extends Model {
         'requisitos', 
         'salidas', 
         'receptores', 
-        'puestosInvolucrados'
+        'puestosInvolucrados',
+        'diagramaFlujo'
     ];
 
     // Relación con Procesos

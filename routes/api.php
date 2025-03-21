@@ -36,6 +36,9 @@ use App\Http\Controllers\Api\ProyectoMejoraController;
 
 
 
+//Reporte
+use App\Http\Controllers\Api\ReporteProcesoController;
+
 
 
 
@@ -59,6 +62,9 @@ Route::delete('/minutasDelete/{id}', [MinutaController::class, 'destroy']);
 Route::post('/registros', [RegistrosController::class, 'store']); //crear carpeta
 Route::put('/registros{id}', [RegistrosController::class, 'update']);//actualizar update
 Route::post('/registros/filtrar', [RegistrosController::class, 'obtenerRegistrosPorProcesoYApartado']); // obtener carpetas por proceso de un apartado
+Route::get('/registros/{idRegistro}', [RegistrosController::class, 'show']);
+
+Route::get('/registros/years/{idProceso}', [RegistrosController::class, 'obtenerAnios']);
 
 
 // Route::get('procesos', action: [ProcessController::class, 'index']); 
@@ -66,6 +72,8 @@ Route::post('/registros/filtrar', [RegistrosController::class, 'obtenerRegistros
 Route::apiResource('procesos', controller: ProcessController::class);
 // Rutas principales de Indicadores Consolidados
 Route::apiResource('indicadoresconsolidados', IndicadorConsolidadoController::class);
+Route::get('indicadoresconsolidados', [IndicadorConsolidadoController::class, 'index']);
+
 
 // Registrar y obtener resultados por tipo de indicador
 Route::prefix('indicadoresconsolidados')->group(function () {
@@ -113,6 +121,8 @@ Route::apiResource('controlcambios', ControlCambioController::class);
 Route::apiResource('mapaproceso', MapaProcesoController::class);
 Route::apiResource('indmapaproceso', IndMapaProcesoController::class);
 Route::apiResource('actividadcontrol', ActividadControlController::class);
+Route::post('/mapa-proceso/{idProceso}/subir-diagrama', [MapaProcesoController::class, 'subirDiagramaFlujo']);
+
 
 
 
@@ -181,3 +191,12 @@ Route::post('/proyecto-mejora', [ProyectoMejoraController::class, 'store']);
 
 
 
+//Reporte
+
+// Route::get('/generar-reporte', [ReporteProcesoController::class, 'generarReporte']);
+Route::get('/generar-reporte/{idProceso}/{anio}', [ReporteProcesoController::class, 'generarReporte']);
+Route::get('/datos-reporte/{idProceso}/{anio}', [ReporteProcesoController::class, 'obtenerDatosReporte']);
+Route::get('/mapa-proceso/{idProceso}', [ReporteProcesoController::class, 'obtenerMapaProceso']);
+Route::get('/vista-reporte', function () {
+    return view('proceso');
+});
