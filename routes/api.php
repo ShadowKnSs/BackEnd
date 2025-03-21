@@ -146,8 +146,7 @@ Route::put('gestionriesgos/{idGesRies}/riesgos/{idRiesgo}', [RiesgoController::c
 Route::delete('gestionriesgos/{idGesRies}/riesgos/{idRiesgo}', [RiesgoController::class, 'destroy']);
 
 
-Route::get('analisisDatos/{idformAnalisisDatos}/analisis', [FormAnalisisDatosController::class, 'show']);
-Route::put('analisisDatos/{idformAnalisisDatos}/necesidad-interpretacion', [FormAnalisisDatosController::class, 'updateNecesidadInterpretacion']);
+Route::get('analisisDatos/{idRegistro}', [FormAnalisisDatosController::class, 'show']);
 
 //Ruta para obtener resultados de los resultados de plan de control
 Route::get('/plan-control', [IndicadorResultadoController::class, 'getResultadosPlanControl']);

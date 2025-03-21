@@ -9,41 +9,43 @@ use App\Models\AnalisisDatos;
 use App\Models\Encuesta;
 use App\Models\EvaluaProveedores;
 use App\Models\Retroalimentacion;
-use App\Models\NeceInter;
+use App\Models\IndicadorConsolidado;
+
 
 class FormAnalisisDatosController extends Controller
 {
-    // Obtener un registro de FormAnalisisDatos junto con sus análisis de datos
-    public function show($idformAnalisisDatos)
+    // Obtener registros de AnalisisDatos filtrando por idRegistro
+    public function show($idRegistro)
     {
-        // Buscar el registro en FormAnalisisDatos por su ID
-        $formAnalisisDatos = FormAnalisisDatos::find($idformAnalisisDatos);
+        // Buscar registros en AnalisisDatos por idRegistro
+        $registros = AnalisisDatos::where('idRegistro', $idRegistro)->get();
+        $indicadores = IndicadorConsolidado::where('idRegistro', $idRegistro)->get();
 
-        // Si no se encuentra el registro, devolver error
-        if (!$formAnalisisDatos) {
-            return response()->json(['message' => 'Registro de Análisis de Datos no encontrado'], 404);
+        // Si no se encuentran registros, devolver error
+        if ($registros->isEmpty()) {
+            return response()->json(['message' => 'No se encontraron registros con el idRegistro proporcionado'], 404);
         }
 
-        // Consultar los riesgos asociados al idformAnalisisDatos
-        $indicadores = AnalisisDatos::where('idformAnalisisDatos', $idformAnalisisDatos)->get();
-        $encuesta = Encuesta::where('idformAnalisisDatos', $idformAnalisisDatos)->get();
-        $evProv = EvaluaProveedores::where('idformAnalisisDatos', $idformAnalisisDatos)->get();
-        $retro = Retroalimentacion::where('idformAnalisisDatos', $idformAnalisisDatos)->get();
-        $neceInter = NeceInter::where('idformAnalisisDatos', $idformAnalisisDatos)->get();
-        
+        // Extraer los idIndicador de los indicadores
+        $idIndicadores = $indicadores->pluck('idIndicador')->toArray();
 
-        // Devolver los resultados
+        // Obtener registros de Encuesta, EvaluaProveedores y Retroalimentacion que tengan algún idIndicador
+        $encuestas = Encuesta::whereIn('idIndicador', $idIndicadores)->get();
+        $evaluaProveedores = EvaluaProveedores::whereIn('idIndicador', $idIndicadores)->get();
+        $retroalimentaciones = Retroalimentacion::whereIn('idIndicador', $idIndicadores)->get();
+
+        // Devolver los resultados en formato JSON
         return response()->json([
-            'formAnalisisDatos' => $formAnalisisDatos,
+            'AnalisisDatos' => $registros,
             'Indicadores' => $indicadores,
-            'Encuesta' => $encuesta,
-            'Evaluacion' => $evProv,
-            'Retroalimentacion' => $retro,
-            'NeceInter'=>$neceInter
+            'idIndicadores' => $idIndicadores, // Puedes incluirlo en la respuesta si lo necesitas
+            'Encuestas' => $encuestas,
+            'EvaluaProveedores' => $evaluaProveedores,
+            'Retroalimentaciones' => $retroalimentaciones
         ]);
     }
 
-    // Actualizar necesidad e interpretación en NeceInter
+    /* Actualizar necesidad e interpretación en NeceInter
     public function updateNecesidadInterpretacion(Request $request, $idformAnalisisDatos)
     {
         // Validar los datos de entrada
@@ -71,4 +73,5 @@ class FormAnalisisDatosController extends Controller
         // Devolver respuesta exitosa
         return response()->json(['message' => 'Campo actualizado correctamente', 'data' => $neceInter], 200);
     }
+        */
 }
