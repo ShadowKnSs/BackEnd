@@ -44,24 +44,39 @@ class IndicadorConsolidadoController extends Controller
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function index()
+    public function index(Request $request)
     {
         try {
-            // Obtener todos los indicadores consolidados
-            $indicadores = IndicadorConsolidado::all();
+            // 📌 Validar que idRegistro está presente
+            if (!$request->has('idRegistro')) {
+                Log::error("❌ Parámetro idRegistro faltante.");
+                return response()->json(['message' => 'El parámetro idRegistro es requerido.'], 400);
+            }
 
-            // Registrar en los logs la cantidad de indicadores obtenidos
-            Log::info("Se listaron todos los indicadores", ['total' => count($indicadores)]);
+            $idRegistro = $request->query('idRegistro');
 
-            // Retornar los indicadores en formato JSON
+            // 📌 Buscar el idProceso en la tabla Registros
+            $registro = DB::table('Registros')->where('idRegistro', $idRegistro)->first();
+            if (!$registro) {
+                Log::error("❌ No se encontró registro para idRegistro", ['idRegistro' => $idRegistro]);
+                return response()->json(['message' => 'No se encontró un registro con ese idRegistro.'], 404);
+            }
+
+            $idProceso = $registro->idProceso;
+            Log::info("📌 idProceso obtenido:", ['idRegistro' => $idRegistro, 'idProceso' => $idProceso]);
+
+            // 📌 Filtrar indicadores por idRegistro y idProceso
+            $indicadores = IndicadorConsolidado::where('idRegistro', $idRegistro)
+                ->orWhere('idProceso', $idProceso)
+                ->get();
+
+            Log::info("📌 Indicadores filtrados:", ['total' => count($indicadores)]);
+
             return response()->json(['indicadores' => $indicadores], 200);
-        } catch (\Exception $e) {
-            Log::error("Error al listar indicadores", ['error' => $e->getMessage()]);
 
-            return response()->json([
-                'message' => 'Error al listar indicadores',
-                'error' => $e->getMessage()
-            ], 500);
+        } catch (\Exception $e) {
+            Log::error("❌ Error al obtener los indicadores:", ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Error al obtener los indicadores'], 500);
         }
     }
 
@@ -249,37 +264,37 @@ class IndicadorConsolidadoController extends Controller
         try {
             $indicador = IndicadorConsolidado::findOrFail($id);
             Log::info("Iniciando eliminación del indicador", ['idIndicador' => $id]);
-
-            // Buscar registro relacionado en la tabla analisisdatos usando el campo 'idIndicador'
-            $analisis = DB::table('analisisdatos')->where('idIndicador', $id)->first();
-            if ($analisis) {
-                // Se elimina el registro en la tabla hija según el origen
-                switch ($indicador->origenIndicador) {
-                    case 'Encuesta':
-                        DB::table('encuesta')->where('idIndicador', $id)->delete();
-                        Log::info("Registro en encuesta eliminado", ['idIndicador' => $id]);
-                        break;
-                    case 'Retroalimentacion':
-                        DB::table('retroalimentacion')->where('idIndicador', $id)->delete();
-                        Log::info("Registro en retroalimentacion eliminado", ['idIndicador' => $id]);
-                        break;
-                    case 'EvaluaProveedores':
-                        DB::table('evaluaProveedores')->where('idIndicador', $id)->delete();
-                        Log::info("Registro en evaluaProveedores eliminado", ['idIndicador' => $id]);
-                        break;
-                    default:
-                        Log::info("No hay registro hijo a eliminar para el origen: " . $indicador->origenIndicador);
-                        break;
-                }
-                // Eliminar el registro en analisisdatos
-                DB::table('analisisdatos')->where('idIndicador', $id)->delete();
-                Log::info("Registro en analisisdatos eliminado", ['idIndicador' => $id]);
+    
+            // 🔹 Eliminar registros en la tabla correspondiente según el origenIndicador
+            switch ($indicador->origenIndicador) {
+                case 'Encuesta':
+                    DB::table('encuesta')->where('idIndicador', $id)->delete();
+                    Log::info("Registro en encuesta eliminado", ['idIndicador' => $id]);
+                    break;
+                case 'Retroalimentacion':
+                    DB::table('retroalimentacion')->where('idIndicador', $id)->delete();
+                    Log::info("Registro en retroalimentacion eliminado", ['idIndicador' => $id]);
+                    break;
+                case 'EvaluaProveedores':
+                    DB::table('evaluaProveedores')->where('idIndicador', $id)->delete();
+                    Log::info("Registro en evaluaProveedores eliminado", ['idIndicador' => $id]);
+                    break;
+                case 'ActividadControl':
+                case 'MapaProceso':
+                case 'GestionRiesgo':
+                    DB::table('ResultadoIndi')->where('idIndicador', $id)->delete();
+                    Log::info("Registro en resultadoIndi eliminado", ['idIndicador' => $id]);
+                    break;
+                default:
+                    Log::info("No hay registro hijo a eliminar para el origen: " . $indicador->origenIndicador);
+                    break;
             }
-
-            // Eliminar el indicador consolidado
+    
+            // 🔹 Eliminar el indicador consolidado
             $indicador->delete();
             DB::commit();
             Log::info("Indicador y registros asociados eliminados exitosamente", ['idIndicador' => $id]);
+    
             return response()->json([
                 'message' => 'Indicador y sus registros asociados eliminados correctamente.',
                 'indicador' => $indicador
@@ -293,5 +308,6 @@ class IndicadorConsolidadoController extends Controller
             ], 500);
         }
     }
+    
 }
 

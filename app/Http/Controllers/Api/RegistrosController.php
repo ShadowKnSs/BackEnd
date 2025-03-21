@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use Illuminate\Http\Request;
 use App\Models\Registros;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Log;
 
 class RegistrosController extends Controller
 {
@@ -25,26 +26,26 @@ class RegistrosController extends Controller
 
     // Crear un nuevo registro
     public function store(Request $request)
-{
-    $request->validate([
-        'idProceso' => 'required|integer|exists:proceso,idProceso',
-        'año' => 'required|integer',
-        'Apartado' => 'required|string',
-    ]);
+    {
+        $request->validate([
+            'idProceso' => 'required|integer|exists:proceso,idProceso',
+            'año' => 'required|integer',
+            'Apartado' => 'required|string',
+        ]);
 
-    // Verificar si ya existe un registro con el mismo idProceso, año y apartado
-    $registroExistente = Registros::where('idProceso', $request->idProceso)
-        ->where('año', $request->año)
-        ->where('Apartado', $request->Apartado)
-        ->first();
+        // Verificar si ya existe un registro con el mismo idProceso, año y apartado
+        $registroExistente = Registros::where('idProceso', $request->idProceso)
+            ->where('año', $request->año)
+            ->where('Apartado', $request->Apartado)
+            ->first();
 
-    if ($registroExistente) {
-        return response()->json(['message' => 'La carpeta ya existe'], 409);
+        if ($registroExistente) {
+            return response()->json(['message' => 'La carpeta ya existe'], 409);
+        }
+
+        $registro = Registros::create($request->all());
+        return response()->json($registro, 201);
     }
-
-    $registro = Registros::create($request->all());
-    return response()->json($registro, 201);
-}
 
 
     // Mostrar un solo registro
@@ -82,5 +83,21 @@ class RegistrosController extends Controller
 
         return response()->json($registros);
     }
+
+    public function obtenerAnios($idProceso)
+    {
+        // Log del idProceso recibido
+        Log::info("Obteniendo años para el proceso: " . $idProceso);
+    
+        // Obtener los años distintos de los registros asociados al idProceso
+        $years = Registros::where('idProceso', $idProceso)
+            ->distinct()
+            ->pluck('año');
+    
+        Log::info("Años obtenidos: " . $years->implode(', '));
+    
+        return response()->json($years);
+    }
+
 
 }
