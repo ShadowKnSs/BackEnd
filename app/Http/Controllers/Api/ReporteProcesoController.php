@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Storage;
 use App\Models\Proceso;
 use App\Models\Registros;
 use App\Models\ActividadControl;
+use App\Models\Auditoria;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Log;
 
@@ -45,7 +46,7 @@ class ReporteProcesoController extends Controller
 
         $mapa = MapaProceso::where('idProceso', $idProceso)->first();
         $actividades = ActividadControl::where('idProceso', $idProceso)->get();
-
+        $auditorias = Auditoria::where('idProceso', $idProceso)->get();
 
         $datos = [
             'nombreProceso' => $proceso->nombreProceso,
@@ -65,7 +66,7 @@ class ReporteProcesoController extends Controller
             'receptores' => $mapa->receptores ?? 'No disponible',
             'diagramaFlujo' => $mapa->diagramaFlujo ?? 'No disponible',
             'planControl' => $actividades,
-
+            'auditorias' => $auditorias,
         ];
 
         Log::info("📄 Datos enviados a la vista", $datos);
@@ -130,5 +131,19 @@ class ReporteProcesoController extends Controller
         }
     }
 
+    public function obtenerAuditoria($idProceso)
+{
+    try {
+        $auditorias = Auditoria::where('idProceso', $idProceso)->get();
+
+        if ($auditorias->isEmpty()) {
+            return response()->json(['error' => 'No se encontraron auditorías'], 404);
+        }
+
+        return response()->json($auditorias);
+    } catch (\Exception $e) {
+        return response()->json(['error' => 'Error al obtener las auditorías'], 500);
+    }
+}
 
 }

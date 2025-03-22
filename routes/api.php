@@ -196,6 +196,7 @@ Route::post('/proyecto-mejora', [ProyectoMejoraController::class, 'store']);
 Route::get('/generar-reporte/{idProceso}/{anio}', [ReporteProcesoController::class, 'generarReporte']);
 Route::get('/datos-reporte/{idProceso}/{anio}', [ReporteProcesoController::class, 'obtenerDatosReporte']);
 Route::get('/mapa-proceso/{idProceso}', [ReporteProcesoController::class, 'obtenerMapaProceso']);
+Route::get('/auditoria/{idProceso}', [ReporteProcesoController::class, 'obtenerAuditoria']);
 Route::get('/vista-reporte', function () {
     return view('proceso');
 });

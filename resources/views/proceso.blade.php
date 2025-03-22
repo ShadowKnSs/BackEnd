@@ -224,7 +224,40 @@
             <p style="color: gray;">No hay actividades registradas para el plan de control de este proceso.</p>
         @endif
     </div>
+    <!-- Auditorías -->
+    <div style="margin-top: 40px;">
+    <h2 style="font-size: 20px; font-weight: bold; border-bottom: 2px solid #000; padding-bottom: 5px;">
+        Auditorías del Proceso
+    </h2>
 
+    @if ($auditorias && count($auditorias) > 0)
+        <table width="100%" border="1" cellspacing="0" cellpadding="6"
+            style="border-collapse: collapse; margin-top: 10px; font-size: 12px;">
+            <thead style="background-color: #0e75cb; color: white;">
+                <tr>
+                    <th>Fecha Programada</th>
+                    <th>Hora Programada</th>
+                    <th>Tipo</th>
+                    <th>Estado</th>
+                    <th>Descripcion</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($auditorias as $auditoria)
+                    <tr>
+                        <td style="text-align: center;">{{ $auditoria->fechaProgramada }}</td>
+                        <td style="text-align: center;">{{ $auditoria->horaProgramada }}</td>
+                        <td style="text-align: center;">{{ $auditoria->tipoAuditoria }}</td>
+                        <td style="text-align: center;">{{ $auditoria->estado }}</td>
+                        <td style="text-align: center;">{{ $auditoria->descripcion }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    @else
+        <p style="color: gray;">No hay auditorías registradas para este proceso.</p>
+    @endif
+    </div>
 </body>
 
 </html>
