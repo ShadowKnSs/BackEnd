@@ -6,21 +6,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reporte de Proceso</title>
     <style>
-        table {
-            word-break: break-word;
-            table-layout: fixed;
-        }
-
-        th,
-        td {
-            word-wrap: break-word;
-            word-break: break-word;
-        }
-
+        /* Estilos generales */
         body {
             font-family: Arial, sans-serif;
             margin: 40px;
             padding: 0;
+        }
+
+        table {
+            word-break: break-word;
+            table-layout: fixed;
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            word-wrap: break-word;
+            padding: 8px;
+            text-align: center;
         }
 
         .title {
@@ -28,11 +31,8 @@
             font-size: 24px;
             font-weight: bold;
             margin-bottom: 20px;
-            position: relative;
-            display: inline-block;
             color: #0e75cb;
         }
-
 
         .section {
             margin-bottom: 15px;
@@ -61,6 +61,12 @@
             background-color: #F44336;
             color: white;
         }
+
+        .encabezado {
+            background-color: #0e75cb;
+            font-weight: bold;
+            color: white;
+        }
     </style>
 </head>
 
@@ -76,34 +82,30 @@
     <!-- Título del Reporte -->
     <h1 class="title">Reporte del Proceso</h1>
 
-    <!-- Norma y Año de Certificación en la misma línea -->
+    <!-- Información General del Proceso -->
     <div class="section">
         <span class="bold">Norma:</span> {{ $norma }} |
         <span class="bold">Año de Certificación:</span> {{ $anioCertificacion }}
     </div>
 
-    <!-- Entidad y Nombre del Proceso en el mismo renglón -->
     <div class="section">
         <span class="bold">Entidad/Dependencia:</span> {{ $entidad }} |
         <span class="bold">Nombre del Proceso:</span> {{ $nombreProceso }}
     </div>
 
-    <!-- Líder del Proceso -->
     <div class="section">
         <span class="bold">Líder del Proceso:</span> {{ $liderProceso }}
     </div>
 
-    <!-- Objetivo -->
     <div class="section">
         <span class="bold">Objetivo:</span> {{ $objetivo }}
     </div>
 
-    <!-- Alcance -->
     <div class="section">
         <span class="bold">Alcance:</span> {{ $alcance }}
     </div>
 
-    <!-- Estado con color -->
+    <!-- Estado del Proceso -->
     <div class="section">
         @if ($estado == 'Activo')
             <span class="status status-activo">Activo</span>
@@ -116,50 +118,45 @@
 
     <!-- Mapa de Proceso -->
     <div style="margin-bottom: 30px;">
-        <h2 style="padding-bottom: 4px, color: #0e75cb;">Mapa de Proceso</h2>
+        <h2 class="title">Mapa de Proceso</h2>
 
-        <!-- Documentos Relacionados -->
         <p><strong>Documentos Relacionados:</strong> {{ $documentos ?? 'No disponible' }}</p>
-
-        <!-- Puestos Involucrados -->
         <p><strong>Puestos Involucrados:</strong> {{ $puestosInvolucrados ?? 'No disponible' }}</p>
 
         <!-- Tabla 1: Fuente de Entrada y Entradas -->
-        <table width="100%" border="1" cellspacing="0" cellpadding="8"
-            style="margin-top: 20px; border-collapse: collapse;">
+        <table border="1" cellspacing="0" cellpadding="8" style="margin-top: 20px;">
             <thead>
-                <tr style="background-color: #0e75cb;color: white;">
-                    <th style="text-align: center;">Fuente de Entrada</th>
-                    <th colspan="2" style="text-align: center;">Entradas</th>
+                <tr class="encabezado">
+                    <th>Fuente de Entrada</th>
+                    <th colspan="2">Entradas</th>
                 </tr>
-                <tr style="background-color: #0e75cb; color: white;">
+                <tr class="encabezado">
                     <th></th>
-                    <th style="text-align: center;">Material y/o Información</th>
-                    <th style="text-align: center;">Requisito de Entrada</th>
+                    <th>Material y/o Información</th>
+                    <th>Requisito de Entrada</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td style="text-align: center;">{{ $fuente ?? 'No disponible' }}</td>
-                    <td style="text-align: center;">{{ $material ?? 'No disponible' }}</td>
-                    <td style="text-align: center;">{{ $requisitos ?? 'No disponible' }}</td>
+                    <td>{{ $fuente ?? 'No disponible' }}</td>
+                    <td>{{ $material ?? 'No disponible' }}</td>
+                    <td>{{ $requisitos ?? 'No disponible' }}</td>
                 </tr>
             </tbody>
         </table>
 
         <!-- Tabla 2: Salidas y Receptores -->
-        <table width="100%" border="1" cellspacing="0" cellpadding="8"
-            style="margin-top: 20px; border-collapse: collapse;">
+        <table border="1" cellspacing="0" cellpadding="8" style="margin-top: 20px;">
             <thead>
-                <tr style="background-color: #0e75cb; color: white;">
-                    <th style="text-align: center;">Salidas</th>
-                    <th style="text-align: center;">Receptores de Salidas / Cliente</th>
+                <tr class="encabezado">
+                    <th>Salidas</th>
+                    <th>Receptores de Salidas / Cliente</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td style="text-align: center;">{{ $salidas ?? 'No disponible' }}</td>
-                    <td style="text-align: center;">{{ $receptores ?? 'No disponible' }}</td>
+                    <td>{{ $salidas ?? 'No disponible' }}</td>
+                    <td>{{ $receptores ?? 'No disponible' }}</td>
                 </tr>
             </tbody>
         </table>
@@ -167,10 +164,7 @@
 
     <!-- Diagrama de Flujo -->
     <div style="margin-top: 40px;">
-        <h2 style="font-size: 20px; font-weight: bold; border-bottom: 2px solid #000; padding-bottom: 5px;">
-            Diagrama de Flujo
-        </h2>
-
+        <h2 class="title">Diagrama de Flujo</h2>
         @if (!empty($diagramaFlujo))
             <div style="margin-top: 15px; text-align: center;">
                 <img src="{{ public_path(str_replace('/storage/', 'storage/', parse_url($diagramaFlujo, PHP_URL_PATH))) }}"
@@ -179,19 +173,14 @@
         @else
             <p style="color: gray;">No se ha registrado un Diagrama de Flujo para este proceso.</p>
         @endif
-
     </div>
 
     <!-- Plan de Control -->
     <div style="margin-top: 40px;">
-        <h2 style="font-size: 20px; font-weight: bold; border-bottom: 2px solid #000; padding-bottom: 5px;">
-            Plan de Control
-        </h2>
-
+        <h2 class="title">Plan de Control</h2>
         @if ($planControl && count($planControl) > 0)
-            <table width="100%" border="1" cellspacing="0" cellpadding="6"
-                style="border-collapse: collapse; margin-top: 10px; font-size: 12px;">
-                <thead style="background-color: #0e75cb;">
+            <table border="1" cellspacing="0" cellpadding="6" style="font-size: 12px;">
+                <thead class="encabezado">
                     <tr>
                         <th>Actividad</th>
                         <th>Procedimiento</th>
@@ -224,40 +213,270 @@
             <p style="color: gray;">No hay actividades registradas para el plan de control de este proceso.</p>
         @endif
     </div>
+
     <!-- Auditorías -->
     <div style="margin-top: 40px;">
-    <h2 style="font-size: 20px; font-weight: bold; border-bottom: 2px solid #000; padding-bottom: 5px;">
-        Auditorías del Proceso
-    </h2>
-
-    @if ($auditorias && count($auditorias) > 0)
-        <table width="100%" border="1" cellspacing="0" cellpadding="6"
-            style="border-collapse: collapse; margin-top: 10px; font-size: 12px;">
-            <thead style="background-color: #0e75cb; color: white;">
-                <tr>
-                    <th>Fecha Programada</th>
-                    <th>Hora Programada</th>
-                    <th>Tipo</th>
-                    <th>Estado</th>
-                    <th>Descripcion</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach ($auditorias as $auditoria)
+        <h2 class="title">Auditorías del Proceso</h2>
+        @if ($auditorias && count($auditorias) > 0)
+            <table border="1" cellspacing="0" cellpadding="6" style="font-size: 12px;">
+                <thead class="encabezado">
                     <tr>
-                        <td style="text-align: center;">{{ $auditoria->fechaProgramada }}</td>
-                        <td style="text-align: center;">{{ $auditoria->horaProgramada }}</td>
-                        <td style="text-align: center;">{{ $auditoria->tipoAuditoria }}</td>
-                        <td style="text-align: center;">{{ $auditoria->estado }}</td>
-                        <td style="text-align: center;">{{ $auditoria->descripcion }}</td>
+                        <th>Fecha Programada</th>
+                        <th>Hora Programada</th>
+                        <th>Tipo</th>
+                        <th>Estado</th>
+                        <th>Descripcion</th>
                     </tr>
-                @endforeach
-            </tbody>
-        </table>
-    @else
-        <p style="color: gray;">No hay auditorías registradas para este proceso.</p>
-    @endif
+                </thead>
+                <tbody>
+                    @foreach ($auditorias as $auditoria)
+                        <tr>
+                            <td>{{ $auditoria->fechaProgramada }}</td>
+                            <td>{{ $auditoria->horaProgramada }}</td>
+                            <td>{{ $auditoria->tipoAuditoria }}</td>
+                            <td>{{ $auditoria->estado }}</td>
+                            <td>{{ $auditoria->descripcion }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        @else
+            <p style="color: gray;">No hay auditorías registradas para este proceso.</p>
+        @endif
     </div>
+        <!-- Seguimientos -->
+    <div style="margin-top: 40px;">
+        <h2 class="title">Seguimiento</h2>
+        @foreach ($seguimientos as $seguimiento)
+            <h3>Minuta</h3>
+            <h4>Asistentes:</h4>
+            <table border="1" cellspacing="0" cellpadding="6" style="font-size: 12px;">
+                <thead>
+                    <tr>
+                        <th>Nombre</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($asistentes->where('idSeguimiento', $seguimiento->idSeguimiento) as $asistente)
+                        <tr>
+                            <td>{{ $asistente->nombre }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+
+            <p><strong>Lugar:</strong> {{ $seguimiento->lugar }}</p>
+            <p><strong>Fecha:</strong> {{ $seguimiento->fecha }}</p>
+            <p><strong>Duración:</strong> {{ $seguimiento->duracion }}</p>
+
+            <h4>Actividades:</h4>
+            <table border="1" cellspacing="0" cellpadding="6" style="font-size: 12px;">
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>Actividades Realizadas</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($actividadesSeg->where('idSeguimiento', $seguimiento->idSeguimiento) as $actividad)
+                        <tr>
+                            <td>{{ $loop->iteration }}</td>
+                            <td>{{ $actividad->descripcion }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+
+            <h4>Compromisos:</h4>
+            <table border="1" cellspacing="0" cellpadding="6" style="font-size: 12px;">
+                <thead>
+                    <tr>
+                        <th>No</th>
+                        <th>Compromisos</th>
+                        <th>Responsable</th>
+                        <th>Fecha</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($compromisosSeg->where('idSeguimiento', $seguimiento->idSeguimiento) as $compromiso)
+                        <tr>
+                            <td>{{ $loop->iteration }}</td>
+                            <td>{{ $compromiso->descripcion }}</td>
+                            <td>{{ $compromiso->responsables }}</td>
+                            <td>{{ $compromiso->fecha }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+            <hr style="margin-top: 20px; margin-bottom: 20px;">
+        @endforeach
+    </div>
+
+    <!-- Gestión de Riesgos -->
+    <div style="margin-top: 40px;">
+        <h2 class="title">Gestión de Riesgos</h2>
+        @if (!empty($riesgos) && count($riesgos) > 0)
+            <!-- Identificación de Riesgos -->
+            <h3>1. Identificación</h3>
+            <table border="1" cellspacing="0" cellpadding="6" style="font-size: 10px;">
+                <thead class="encabezado">
+                    <tr>
+                        <th>No</th>
+                        <th>Fuente</th>
+                        <th>Tipo</th>
+                        <th>Descripción de Riesgo/Oportunidad</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($riesgos as $index => $r)
+                        <tr>
+                            <td>{{ $index + 1 }}</td>
+                            <td>{{ $r->fuente }}</td>
+                            <td>{{ $r->tipoRiesgo }}</td>
+                            <td>{{ $r->descripcion }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+
+            <!-- Análisis de Riesgos -->
+            <h3>2. Análisis</h3>
+            <table border="1" cellspacing="0" cellpadding="6" style="font-size: 10px;">
+                <thead class="encabezado">
+                    <tr>
+                        <th>Consecuencias</th>
+                        <th>Severidad</th>
+                        <th>Ocurrencia</th>
+                        <th>NRP</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($riesgos as $r)
+                        <tr>
+                            <td>{{ $r->consecuencias }}</td>
+                            <td>{{ $r->valorSeveridad }}</td>
+                            <td>{{ $r->valorOcurrencia }}</td>
+                            <td>{{ $r->valorNRP }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+
+            <!-- Tratamiento de Riesgos -->
+            <h3>3. Tratamiento</h3>
+            <table border="1" cellspacing="0" cellpadding="6" style="font-size: 10px;">
+                <thead class="encabezado">
+                    <tr>
+                        <th>Actividades</th>
+                        <th>Acciones de Mejora</th>
+                        <th>Responsable</th>
+                        <th>Fecha Implementación</th>
+                        <th>Fecha Evaluación</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($riesgos as $r)
+                        <tr>
+                            <td>{{ $r->actividades }}</td>
+                            <td>{{ $r->accionMejora }}</td>
+                            <td>{{ $r->responsable }}</td>
+                            <td>{{ \Carbon\Carbon::parse($r->fechaImp)->format('d/m/Y') }}</td>
+                            <td>{{ \Carbon\Carbon::parse($r->fechaEva)->format('d/m/Y') }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+
+            <!-- Evaluación de la Efectividad -->
+            <h3>4. Evaluación de la Efectividad</h3>
+            <table border="1" cellspacing="0" cellpadding="6" style="font-size: 10px;">
+                <thead class="encabezado">
+                    <tr>
+                        <th>Reevaluación Severidad</th>
+                        <th>Reevaluación Ocurrencia</th>
+                        <th>NRP</th>
+                        <th>Efectividad</th>
+                        <th>Análisis de la Efectividad del Tratamiento</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($riesgos as $r)
+                        @php
+                            $efectivo = $r->valorNRP >= $r->reevaluacionNRP;
+                            $color = $efectivo ? '#28a745' : '#dc3545'; // verde o rojo
+                        @endphp
+                        <tr>
+                            <td>{{ $r->reevaluacionSeveridad }}</td>
+                            <td>{{ $r->reevaluacionOcurrencia }}</td>
+                            <td>{{ $r->reevaluacionNRP }}</td>
+                            <td style="background-color: {{ $color }}; color: #fff; font-weight: bold;">
+                                {{ $efectivo ? 'Efectivo' : 'No Efectivo' }}
+                            </td>
+                            <td>{{ $r->analisisEfectividad }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        @else
+            <p style="color: gray;">No se encontraron riesgos registrados para este proceso y año.</p>
+        @endif
+    </div>
+
+    <!-- Gráficas -->
+    <div style="margin-top: 40px; text-align: center;">
+        <h3 style="font-size: 18px; font-weight: bold; margin-bottom: 15px;">Gráfica de Plan de Control</h3>
+        @if (file_exists($graficaPlanControl))
+            <img src="{{ $graficaPlanControl }}" style="width: 100%; max-height: 400px;" alt="Gráfica Plan de Control">
+        @else
+            <p style="color: gray;">La gráfica aún no ha sido generada.</p>
+        @endif
+    </div>
+
+    <div style="margin-top: 40px; text-align: center;">
+        <h3 style="font-size: 18px; font-weight: bold; margin-bottom: 15px;">Gráfica de Encuesta</h3>
+        @if (file_exists($graficaEncuesta))
+            <img src="{{ $graficaEncuesta }}" style="width: 100%; max-height: 400px;" alt="Gráfica Encuesta">
+        @else
+            <p style="color: gray;">La gráfica aún no ha sido generada.</p>
+        @endif
+    </div>
+
+    <div style="margin-top: 40px; text-align: center;">
+        <h3 style="font-size: 18px; font-weight: bold; margin-bottom: 15px;">Gráfica de Retroalimentación</h3>
+        @if (file_exists($graficaRetroalimentacion))
+            <img src="{{ $graficaRetroalimentacion }}" style="width: 100%; max-height: 400px;" alt="Gráfica Retroalimentación">
+        @else
+            <p style="color: gray;">La gráfica aún no ha sido generada.</p>
+        @endif
+    </div>
+
+    <div style="margin-top: 40px; text-align: center;">
+        <h3 style="font-size: 18px; font-weight: bold; margin-bottom: 15px;">Gráfica de Mapa de Proceso</h3>
+        @if (file_exists($graficaMP))
+            <img src="{{ $graficaMP }}" style="width: 100%; max-height: 400px;" alt="Gráfica Mapa de Proceso">
+        @else
+            <p style="color: gray;">La gráfica aún no ha sido generada.</p>
+        @endif
+    </div>
+
+    <div style="margin-top: 40px; text-align: center;">
+        <h3 style="font-size: 18px; font-weight: bold; margin-bottom: 15px;">Gráfica de Riesgos</h3>
+        @if (file_exists($graficaRiesgos))
+            <img src="{{ $graficaRiesgos }}" style="width: 100%; max-height: 400px;" alt="Gráfica de Riesgos">
+        @else
+            <p style="color: gray;">La gráfica aún no ha sido generada.</p>
+        @endif
+    </div>
+
+    <div style="margin-top: 40px; text-align: center;">
+        <h3 style="font-size: 18px; font-weight: bold; margin-bottom: 15px;">Gráfica de Evaluación de Proveedores</h3>
+        @if (file_exists($graficaEvaluacion))
+            <img src="{{ $graficaEvaluacion }}" style="width: 100%; max-height: 400px;" alt="Gráfica de Evaluación de Proveedores">
+        @else
+            <p style="color: gray;">La gráfica aún no ha sido generada.</p>
+        @endif
+    </div>
+
 </body>
 
 </html>

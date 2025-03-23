@@ -11,6 +11,15 @@ use App\Models\Proceso;
 use App\Models\Registros;
 use App\Models\ActividadControl;
 use App\Models\Auditoria;
+use App\Models\GestionRiesgos;
+use App\Models\Riesgo;
+use App\Models\ActividadMejora;
+use App\Models\SeguimientoMinuta;
+use App\Models\Asistente;
+use App\Models\ActividadMinuta;
+use App\Models\CompromisoMinuta;
+
+
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Log;
 
@@ -43,10 +52,52 @@ class ReporteProcesoController extends Controller
             Log::error("❌ Error al obtener el registro", ['error' => $e->getMessage()]);
             return response()->json(['error' => 'Error al obtener el registro'], 500);
         }
+        
 
         $mapa = MapaProceso::where('idProceso', $idProceso)->first();
         $actividades = ActividadControl::where('idProceso', $idProceso)->get();
         $auditorias = Auditoria::where('idProceso', $idProceso)->get();
+
+        $registro = Registros::where('idProceso', $idProceso)
+            ->where('año', $anio)
+            ->where('apartado', 'Gestión de Riesgo')
+            ->first();
+
+        if (!$registro) {
+            return response()->json(['error' => 'No se encontró el registro.'], 404);
+        }
+
+        
+
+        $gestion = GestionRiesgos::where('idRegistro', $registro->idRegistro)->first();
+        if (!$gestion) {
+            return response()->json(['error' => 'No se encontró gestión de riesgos.'], 404);
+        }
+        $riesgos = Riesgo::where('idGesRies', $gestion->idGesRies)->get();
+        $graficaPlanControl = public_path("storage/graficas/plan_control_{$idProceso}_{$anio}.png");
+        $graficaEncuesta = public_path("storage/graficas/encuesta_{$idProceso}_{$anio}.png");
+        $graficaRetroalimentacion = public_path("storage/graficas/retroalimentacion_{$idProceso}_{$anio}.png");
+        $graficaMP = public_path("storage/graficas/mapaProceso_{$idProceso}_{$anio}.png");
+        $graficaRiesgos = public_path("storage/graficas/riesgos_{$idProceso}_{$anio}.png");
+        $graficaEvaluacion = public_path("storage/graficas/evaluacionProveedores_{$idProceso}_{$anio}.png");
+
+
+
+        $registroSeg = Registros::where('idProceso', $idProceso)
+            ->where('año', $anio)
+            ->where('apartado', 'Seguimiento')
+            ->first();
+
+        if (!$registroSeg) {
+            return response()->json(['error' => 'No se encontró el registro.'], 404);
+        }
+        /* Segumientos */
+        $seguimientos = SeguimientoMinuta::where('idRegistro', $registroSeg->idRegistro)->get();
+        $idSeguimientos = $seguimientos->pluck('idSeguimiento')->toArray();
+        $asistentes = Asistente::whereIn('idSeguimiento', $idSeguimientos)->get();
+        $actividadesSeg= ActividadMinuta::whereIn('idSeguimiento', $idSeguimientos)->get();
+        $compromisosSeg= CompromisoMinuta::whereIn('idSeguimiento', $idSeguimientos)->get();
+
 
         $datos = [
             'nombreProceso' => $proceso->nombreProceso,
@@ -67,6 +118,19 @@ class ReporteProcesoController extends Controller
             'diagramaFlujo' => $mapa->diagramaFlujo ?? 'No disponible',
             'planControl' => $actividades,
             'auditorias' => $auditorias,
+            'riesgos' => $riesgos,
+            'graficaPlanControl' => $graficaPlanControl,
+            'graficaEncuesta' =>  $graficaEncuesta,
+            'graficaRetroalimentacion' => $graficaRetroalimentacion,
+            'graficaMP' => $graficaMP,
+            'graficaRiesgos' => $graficaRiesgos,
+            'graficaEvaluacion' => $graficaEvaluacion,
+            'registro' => $registro->idRegistro,
+            'seguimientos'=> $seguimientos,
+            'idseguimientos'=> $idSeguimientos,
+            'asistentes'=> $asistentes,
+            'actividadesSeg'=> $actividadesSeg,
+            'compromisosSeg'=>$compromisosSeg
         ];
 
         Log::info("📄 Datos enviados a la vista", $datos);
@@ -76,6 +140,7 @@ class ReporteProcesoController extends Controller
             Log::info("📄 Generando PDF");
             $pdf = Pdf::loadView('proceso', $datos);
             Log::info("✅ PDF generado con éxito");
+
 
             return $pdf->download("reporte_proceso_{$anio}.pdf");
         } catch (\Exception $e) {
@@ -146,4 +211,67 @@ class ReporteProcesoController extends Controller
     }
 }
 
+    public function obtenerRiesgosPorProcesoYAnio($idProceso, $anio)
+    {
+        try {
+            $registro = Registros::where('idProceso', $idProceso)
+                ->where('año', $anio)
+                ->where('apartado', 'Gestión de Riesgo')
+                ->first();
+
+            if (!$registro) {
+                return response()->json(['error' => 'No se encontró el registro.'], 404);
+            }
+
+            $gestion = GestionRiesgos::where('idRegistro', $registro->idRegistro)->first();
+            if (!$gestion) {
+                return response()->json(['error' => 'No se encontró gestión de riesgos.'], 404);
+            }
+
+            $riesgos = Riesgo::where('idGesRies', $gestion->idGesRies)->get();
+
+            return response()->json([
+                'riesgos' => $riesgos,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Error al obtener datos'], 500);
+        }
+    }
+    
+    public function obtenerSeguimiento($idProceso, $anio)
+    {
+        try {
+            
+            $registroSeg = Registros::where('idProceso', $idProceso)
+            ->where('año', $anio)
+            ->where('apartado', 'Seguimiento')
+            ->first();
+
+            if (!$registroSeg) {
+                return response()->json(['error' => 'No se encontró el registro.'], 404);
+            }
+            // Obtener los seguimientos relacionados
+            $seguimientos = SeguimientoMinuta::where('idRegistro', $registroSeg->idRegistro)->get();
+            
+            if ($seguimientos->isEmpty()) {
+                return response()->json(['error' => 'No se encontraron seguimientos para este proceso.'], 404);
+            }
+
+            $idSeguimientos = $seguimientos->pluck('idSeguimiento')->toArray();
+            
+            // Obtener los asistentes, actividades y compromisos relacionados con los seguimientos
+            $asistentes = Asistente::whereIn('idSeguimiento', $idSeguimientos)->get();
+            $actividadesSeg = ActividadMinuta::whereIn('idSeguimiento', $idSeguimientos)->get();
+            $compromisosSeg = CompromisoMinuta::whereIn('idSeguimiento', $idSeguimientos)->get();
+
+            return response()->json([
+                'seguimientos' => $seguimientos,
+                'asistentes' => $asistentes,
+                'actividades' => $actividadesSeg,
+                'compromisos' => $compromisosSeg,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Error al obtener los seguimientos', 'detalle' => $e->getMessage()], 500);
+        }
+    }
 }

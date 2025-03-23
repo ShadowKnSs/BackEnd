@@ -88,15 +88,38 @@ class RegistrosController extends Controller
     {
         // Log del idProceso recibido
         Log::info("Obteniendo años para el proceso: " . $idProceso);
-    
+
         // Obtener los años distintos de los registros asociados al idProceso
         $years = Registros::where('idProceso', $idProceso)
             ->distinct()
             ->pluck('año');
-    
+
         Log::info("Años obtenidos: " . $years->implode(', '));
-    
+
         return response()->json($years);
+    }
+
+    public function obtenerIdRegistro(Request $request)
+    {
+        Log::info("🔍 Entrando a obtenerIdRegistro"); // ✅ este debería salir
+
+        $idProceso = $request->query('proceso');
+        $anio = $request->query('año');
+        $apartado = $request->query('apartado', 'Indicadores');
+
+
+        $registro = Registros::where('idProceso', $idProceso)
+            ->where('año', $anio)
+            ->where('Apartado', $apartado)
+            ->first();
+
+        if (!$registro) {
+            Log::warning("⚠️ Registro no encontrado", compact('idProceso', 'anio', 'apartado'));
+            return response()->json(['error' => 'Registro no encontrado'], 404);
+        }
+        Log::info("✅ Registro encontrado", ['idRegistro' => $registro->idRegistro]);
+
+        return response()->json(['idRegistro' => $registro->idRegistro]);
     }
 
 

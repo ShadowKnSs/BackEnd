@@ -33,11 +33,9 @@ use App\Http\Controllers\Api\PlanCorrectivoController;
 use App\Http\Controllers\Api\PlanTrabajoController;
 use App\Http\Controllers\Api\FuentePtController;
 use App\Http\Controllers\Api\ProyectoMejoraController;
-
-
-
 //Reporte
 use App\Http\Controllers\Api\ReporteProcesoController;
+use App\Http\Controllers\Api\GraficaController;
 
 
 
@@ -59,12 +57,15 @@ Route::get('/minutas/registro/{idRegistro}', [MinutaController::class, 'getMinut
 Route::put('/minutas/{id}', [MinutaController::class, 'update']); //actualizar una minuta
 Route::delete('/minutasDelete/{id}', [MinutaController::class, 'destroy']);
 
-Route::post('/registros', [RegistrosController::class, 'store']); //crear carpeta
-Route::put('/registros{id}', [RegistrosController::class, 'update']);//actualizar update
-Route::post('/registros/filtrar', [RegistrosController::class, 'obtenerRegistrosPorProcesoYApartado']); // obtener carpetas por proceso de un apartado
-Route::get('/registros/{idRegistro}', [RegistrosController::class, 'show']);
-
+// ✅ Rutas con nombre explícito primero
+Route::get('/registros/idRegistro', [RegistrosController::class, 'obtenerIdRegistro']);
 Route::get('/registros/years/{idProceso}', [RegistrosController::class, 'obtenerAnios']);
+Route::post('/registros/filtrar', [RegistrosController::class, 'obtenerRegistrosPorProcesoYApartado']);
+
+// ✅ CRUD estándar después
+Route::post('/registros', [RegistrosController::class, 'store']);
+Route::put('/registros{id}', [RegistrosController::class, 'update']);
+Route::get('/registros/{idRegistro}', [RegistrosController::class, 'show']);
 
 
 // Route::get('procesos', action: [ProcessController::class, 'index']); 
@@ -190,13 +191,20 @@ Route::post('/proyecto-mejora', [ProyectoMejoraController::class, 'store']);
 
 
 
-//Reporte
+//*********************************************************/
+//                  Para Reporte de Procesos
+//*********************************************************/
 
 // Route::get('/generar-reporte', [ReporteProcesoController::class, 'generarReporte']);
 Route::get('/generar-reporte/{idProceso}/{anio}', [ReporteProcesoController::class, 'generarReporte']);
 Route::get('/datos-reporte/{idProceso}/{anio}', [ReporteProcesoController::class, 'obtenerDatosReporte']);
 Route::get('/mapa-proceso/{idProceso}', [ReporteProcesoController::class, 'obtenerMapaProceso']);
 Route::get('/auditoria/{idProceso}', [ReporteProcesoController::class, 'obtenerAuditoria']);
+Route::get('/seguimiento/{idProceso}/{anio}', [ReporteProcesoController::class, 'obtenerSeguimiento']);
+Route::get('/gestion-riesgos/{idProceso}/{anio}', [ReporteProcesoController::class, 'obtenerRiesgosPorProcesoYAnio']);
+//Graficas para el reporte
+Route::post('/graficas/guardar', [GraficaController::class, 'guardar']);
+
 Route::get('/vista-reporte', function () {
     return view('proceso');
 });
