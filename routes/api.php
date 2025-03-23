@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\ControlCambioController;
 use App\Http\Controllers\Api\MapaProcesoController;
 use App\Http\Controllers\Api\IndMapaProcesoController;
 use App\Http\Controllers\Api\ActividadControlController;
+use App\Http\Controllers\Api\AuditoriaInternaController;
 
 Route::get('macroprocesos', [MacroProcesoController::class, 'index']);
 Route::get('entidades', [EntidadDependenciaController::class, 'index']);
@@ -42,3 +43,6 @@ Route::apiResource('controlcambios', ControlCambioController::class);
 Route::apiResource('mapaproceso', MapaProcesoController::class);
 Route::apiResource('indmapaproceso', IndMapaProcesoController::class);
 Route::apiResource('actividadcontrol', ActividadControlController::class);
+
+//Para Auditoria Interna
+Route::apiResource('auditorias', AuditoriaInternaController::class);
