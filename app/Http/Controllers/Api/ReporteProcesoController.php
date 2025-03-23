@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Storage;
 use App\Models\Proceso;
 use App\Models\Registros;
 use App\Models\ActividadControl;
+use App\Models\GestionRiesgos;
+use App\Models\Riesgo;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Log;
 
@@ -46,6 +48,26 @@ class ReporteProcesoController extends Controller
         $mapa = MapaProceso::where('idProceso', $idProceso)->first();
         $actividades = ActividadControl::where('idProceso', $idProceso)->get();
 
+        $registro = Registros::where('idProceso', $idProceso)
+            ->where('año', $anio)
+            ->where('apartado', 'Gestión de Riesgo')
+            ->first();
+
+        if (!$registro) {
+            return response()->json(['error' => 'No se encontró el registro.'], 404);
+        }
+
+        $gestion = GestionRiesgos::where('idRegistro', $registro->idRegistro)->first();
+        if (!$gestion) {
+            return response()->json(['error' => 'No se encontró gestión de riesgos.'], 404);
+        }
+        $riesgos = Riesgo::where('idGesRies', $gestion->idGesRies)->get();
+        $graficaPlanControl = public_path("storage/graficas/plan_control_{$idProceso}_{$anio}.png");
+        $graficaEncuesta = public_path("storage/graficas/encuesta_{$idProceso}_{$anio}.png");
+        $graficaRetroalimentacion = public_path("storage/graficas/retroalimentacion_{$idProceso}_{$anio}.png");
+        $graficaMP = public_path("storage/graficas/mapaProceso_{$idProceso}_{$anio}.png");
+        $graficaRiesgos = public_path("storage/graficas/riesgos_{$idProceso}_{$anio}.png");
+        $graficaEvaluacion = public_path("storage/graficas/evaluacionProveedores_{$idProceso}_{$anio}.png");
 
         $datos = [
             'nombreProceso' => $proceso->nombreProceso,
@@ -65,6 +87,14 @@ class ReporteProcesoController extends Controller
             'receptores' => $mapa->receptores ?? 'No disponible',
             'diagramaFlujo' => $mapa->diagramaFlujo ?? 'No disponible',
             'planControl' => $actividades,
+            'riesgos' => $riesgos,
+            'graficaPlanControl' => $graficaPlanControl,
+            'graficaEncuesta' =>  $graficaEncuesta,
+            'graficaRetroalimentacion' => $graficaRetroalimentacion,
+            'graficaMP' => $graficaMP,
+            'graficaRiesgos' => $graficaRiesgos,
+            'graficaEvaluacion' => $graficaEvaluacion,
+
 
         ];
 
@@ -75,6 +105,7 @@ class ReporteProcesoController extends Controller
             Log::info("📄 Generando PDF");
             $pdf = Pdf::loadView('proceso', $datos);
             Log::info("✅ PDF generado con éxito");
+
 
             return $pdf->download("reporte_proceso_{$anio}.pdf");
         } catch (\Exception $e) {
@@ -127,6 +158,34 @@ class ReporteProcesoController extends Controller
             ]);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Error al obtener el Mapa de Proceso'], 500);
+        }
+    }
+
+
+    public function obtenerRiesgosPorProcesoYAnio($idProceso, $anio)
+    {
+        try {
+            $registro = Registros::where('idProceso', $idProceso)
+                ->where('año', $anio)
+                ->where('apartado', 'Gestión de Riesgo')
+                ->first();
+
+            if (!$registro) {
+                return response()->json(['error' => 'No se encontró el registro.'], 404);
+            }
+
+            $gestion = GestionRiesgos::where('idRegistro', $registro->idRegistro)->first();
+            if (!$gestion) {
+                return response()->json(['error' => 'No se encontró gestión de riesgos.'], 404);
+            }
+
+            $riesgos = Riesgo::where('idGesRies', $gestion->idGesRies)->get();
+
+            return response()->json([
+                'riesgos' => $riesgos,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Error al obtener datos'], 500);
         }
     }
 

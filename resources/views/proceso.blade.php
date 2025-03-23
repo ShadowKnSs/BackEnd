@@ -61,6 +61,12 @@
             background-color: #F44336;
             color: white;
         }
+
+        .encabezado {
+            background-color: #0e75cb;
+            font-weight: bold;
+            color: white;
+        }
     </style>
 </head>
 
@@ -116,7 +122,7 @@
 
     <!-- Mapa de Proceso -->
     <div style="margin-bottom: 30px;">
-        <h2 style="padding-bottom: 4px, color: #0e75cb;">Mapa de Proceso</h2>
+        <h2 class="title">Mapa de Proceso</h2>
 
         <!-- Documentos Relacionados -->
         <p><strong>Documentos Relacionados:</strong> {{ $documentos ?? 'No disponible' }}</p>
@@ -151,7 +157,7 @@
         <table width="100%" border="1" cellspacing="0" cellpadding="8"
             style="margin-top: 20px; border-collapse: collapse;">
             <thead>
-                <tr style="background-color: #0e75cb; color: white;">
+                <tr>
                     <th style="text-align: center;">Salidas</th>
                     <th style="text-align: center;">Receptores de Salidas / Cliente</th>
                 </tr>
@@ -167,7 +173,7 @@
 
     <!-- Diagrama de Flujo -->
     <div style="margin-top: 40px;">
-        <h2 style="font-size: 20px; font-weight: bold; border-bottom: 2px solid #000; padding-bottom: 5px;">
+        <h2 class="title"">
             Diagrama de Flujo
         </h2>
 
@@ -184,14 +190,14 @@
 
     <!-- Plan de Control -->
     <div style="margin-top: 40px;">
-        <h2 style="font-size: 20px; font-weight: bold; border-bottom: 2px solid #000; padding-bottom: 5px;">
+        <h2 class="title">
             Plan de Control
         </h2>
 
         @if ($planControl && count($planControl) > 0)
             <table width="100%" border="1" cellspacing="0" cellpadding="6"
                 style="border-collapse: collapse; margin-top: 10px; font-size: 12px;">
-                <thead style="background-color: #0e75cb;">
+                <thead  class="encabezado">
                     <tr>
                         <th>Actividad</th>
                         <th>Procedimiento</th>
@@ -224,7 +230,199 @@
             <p style="color: gray;">No hay actividades registradas para el plan de control de este proceso.</p>
         @endif
     </div>
+    
+    <!-- Gestión de Riesgos -->
+<div style="margin-top: 40px;">
+    <h2 class="title">
+        Gestión de Riesgos
+    </h2>
 
+    @if (!empty($riesgos) && count($riesgos) > 0)
+        {{-- Tabla 1: Identificación --}}
+        <h3 style="margin-top: 20px;">1. Identificación</h3>
+        <table width="100%" border="1" cellspacing="0" cellpadding="6" style="font-size: 10px; border-collapse: collapse;">
+            <thead  class="encabezado">
+                <tr>
+                    <th>No</th>
+                    <th>Fuente</th>
+                    <th>Tipo</th>
+                    <th>Descripción de Riesgo/Oportunidad</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($riesgos as $index => $r)
+                    <tr>
+                        <td>{{ $index + 1 }}</td>
+                        <td>{{ $r->fuente }}</td>
+                        <td>{{ $r->tipoRiesgo }}</td>
+                        <td>{{ $r->descripcion }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+
+        {{-- Tabla 2: Análisis --}}
+        <h3 style="margin-top: 20px;">2. Análisis</h3>
+        <table width="100%" border="1" cellspacing="0" cellpadding="6" style="font-size: 10px; border-collapse: collapse;">
+            <thead  class="encabezado">
+                <tr>
+                    <th>Consecuencias</th>
+                    <th>Severidad</th>
+                    <th>Ocurrencia</th>
+                    <th>NRP</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($riesgos as $r)
+                    <tr>
+                        <td>{{ $r->consecuencias }}</td>
+                        <td>{{ $r->valorSeveridad }}</td>
+                        <td>{{ $r->valorOcurrencia }}</td>
+                        <td>{{ $r->valorNRP }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+
+        {{-- Tabla 3: Tratamiento --}}
+        <h3 style="margin-top: 20px;">3. Tratamiento</h3>
+        <table width="100%" border="1" cellspacing="0" cellpadding="6" style="font-size: 10px; border-collapse: collapse;">
+            <thead  class="encabezado">
+                <tr>
+                    <th>Actividades</th>
+                    <th>Acciones de Mejora</th>
+                    <th>Responsable</th>
+                    <th>Fecha Implementación</th>
+                    <th>Fecha Evaluación</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($riesgos as $r)
+                    <tr>
+                        <td>{{ $r->actividades }}</td>
+                        <td>{{ $r->accionMejora }}</td>
+                        <td>{{ $r->responsable }}</td>
+                        <td>{{ \Carbon\Carbon::parse($r->fechaImp)->format('d/m/Y') }}</td>
+                        <td>{{ \Carbon\Carbon::parse($r->fechaEva)->format('d/m/Y') }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+
+        {{-- Tabla 4: Evaluación de la Efectividad --}}
+        <h3 style="margin-top: 20px;">4. Evaluación de la Efectividad</h3>
+        <table width="100%" border="1" cellspacing="0" cellpadding="6" style="font-size: 10px; border-collapse: collapse;">
+            <thead  class="encabezado">
+                <tr>
+                    <th>Reevaluación Severidad</th>
+                    <th>Reevaluación Ocurrencia</th>
+                    <th>NRP</th>
+                    <th style="text-align: center;">Efectividad</th>
+                    <th>Análisis de la Efectividad del Tratamiento</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($riesgos as $r)
+                    @php
+                        $efectivo = $r->valorNRP >= $r->reevaluacionNRP;
+                        $color = $efectivo ? '#28a745' : '#dc3545'; // verde o rojo
+                        
+                    @endphp
+                    <tr>
+                        <td>{{ $r->reevaluacionSeveridad }}</td>
+                        <td>{{ $r->reevaluacionOcurrencia }}</td>
+                        <td>{{ $r->reevaluacionNRP }}</td>
+                        <td style="background-color: {{ $color }}; color: #fff; text-align: center; font-weight: bold;">
+                            
+                        </td>
+                        <td>{{ $r->analisisEfectividad }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    @else
+        <p style="color: gray;">No se encontraron riesgos registrados para este proceso y año.</p>
+    @endif
+</div>
+
+{{-- Gráfica: Plan de Control --}}
+<div style="margin-top: 40px; text-align: center;">
+    <h3 style="font-size: 18px; font-weight: bold; margin-bottom: 15px;">
+        Gráfica de Plan de Control
+    </h3>
+
+    @if (file_exists($graficaPlanControl))
+        <img src="{{ $graficaPlanControl }}" style="width: 100%; max-height: 400px;" alt="Gráfica Plan de Control">
+    @else
+        <p style="color: gray;">La gráfica aún no ha sido generada.</p>
+    @endif
+</div>
+
+{{-- Gráfica: Encuesta --}}
+<div style="margin-top: 40px; text-align: center;">
+    <h3 style="font-size: 18px; font-weight: bold; margin-bottom: 15px;">
+        Gráfica de Encuesta
+    </h3>
+
+    @if (file_exists($graficaEncuesta))
+        <img src="{{ $graficaEncuesta }}" style="width: 100%; max-height: 400px;" alt="Gráfica Encuesta">
+    @else
+        <p style="color: gray;">La gráfica aún no ha sido generada.</p>
+    @endif
+</div>
+{{-- Gráfica: Retroalimentacion --}}
+<div style="margin-top: 40px; text-align: center;">
+    <h3 style="font-size: 18px; font-weight: bold; margin-bottom: 15px;">
+        Gráfica de Retroalimentacion
+    </h3>
+
+    @if (file_exists($graficaRetroalimentacion))
+        <img src="{{ $graficaRetroalimentacion }}" style="width: 100%; max-height: 400px;" alt="Gráfica Retroalimentación">
+    @else
+        <p style="color: gray;">La gráfica aún no ha sido generada.</p>
+    @endif
+</div>
+{{-- Gráfica: Mapa Proces --}}
+<div style="margin-top: 40px; text-align: center;">
+    <h3 style="font-size: 18px; font-weight: bold; margin-bottom: 15px;">
+        Gráfica de MapaProceso
+    </h3>
+
+    @if (file_exists($graficaMP))
+        <img src="{{ $graficaMP }}" style="width: 100%; max-height: 400px;" alt="Gráfica Mapa Proceso">
+    @else
+        <p style="color: gray;">La gráfica aún no ha sido generada.</p>
+    @endif
+   
+
+</div>
+{{-- Gráfica: Riesgos --}}
+<div style="margin-top: 40px; text-align: center;">
+    <h3 style="font-size: 18px; font-weight: bold; margin-bottom: 15px;">
+        Gráfica de Riesgos
+    </h3>
+
+    @if (file_exists($graficaRiesgos))
+        <img src="{{ $graficaRiesgos }}" style="width: 100%; max-height: 400px;" alt="Gráfica Mapa Proceso">
+    @else
+        <p style="color: gray;">La gráfica aún no ha sido generada.</p>
+    @endif
+   
+
+</div>
+<div style="margin-top: 40px; text-align: center;">
+    <h3 style="font-size: 18px; font-weight: bold; margin-bottom: 15px;">
+        Gráfica de Evaluación de Proveedores
+    </h3>
+
+    @if (file_exists($graficaEvaluacion))
+        <img src="{{ $graficaEvaluacion }}" style="width: 100%; max-height: 400px;" alt="Gráfica Mapa Proceso">
+    @else
+        <p style="color: gray;">La gráfica aún no ha sido generada.</p>
+    @endif
+   
+
+</div>
 </body>
 
 </html>

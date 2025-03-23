@@ -55,19 +55,13 @@ class ActividadControlController extends Controller
             ]);
 
             // 2) Crear el IndicadorConsolidado asociado
-            // Tomamos "nombreActividad" como "nombreIndicador"
-            // idProceso, lo mismo
-            // origenIndicador = "ActividadControl"
-            // periodicidad = "Anual"
-            // meta = null
-            // idRegistro = null
             $indicador = IndicadorConsolidado::create([
                 'idRegistro'       => null, // o lo que tú necesites
                 'idProceso'        => $actividad->idProceso,
                 'nombreIndicador'  => $actividad->nombreActividad,  // clave
                 'origenIndicador'  => 'ActividadControl',
                 'periodicidad'     => 'Semestral',
-                'meta'             => null,
+                'meta'             => 100,
             ]);
 
             DB::commit();
