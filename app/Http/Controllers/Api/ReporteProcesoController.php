@@ -15,6 +15,16 @@ use App\Models\Riesgo;
 use App\Models\IndicadorConsolidado;
 use App\Models\ResultadoIndi;
 use App\Models\AnalisisDatos;
+use App\Models\ActividadMejora;
+use App\Models\SeguimientoMinuta;
+use App\Models\Asistente;
+use App\Models\ActividadMinuta;
+use App\Models\CompromisoMinuta;
+use App\Models\ProyectoMejora;
+use App\Models\Recurso;
+use App\Models\ActividadesPM;
+
+
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Log;
 
