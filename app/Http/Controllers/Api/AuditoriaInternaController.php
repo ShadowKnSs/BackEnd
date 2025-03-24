@@ -26,17 +26,22 @@ class AuditoriaInternaController extends Controller
         ])->get();
 
         return response()->json($auditorias);
+
+        return AuditoriaInterna::all();
     }
 
     // Obtener una auditoría por ID
     public function show($id)
     {
         $auditoria = AuditoriaInterna::with([
+            'criterios',
             'equipoAuditor',
             'personalAuditado',
             'verificacionRuta',
-            'puntosMejora'
-        ])->find($id);
+            'puntosMejora',
+            'conclusiones',
+            'plazos'
+        ])->findOrFail($id);
 
         if (!$auditoria) {
             return response()->json(['message' => 'Auditoría no encontrada'], 404);
