@@ -201,6 +201,7 @@ Route::get('/datos-reporte/{idProceso}/{anio}', [ReporteProcesoController::class
 Route::get('/mapa-proceso/{idProceso}', [ReporteProcesoController::class, 'obtenerMapaProceso']);
 Route::get('/auditoria/{idProceso}', [ReporteProcesoController::class, 'obtenerAuditoria']);
 Route::get('/seguimiento/{idProceso}/{anio}', [ReporteProcesoController::class, 'obtenerSeguimiento']);
+Route::get('/proyecto-mejora/{idProceso}/{anio}', [ReporteProcesoController::class, 'obtenerPM']);
 Route::get('/gestion-riesgos/{idProceso}/{anio}', [ReporteProcesoController::class, 'obtenerRiesgosPorProcesoYAnio']);
 //Graficas para el reporte
 Route::post('/graficas/guardar', [GraficaController::class, 'guardar']);

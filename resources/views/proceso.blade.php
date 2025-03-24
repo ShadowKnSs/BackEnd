@@ -310,8 +310,87 @@
             </table>
             <hr style="margin-top: 20px; margin-bottom: 20px;">
         @endforeach
-    </div>
+        </div>
 
+        
+        <!-- Proyecto Mejora -->
+        <div class="container">
+        <h2>Proyecto de Mejora</h2>
+
+        <!-- Información básica del proyecto -->
+        <table class="table table-bordered">
+            <tr>
+                <th>Fecha:</th>
+                <td>{{$proyectoMejora->fecha}}</td>
+                <th>No. Mejora:</th>
+                <td>{{ $proyectoMejora->noMejora}}</td>
+            </tr>
+            <tr>
+                <th>Descripción de la mejora:</th>
+                <td colspan="5">{{ $proyectoMejora->descripcionMejora}}</td>
+            </tr>
+        </table>
+
+        <!-- Objetivos/Beneficios de la mejora -->
+        <h4>Objetivos/Beneficio de la mejora:</h4>
+        <p>{{ $proyectoMejora->objetivo }}</p>
+
+        <!-- Áreas de impacto/Personal beneficiado -->
+        <h4>Áreas de impacto/Personal beneficiado:</h4>
+        <p>{{ $proyectoMejora->areaImpacto}}</p>
+
+        <!-- Responsables involucrados -->
+        <h4>Responsables involucrados:</h4>
+        <p>{{ $proyectoMejora->responsable}}</p>
+
+        <!-- Situación actual -->
+        <h4>Situación actual:</h4>
+        <p>{{ $proyectoMejora->situacionActual }}</p>
+
+        <!-- Indicadores de Éxito -->
+        <h4>Indicadores de Éxito:</h4>
+        <p>{{ $proyectoMejora->indicadorExito }}</p>
+
+        <h4>Recursos:</h4>
+            <table border="1" cellspacing="0" cellpadding="6" style="font-size: 12px;">
+                <thead>
+                    <tr>
+                        <th>Descripcion</th>
+                        <th>Recursos Materiales y Humanos </th>
+                        <th>Costo estimado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($recursos->where('idProyectoMejora', $proyectoMejora->idProyectoMejora) as $recurso)
+                        <tr>
+                            <td>{{ $recurso->descripcionRec }}</td>
+                            <td>{{ $recurso->recursosMatHum }}</td>
+                            <td>{{ $recurso->costo }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+
+            <h4>Actividades:</h4>
+            <table border="1" cellspacing="0" cellpadding="6" style="font-size: 12px;">
+                <thead>
+                    <tr>
+                        <th>Descripcion</th>
+                        <th>Responsable </th>
+                        <th>Fecha</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($actividadesPM->where('idProyectoMejora', $proyectoMejora->idProyectoMejora) as $act)
+                        <tr>
+                            <td>{{ $act->descripcionAct }}</td>
+                            <td>{{ $act->responsable }}</td>
+                            <td>{{ $act->fecha }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+    </div>
     <!-- Gestión de Riesgos -->
     <div style="margin-top: 40px;">
         <h2 class="title">Gestión de Riesgos</h2>

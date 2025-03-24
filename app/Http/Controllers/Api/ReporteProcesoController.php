@@ -18,6 +18,10 @@ use App\Models\SeguimientoMinuta;
 use App\Models\Asistente;
 use App\Models\ActividadMinuta;
 use App\Models\CompromisoMinuta;
+use App\Models\ProyectoMejora;
+use App\Models\Recurso;
+use App\Models\ActividadesPM;
+
 
 
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -82,7 +86,7 @@ class ReporteProcesoController extends Controller
         $graficaEvaluacion = public_path("storage/graficas/evaluacionProveedores_{$idProceso}_{$anio}.png");
 
 
-
+         /* Segumientos */
         $registroSeg = Registros::where('idProceso', $idProceso)
             ->where('año', $anio)
             ->where('apartado', 'Seguimiento')
@@ -91,14 +95,26 @@ class ReporteProcesoController extends Controller
         if (!$registroSeg) {
             return response()->json(['error' => 'No se encontró el registro.'], 404);
         }
-        /* Segumientos */
+       
         $seguimientos = SeguimientoMinuta::where('idRegistro', $registroSeg->idRegistro)->get();
         $idSeguimientos = $seguimientos->pluck('idSeguimiento')->toArray();
         $asistentes = Asistente::whereIn('idSeguimiento', $idSeguimientos)->get();
         $actividadesSeg= ActividadMinuta::whereIn('idSeguimiento', $idSeguimientos)->get();
         $compromisosSeg= CompromisoMinuta::whereIn('idSeguimiento', $idSeguimientos)->get();
 
+        $registroAcMejora = Registros::where('idProceso', $idProceso)
+            ->where('año', $anio)
+            ->where('apartado', 'Acciones de Mejora')
+            ->first();
 
+        if (!$registroAcMejora) {
+            return response()->json(['error' => 'No se encontró el registro.'], 404);
+        }
+        $acMejora = ActividadMejora::where('idRegistro', $registroAcMejora->idRegistro)->get();
+        $idAccMejora = $acMejora->pluck('idActividadMejora')->toArray();
+        $proyectoMejora= ProyectoMejora::whereIn('idActividadMejora', $idAccMejora)->first();
+        $recursos=Recurso::where('idProyectoMejora', $proyectoMejora->idProyectoMejora)->get();
+        $actividadesPM=ActividadesPM::where('idProyectoMejora', $proyectoMejora->idProyectoMejora)->get();
         $datos = [
             'nombreProceso' => $proceso->nombreProceso,
             'entidad' => $proceso->entidad->nombreEntidad ?? 'Entidad no disponible',
@@ -130,7 +146,12 @@ class ReporteProcesoController extends Controller
             'idseguimientos'=> $idSeguimientos,
             'asistentes'=> $asistentes,
             'actividadesSeg'=> $actividadesSeg,
-            'compromisosSeg'=>$compromisosSeg
+            'compromisosSeg'=>$compromisosSeg,
+            'Accion Mejora'=>$acMejora,
+            'idAcciones'=> $idAccMejora,
+            'proyectoMejora'=>$proyectoMejora,
+            'recursos'=> $recursos,
+            'actividadesPM'=> $actividadesPM
         ];
 
         Log::info("📄 Datos enviados a la vista", $datos);
@@ -272,6 +293,35 @@ class ReporteProcesoController extends Controller
             ]);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Error al obtener los seguimientos', 'detalle' => $e->getMessage()], 500);
+        }
+    }
+    public function obtenerPM($idProceso, $anio)
+    {
+        try {
+            
+            $registroAcMejora = Registros::where('idProceso', $idProceso)
+            ->where('año', $anio)
+            ->where('apartado', 'Acciones de Mejora')
+            ->first();
+
+            if (!$registroAcMejora) {
+                return response()->json(['error' => 'No se encontró el registro.'], 404);
+            }
+            // Obtener los seguimientos relacionados
+            $acMejora = ActividadMejora::where('idRegistro', $registroAcMejora->idRegistro)->get();
+            
+            $idAccMejora = $acMejora->pluck('idActividadMejora')->toArray();
+            $proyectoMejora= ProyectoMejora::whereIn('idActividadMejora', $idAccMejora)->first();
+            $recursos=Recurso::where('idProyectoMejora', $proyectoMejora->idProyectoMejora)->get();
+            $actividadesPM=ActividadesPM::where('idProyectoMejora', $proyectoMejora->idProyectoMejora)->get();
+            return response()->json([
+                'acMejora'=> $acMejora,
+                'proyectoMejora' => $proyectoMejora,
+                'recursos' => $recursos,
+                'actividadesPM' => $actividadesPM,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Error al obtener', 'detalle' => $e->getMessage()], 500);
         }
     }
 }
