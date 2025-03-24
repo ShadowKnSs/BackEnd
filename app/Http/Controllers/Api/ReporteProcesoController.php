@@ -34,9 +34,7 @@ use Illuminate\Support\Facades\Log;
 class ReporteProcesoController extends Controller
 {
 
-    public function generarReporte($idProceso, $anio)
-    {
-        Log::info("🔹 Iniciando generación de reporte", ['idProceso' => $idProceso, 'anio' => $anio]);
+    public function generarReporte($idProceso, $anio){
 
         try {
             $proceso = Proceso::with(['entidad', 'usuario'])->findOrFail($idProceso);
@@ -49,7 +47,7 @@ class ReporteProcesoController extends Controller
         
 
         // ✅ Gestión de Riesgos
-        $registroRiesgo = Registros::where('idProceso', $idProceso)
+        $registroRiesgo = Registros::where('idProceso', $idProceso)->first();
         $mapa = MapaProceso::where('idProceso', $idProceso)->first();
         $actividades = ActividadControl::where('idProceso', $idProceso)->get();
         $auditorias = Auditoria::where('idProceso', $idProceso)->get();
@@ -376,9 +374,6 @@ class ReporteProcesoController extends Controller
     }
 }
 
-
-        }
-    }
     
     public function obtenerSeguimiento($idProceso, $anio)
     {

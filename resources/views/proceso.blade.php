@@ -174,48 +174,6 @@
             <p style="color: gray;">No se ha registrado un Diagrama de Flujo para este proceso.</p>
         @endif
     </div>
-
-    <!-- Plan de Control -->
-    <!-- Tabla 1: Actividades del Plan de Control -->
-<div style="margin-top: 40px;">
-    <h2 class="title">Plan de Control - Actividades</h2>
-
-    @if ($planControlActividades && count($planControlActividades) > 0)
-        <table width="100%" border="1" cellspacing="0" cellpadding="6" style="font-size: 11px; border-collapse: collapse;">
-            <thead class="encabezado">
-                <tr>
-                    <th>Actividad</th>
-                    <th>Procedimiento</th>
-                    <th>Características a Verificar</th>
-                    <th>Criterio de Aceptación</th>
-                    <th>Frecuencia</th>
-                    <th>Identificación de la Salida</th>
-                    <th>Registro de la Salida</th>
-                    <th>Tratamiento</th>
-                    <th>Responsable</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach ($planControlActividades as $actividad)
-                    <tr>
-                        <td>{{ $actividad->nombreActividad }}</td>
-                        <td>{{ $actividad->procedimiento }}</td>
-                        <td>{{ $actividad->caracteriticasVerificar }}</td>
-                        <td>{{ $actividad->criterioAceptacion }}</td>
-                        <td>{{ $actividad->frecuencia }}</td>
-                        <td>{{ $actividad->identificacionSalida }}</td>
-                        <td>{{ $actividad->registroSalida }}</td>
-                        <td>{{ $actividad->tratamiento }}</td>
-                        <td>{{ $actividad->responsable }}</td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
-    @else
-        <p style="color: gray;">No hay actividades registradas para el plan de control de este proceso.</p>
-    @endif
-</div>
-
     
     <div style="margin-top: 40px;">
         <h2 class="title">Plan de Control</h2>
@@ -604,43 +562,6 @@
         <p style="color: gray;">No se encontraron indicadores del tipo ActividadControl.</p>
     @endif
 </div>
-
-</div>
-
-            <!-- Evaluación de la Efectividad -->
-            <h3>4. Evaluación de la Efectividad</h3>
-            <table border="1" cellspacing="0" cellpadding="6" style="font-size: 10px;">
-                <thead class="encabezado">
-                    <tr>
-                        <th>Reevaluación Severidad</th>
-                        <th>Reevaluación Ocurrencia</th>
-                        <th>NRP</th>
-                        <th>Efectividad</th>
-                        <th>Análisis de la Efectividad del Tratamiento</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach ($riesgos as $r)
-                        @php
-                            $efectivo = $r->valorNRP >= $r->reevaluacionNRP;
-                            $color = $efectivo ? '#28a745' : '#dc3545'; // verde o rojo
-                        @endphp
-                        <tr>
-                            <td>{{ $r->reevaluacionSeveridad }}</td>
-                            <td>{{ $r->reevaluacionOcurrencia }}</td>
-                            <td>{{ $r->reevaluacionNRP }}</td>
-                            <td style="background-color: {{ $color }}; color: #fff; font-weight: bold;">
-                                {{ $efectivo ? 'Efectivo' : 'No Efectivo' }}
-                            </td>
-                            <td>{{ $r->analisisEfectividad }}</td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        @else
-            <p style="color: gray;">No se encontraron riesgos registrados para este proceso y año.</p>
-        @endif
-    </div>
 
     <!-- Gráficas -->
     <div style="margin-top: 40px; text-align: center;">
