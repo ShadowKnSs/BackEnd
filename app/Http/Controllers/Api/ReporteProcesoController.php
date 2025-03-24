@@ -152,7 +152,7 @@ class ReporteProcesoController extends Controller
             'objetivo' => $proceso->objetivo ?? 'No especificado',
             'alcance' => $proceso->alcance ?? 'No especificado',
             'norma' => $proceso->norma ?? 'No especificado',
-            'anioCertificacion' => $proceso->anioCertificado ?? 'No especificado',
+            'anioCertificacion' => $proceso->anioCertificado ?? 'No especificadsso',
             'estado' => $proceso->estado ?? 'No especificado',
             'documentos' => $mapa->documentos ?? 'No disponible',
             'puestosInvolucrados' => $mapa->puestosInvolucrados ?? 'No disponible',
