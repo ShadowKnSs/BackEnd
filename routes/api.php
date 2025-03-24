@@ -158,7 +158,7 @@ Route::delete('gestionriesgos/{idGesRies}/riesgos/{idRiesgo}', [RiesgoController
 
 
 Route::get('analisisDatos/{idformAnalisisDatos}/analisis', [FormAnalisisDatosController::class, 'show']);
-Route::put('analisisDatos/{idformAnalisisDatos}/necesidad-interpretacion', [FormAnalisisDatosController::class, 'updateNecesidadInterpretacion']);
+Route::put('analisisDatos/{idRegistro}/necesidad-interpretacion', [FormAnalisisDatosController::class, 'updateNecesidadInterpretacion']);
 
 //Ruta para obtener resultados de los resultados de plan de control
 Route::get('/plan-control', [IndicadorResultadoController::class, 'getResultadosPlanControl']);
@@ -203,6 +203,10 @@ Route::get('/mapa-proceso/{idProceso}', [ReporteProcesoController::class, 'obten
 Route::get('/gestion-riesgos/{idProceso}/{anio}', [ReporteProcesoController::class, 'obtenerRiesgosPorProcesoYAnio']);
 //Graficas para el reporte
 Route::post('/graficas/guardar', [GraficaController::class, 'guardar']);
+
+Route::get('/indicadores/actividad-control/{idProceso}/{anio}', [IndicadorConsolidadoController::class, 'actividadControl']);
+Route::get('/indicadores/satisfaccion-cliente/{idProceso}/{anio}', [ReporteProcesoController::class, 'indicadoresSatisfaccionCliente']);
+
 
 Route::get('/vista-reporte', function () {
     return view('proceso');

@@ -5,7 +5,10 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\IndicadorConsolidado;
+use App\Models\ResultadoIndi;
 use App\Models\EvaluaProveedores;
+use App\Models\AnalisisDatos;
+use App\Models\Registros;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -264,7 +267,7 @@ class IndicadorConsolidadoController extends Controller
         try {
             $indicador = IndicadorConsolidado::findOrFail($id);
             Log::info("Iniciando eliminación del indicador", ['idIndicador' => $id]);
-    
+
             // 🔹 Eliminar registros en la tabla correspondiente según el origenIndicador
             switch ($indicador->origenIndicador) {
                 case 'Encuesta':
@@ -289,12 +292,12 @@ class IndicadorConsolidadoController extends Controller
                     Log::info("No hay registro hijo a eliminar para el origen: " . $indicador->origenIndicador);
                     break;
             }
-    
+
             // 🔹 Eliminar el indicador consolidado
             $indicador->delete();
             DB::commit();
             Log::info("Indicador y registros asociados eliminados exitosamente", ['idIndicador' => $id]);
-    
+
             return response()->json([
                 'message' => 'Indicador y sus registros asociados eliminados correctamente.',
                 'indicador' => $indicador
@@ -308,6 +311,54 @@ class IndicadorConsolidadoController extends Controller
             ], 500);
         }
     }
-    
+
+    public function actividadControl($idProceso, $anio)
+    {
+        Log::info("🔍 Buscando idRegistro para proceso {$idProceso} y año {$anio}");
+
+        // 1. Buscar el registro relacionado al análisis de datos
+        $registro = Registros::where('idProceso', $idProceso)
+            ->where('año', $anio)
+            ->where('Apartado', 'Análisis de Datos')
+            ->first();
+
+        if (!$registro) {
+            return response()->json(['error' => 'Registro de análisis de datos no encontrado'], 404);
+        }
+
+        Log::info("✅ idRegistro encontrado: {$registro->idRegistro}");
+
+        // 2. Obtener las interpretaciones y necesidades de la sección Conformidad
+        $analisis = AnalisisDatos::where('idRegistro', $registro->idRegistro)
+            ->where('seccion', 'Conformidad')
+            ->first();
+
+        Log::info("📊 Análisis agrupado por idIndicador:", $analisis->toArray());
+
+
+
+        // 3. Obtener indicadores de tipo ActividadControl
+        $indicadores = IndicadorConsolidado::where('idProceso', $idProceso)
+            ->where('origenIndicador', 'ActividadControl')
+            ->get();
+
+        // 4. Armar respuesta
+        $resultado = $indicadores->map(function ($indicador) use ($analisis) {
+            $resultados = ResultadoIndi::where('idIndicador', $indicador->idIndicador)->first();
+
+            return [
+                'idIndicador' => $indicador->idIndicador,
+                'nombreIndicador' => $indicador->nombreIndicador,
+                'meta' => $indicador->meta,
+                'resultadoSemestral1' => $resultados->resultadoSemestral1 ?? null,
+                'resultadoSemestral2' => $resultados->resultadoSemestral2 ?? null,
+                'interpretacion' => $analisis->interpretacion ?? null,
+            'necesidad' => $analisis->necesidad ?? null,
+            ];
+        });
+
+        return response()->json($resultado);
+    }
+
 }
 
