@@ -159,7 +159,6 @@ Route::delete('gestionriesgos/{idGesRies}/riesgos/{idRiesgo}', [RiesgoController
 
 Route::get('analisisDatos/{idformAnalisisDatos}/analisis', [FormAnalisisDatosController::class, 'show']);
 Route::put('analisisDatos/{idRegistro}/necesidad-interpretacion', [FormAnalisisDatosController::class, 'updateNecesidadInterpretacion']);
-Route::get('analisisDatos/{idRegistro}', [FormAnalisisDatosController::class, 'show']);
 
 //Ruta para obtener resultados de los resultados de plan de control
 Route::get('/plan-control', [IndicadorResultadoController::class, 'getResultadosPlanControl']);
@@ -201,9 +200,6 @@ Route::post('/proyecto-mejora', [ProyectoMejoraController::class, 'store']);
 Route::get('/generar-reporte/{idProceso}/{anio}', [ReporteProcesoController::class, 'generarReporte']);
 Route::get('/datos-reporte/{idProceso}/{anio}', [ReporteProcesoController::class, 'obtenerDatosReporte']);
 Route::get('/mapa-proceso/{idProceso}', [ReporteProcesoController::class, 'obtenerMapaProceso']);
-Route::get('/auditoria/{idProceso}', [ReporteProcesoController::class, 'obtenerAuditoria']);
-Route::get('/seguimiento/{idProceso}/{anio}', [ReporteProcesoController::class, 'obtenerSeguimiento']);
-Route::get('/proyecto-mejora/{idProceso}/{anio}', [ReporteProcesoController::class, 'obtenerPM']);
 Route::get('/gestion-riesgos/{idProceso}/{anio}', [ReporteProcesoController::class, 'obtenerRiesgosPorProcesoYAnio']);
 //Graficas para el reporte
 Route::post('/graficas/guardar', [GraficaController::class, 'guardar']);
