@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\ReporteAuditoria;
+use App\Models\AuditoriaInterna;
 use Illuminate\Http\Request;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class ReporteAuditoriaController extends Controller
 {
@@ -24,5 +26,21 @@ class ReporteAuditoriaController extends Controller
         $reporte = ReporteAuditoria::findOrFail($id);
         $reporte->delete();
         return response()->json(['message' => 'Reporte eliminado correctamente']);
+    }
+
+    public function descargarPDF($id)
+    {
+        $auditoria = AuditoriaInterna::with([
+            'criterios',
+            'equipoAuditor',
+            'personalAuditado',
+            'verificacionRuta',
+            'puntosMejora',
+            'conclusiones',
+            'plazos'
+        ])->findOrFail($id);        
+    
+        $pdf = Pdf::loadView('pdf.reporteAud', compact('auditoria'));
+        return $pdf->download('informe_auditoria_' . $id . '.pdf');
     }
 }
