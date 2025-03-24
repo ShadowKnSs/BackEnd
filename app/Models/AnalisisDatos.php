@@ -16,11 +16,12 @@ class AnalisisDatos extends Model
     protected $fillable = [
         'idRegistro',
         'interpretacion',
-        'necesidad'
+        'necesidad',
+        'seccion'
     ];
 
     public function registro()
     {
-        return $this->belongsTo(Registro::class, 'idRegistro', 'idRegistro');
+        return $this->belongsTo(Registros::class, 'idRegistro', 'idRegistro');
     }
 }

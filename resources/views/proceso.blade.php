@@ -176,6 +176,47 @@
     </div>
 
     <!-- Plan de Control -->
+    <!-- Tabla 1: Actividades del Plan de Control -->
+<div style="margin-top: 40px;">
+    <h2 class="title">Plan de Control - Actividades</h2>
+
+    @if ($planControlActividades && count($planControlActividades) > 0)
+        <table width="100%" border="1" cellspacing="0" cellpadding="6" style="font-size: 11px; border-collapse: collapse;">
+            <thead class="encabezado">
+                <tr>
+                    <th>Actividad</th>
+                    <th>Procedimiento</th>
+                    <th>Características a Verificar</th>
+                    <th>Criterio de Aceptación</th>
+                    <th>Frecuencia</th>
+                    <th>Identificación de la Salida</th>
+                    <th>Registro de la Salida</th>
+                    <th>Tratamiento</th>
+                    <th>Responsable</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($planControlActividades as $actividad)
+                    <tr>
+                        <td>{{ $actividad->nombreActividad }}</td>
+                        <td>{{ $actividad->procedimiento }}</td>
+                        <td>{{ $actividad->caracteriticasVerificar }}</td>
+                        <td>{{ $actividad->criterioAceptacion }}</td>
+                        <td>{{ $actividad->frecuencia }}</td>
+                        <td>{{ $actividad->identificacionSalida }}</td>
+                        <td>{{ $actividad->registroSalida }}</td>
+                        <td>{{ $actividad->tratamiento }}</td>
+                        <td>{{ $actividad->responsable }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    @else
+        <p style="color: gray;">No hay actividades registradas para el plan de control de este proceso.</p>
+    @endif
+</div>
+
+    
     <div style="margin-top: 40px;">
         <h2 class="title">Plan de Control</h2>
         @if ($planControl && count($planControl) > 0)
@@ -465,6 +506,106 @@
                     @endforeach
                 </tbody>
             </table>
+
+        {{-- Tabla 4: Evaluación de la Efectividad --}}
+        <h3 style="margin-top: 20px;">4. Evaluación de la Efectividad</h3>
+        <table width="100%" border="1" cellspacing="0" cellpadding="6" style="font-size: 10px; border-collapse: collapse;">
+            <thead  class="encabezado">
+                <tr>
+                    <th>Reevaluación Severidad</th>
+                    <th>Reevaluación Ocurrencia</th>
+                    <th>NRP</th>
+                    <th style="text-align: center;">Efectividad</th>
+                    <th>Análisis de la Efectividad del Tratamiento</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($riesgos as $r)
+                    @php
+                        $efectivo = $r->valorNRP >= $r->reevaluacionNRP;
+                        $color = $efectivo ? '#28a745' : '#dc3545'; // verde o rojo
+                        
+                    @endphp
+                    <tr>
+                        <td>{{ $r->reevaluacionSeveridad }}</td>
+                        <td>{{ $r->reevaluacionOcurrencia }}</td>
+                        <td>{{ $r->reevaluacionNRP }}</td>
+                        <td style="background-color: {{ $color }}; color: #fff; text-align: center; font-weight: bold;">
+                            
+                        </td>
+                        <td>{{ $r->analisisEfectividad }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    @else
+        <p style="color: gray;">No se encontraron riesgos registrados para este proceso y año.</p>
+    @endif
+</div>
+<!-- Tabla 2: Indicadores de ActividadControl -->
+<div style="margin-top: 40px;">
+    <h2 class="title">Análisis de Datos</h2>
+    <h3> 9.1.3 a) conformidad del prodcuto o servicio</h3>
+
+    @if (!empty($planControlIndicadores) && count($planControlIndicadores) > 0)
+        <table width="100%" border="1" cellspacing="0" cellpadding="6" style="font-size: 11px; border-collapse: collapse;">
+            <thead class="encabezado">
+                <tr>
+                    <th>No</th>
+                    <th>Descripción de Indicador</th>
+                    <th>Meta</th>
+                    <th>Ene-Jun</th>
+                    <th>Jul-Dic</th>
+                </tr>
+            </thead>
+            <tbody>
+                @php
+                    $totalMeta = 0;
+                    $totalSem1 = 0;
+                    $totalSem2 = 0;
+                    $count = count($planControlIndicadores);
+                @endphp
+
+                @foreach ($planControlIndicadores as $i => $indicador)
+                    @php
+                        $totalMeta += $indicador->meta ?? 0;
+                        $totalSem1 += $indicador->resultadoSemestral1 ?? 0;
+                        $totalSem2 += $indicador->resultadoSemestral2 ?? 0;
+                    @endphp
+                    <tr>
+                        <td>{{ $i + 1 }}</td>
+                        <td>{{ $indicador->nombreIndicador }}</td>
+                        <td align="center">{{ $indicador->meta }}</td>
+                        <td align="center">{{ $indicador->resultadoSemestral1 }}</td>
+                        <td align="center">{{ $indicador->resultadoSemestral2 }}</td>
+                    </tr>
+                @endforeach
+
+                {{-- Fila de Promedios --}}
+                <tr style="background-color: #f0f0f0; font-weight: bold;">
+                    <td colspan="2">Promedio</td>
+                    <td align="center">{{ number_format($totalMeta / $count, 2) }}</td>
+                    <td align="center">{{ number_format($totalSem1 / $count, 2) }}</td>
+                    <td align="center">{{ number_format($totalSem2 / $count, 2) }}</td>
+                </tr>
+
+                {{-- Fila de interpretación y necesidad --}}
+                <tr>
+                    <td colspan="2"><strong>Interpretación</strong></td>
+                    <td colspan="3">{{ $interpretacionPlanControl ?? 'No disponible' }}</td>
+                </tr>
+                <tr>
+                    <td colspan="2"><strong>Necesidad de mejora</strong></td>
+                    <td colspan="3">{{ $necesidadPlanControl ?? 'No disponible' }}</td>
+                </tr>
+            </tbody>
+        </table>
+    @else
+        <p style="color: gray;">No se encontraron indicadores del tipo ActividadControl.</p>
+    @endif
+</div>
+
+</div>
 
             <!-- Evaluación de la Efectividad -->
             <h3>4. Evaluación de la Efectividad</h3>
