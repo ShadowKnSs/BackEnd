@@ -26,7 +26,6 @@ use App\Models\Recurso;
 use App\Models\ActividadesPM;
 
 
-
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Log;
 
