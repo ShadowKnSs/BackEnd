@@ -21,6 +21,8 @@ use App\Http\Controllers\Api\ControlCambioController;
 use App\Http\Controllers\Api\MapaProcesoController;
 use App\Http\Controllers\Api\IndMapaProcesoController;
 use App\Http\Controllers\Api\ActividadControlController;
+use App\Http\Controllers\Api\AuditoriaInternaController;
+use App\Http\Controllers\Api\ReporteAuditoriaController;
 use App\Http\Controllers\Api\GestionRiesgoController;
 use App\Http\Controllers\Api\RiesgoController;
 use App\Http\Controllers\Api\FormAnalisisDatosController;
@@ -122,6 +124,12 @@ Route::apiResource('controlcambios', ControlCambioController::class);
 Route::apiResource('mapaproceso', MapaProcesoController::class);
 Route::apiResource('indmapaproceso', IndMapaProcesoController::class);
 Route::apiResource('actividadcontrol', ActividadControlController::class);
+
+//Para Auditoria Interna
+Route::apiResource('auditorias', AuditoriaInternaController::class);
+Route::apiResource('reportesauditoria', ReporteAuditoriaController::class)->only([ 'index', 'store', 'destroy' ]);
+Route::get('/reporte-pdf/{id}', [ReporteAuditoriaController::class, 'descargarPDF']);
+
 Route::post('/mapa-proceso/{idProceso}/subir-diagrama', [MapaProcesoController::class, 'subirDiagramaFlujo']);
 
 
