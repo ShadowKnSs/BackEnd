@@ -33,7 +33,8 @@ use Illuminate\Support\Facades\Log;
 class ReporteProcesoController extends Controller
 {
 
-    public function generarReporte($idProceso, $anio){
+    public function generarReporte($idProceso, $anio)
+    {
 
         try {
             $proceso = Proceso::with(['entidad', 'usuario'])->findOrFail($idProceso);
@@ -43,7 +44,7 @@ class ReporteProcesoController extends Controller
             Log::error("❌ Error cargando información del proceso", ['error' => $e->getMessage()]);
             return response()->json(['error' => 'Error al obtener información del proceso'], 500);
         }
-        
+
 
         // ✅ Gestión de Riesgos
         $registroRiesgo = Registros::where('idProceso', $idProceso)->first();
@@ -100,7 +101,7 @@ class ReporteProcesoController extends Controller
             return response()->json(['error' => 'No se encontró el registro.'], 404);
         }
 
-        
+
 
         $gestion = GestionRiesgos::where('idRegistro', $registro->idRegistro)->first();
         if (!$gestion) {
@@ -115,7 +116,7 @@ class ReporteProcesoController extends Controller
         $graficaEvaluacion = public_path("storage/graficas/evaluacionProveedores_{$idProceso}_{$anio}.png");
 
 
-         /* Segumientos */
+        /* Segumientos */
         $registroSeg = Registros::where('idProceso', $idProceso)
             ->where('año', $anio)
             ->where('apartado', 'Seguimiento')
@@ -124,12 +125,12 @@ class ReporteProcesoController extends Controller
         if (!$registroSeg) {
             return response()->json(['error' => 'No se encontró el registro.'], 404);
         }
-       
+
         $seguimientos = SeguimientoMinuta::where('idRegistro', $registroSeg->idRegistro)->get();
         $idSeguimientos = $seguimientos->pluck('idSeguimiento')->toArray();
         $asistentes = Asistente::whereIn('idSeguimiento', $idSeguimientos)->get();
-        $actividadesSeg= ActividadMinuta::whereIn('idSeguimiento', $idSeguimientos)->get();
-        $compromisosSeg= CompromisoMinuta::whereIn('idSeguimiento', $idSeguimientos)->get();
+        $actividadesSeg = ActividadMinuta::whereIn('idSeguimiento', $idSeguimientos)->get();
+        $compromisosSeg = CompromisoMinuta::whereIn('idSeguimiento', $idSeguimientos)->get();
 
         $registroAcMejora = Registros::where('idProceso', $idProceso)
             ->where('año', $anio)
@@ -141,9 +142,15 @@ class ReporteProcesoController extends Controller
         }
         $acMejora = ActividadMejora::where('idRegistro', $registroAcMejora->idRegistro)->get();
         $idAccMejora = $acMejora->pluck('idActividadMejora')->toArray();
-        $proyectoMejora= ProyectoMejora::whereIn('idActividadMejora', $idAccMejora)->first();
-        $recursos=Recurso::where('idProyectoMejora', $proyectoMejora->idProyectoMejora)->get();
-        $actividadesPM=ActividadesPM::where('idProyectoMejora', $proyectoMejora->idProyectoMejora)->get();
+        $proyectoMejora = ProyectoMejora::whereIn('idActividadMejora', $idAccMejora)->first();
+        $recursos = Recurso::where('idProyectoMejora', $proyectoMejora->idProyectoMejora)->get();
+        $actividadesPM = ActividadesPM::where('idProyectoMejora', $proyectoMejora->idProyectoMejora)->get();
+
+        //Segunda tabla de Analisis (Satisfacción)
+        // Obtener indicadores de satisfacción para mostrar en tabla Blade
+        $indicadoresJson = $this->indicadoresSatisfaccionCliente($idProceso, $anio)->getContent();
+        $indicadoresSatisfaccion = json_decode($indicadoresJson, true);
+
         $datos = [
             'nombreProceso' => $proceso->nombreProceso,
             'entidad' => $proceso->entidad->nombreEntidad ?? 'Entidad no disponible',
@@ -178,16 +185,18 @@ class ReporteProcesoController extends Controller
             'graficaRiesgos' => $graficaRiesgos,
             'graficaEvaluacion' => $graficaEvaluacion,
             'registro' => $registro->idRegistro,
-            'seguimientos'=> $seguimientos,
-            'idseguimientos'=> $idSeguimientos,
-            'asistentes'=> $asistentes,
-            'actividadesSeg'=> $actividadesSeg,
-            'compromisosSeg'=>$compromisosSeg,
-            'Accion Mejora'=>$acMejora,
-            'idAcciones'=> $idAccMejora,
-            'proyectoMejora'=>$proyectoMejora,
-            'recursos'=> $recursos,
-            'actividadesPM'=> $actividadesPM
+            'seguimientos' => $seguimientos,
+            'idseguimientos' => $idSeguimientos,
+            'asistentes' => $asistentes,
+            'actividadesSeg' => $actividadesSeg,
+            'compromisosSeg' => $compromisosSeg,
+            'Accion Mejora' => $acMejora,
+            'idAcciones' => $idAccMejora,
+            'proyectoMejora' => $proyectoMejora,
+            'recursos' => $recursos,
+            'actividadesPM' => $actividadesPM,
+            'indicadoresSatisfaccion' => $indicadoresSatisfaccion,
+
         ];
 
         try {
@@ -251,19 +260,19 @@ class ReporteProcesoController extends Controller
     }
 
     public function obtenerAuditoria($idProceso)
-{
-    try {
-        $auditorias = Auditoria::where('idProceso', $idProceso)->get();
+    {
+        try {
+            $auditorias = Auditoria::where('idProceso', $idProceso)->get();
 
-        if ($auditorias->isEmpty()) {
-            return response()->json(['error' => 'No se encontraron auditorías'], 404);
+            if ($auditorias->isEmpty()) {
+                return response()->json(['error' => 'No se encontraron auditorías'], 404);
+            }
+
+            return response()->json($auditorias);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Error al obtener las auditorías'], 500);
         }
-
-        return response()->json($auditorias);
-    } catch (\Exception $e) {
-        return response()->json(['error' => 'Error al obtener las auditorías'], 500);
     }
-}
 
     public function obtenerRiesgosPorProcesoYAnio($idProceso, $anio)
     {
@@ -294,107 +303,107 @@ class ReporteProcesoController extends Controller
 
 
     public function indicadoresSatisfaccionCliente($idProceso, $anio)
-{
-    try {
-        // 🔍 Obtener idRegistro del apartado "AnálisisDatos"
-        $registro = Registros::where('idProceso', $idProceso)
-            ->where('año', $anio)
-            ->where('apartado', 'Análisis de Datos')
-            ->first();
+    {
+        try {
+            // 🔍 Obtener idRegistro del apartado "AnálisisDatos"
+            $registro = Registros::where('idProceso', $idProceso)
+                ->where('año', $anio)
+                ->where('apartado', 'Análisis de Datos')
+                ->first();
 
-        if (!$registro) {
-            return response()->json(['error' => 'Registro no encontrado'], 404);
-        }
-
-        // 🔎 Buscar interpretación y necesidad para la sección "Satisfacción"
-        $analisis = AnalisisDatos::where('idRegistro', $registro->idRegistro)
-            ->where('seccion', 'Satisfacción')
-            ->first();
-
-        $interpretacion = $analisis->interpretacion ?? null;
-        $necesidad = $analisis->necesidad ?? null;
-
-        // 🔄 Buscar indicadores del tipo Encuesta y Retroalimentación
-        $indicadores = IndicadorConsolidado::where('idProceso', $idProceso)
-            ->whereIn('origenIndicador', ['Encuesta', 'Retroalimentacion'])
-            ->get();
-
-        $resultado = [];
-
-        foreach ($indicadores as $indicador) {
-            $base = [
-                'idIndicador' => $indicador->idIndicador,
-                'nombreIndicador' => $indicador->nombreIndicador,
-                'origen' => $indicador->origenIndicador,
-                'meta' => $indicador->meta,
-                'interpretacion' => $interpretacion,
-                'necesidad' => $necesidad,
-            ];
-
-            if ($indicador->origenIndicador === 'Encuesta') {
-                $encuesta = \App\Models\Encuesta::where('idIndicador', $indicador->idIndicador)->first();
-
-                if ($encuesta) {
-                    $total = $encuesta->noEncuestas ?? 0;
-                    $excelenteBueno = ($encuesta->bueno + $encuesta->excelente);
-                    $porcentaje = $total > 0 ? round(($excelenteBueno * 100) / $total, 2) : 0;
-
-                    $base += [
-                        'noEncuestas' => $total,
-                        'malo' => $encuesta->malo,
-                        'regular' => $encuesta->regular,
-                        'bueno' => $encuesta->bueno,
-                        'excelente' => $encuesta->excelente,
-                        'porcentajeEB' => $porcentaje,
-                    ];
-                }
-            } elseif ($indicador->origenIndicador === 'Retroalimentacion') {
-                $retro = \App\Models\Retroalimentacion::where('idIndicador', $indicador->idIndicador)->first();
-
-                if ($retro) {
-                    $total = $retro->cantidadFelicitacion + $retro->cantidadSugerencia + $retro->cantidadQueja;
-
-                    $base += [
-                        'felicitaciones' => $retro->cantidadFelicitacion,
-                        'sugerencias' => $retro->cantidadSugerencia,
-                        'quejas' => $retro->cantidadQueja,
-                        'total' => $total
-                    ];
-                }
+            if (!$registro) {
+                return response()->json(['error' => 'Registro no encontrado'], 404);
             }
 
-            $resultado[] = $base;
+            // 🔎 Buscar interpretación y necesidad para la sección "Satisfacción"
+            $analisis = AnalisisDatos::where('idRegistro', $registro->idRegistro)
+                ->where('seccion', 'Satisfacción')
+                ->first();
+
+            $interpretacion = $analisis->interpretacion ?? null;
+            $necesidad = $analisis->necesidad ?? null;
+
+            // 🔄 Buscar indicadores del tipo Encuesta y Retroalimentación
+            $indicadores = IndicadorConsolidado::where('idProceso', $idProceso)
+                ->whereIn('origenIndicador', ['Encuesta', 'Retroalimentacion'])
+                ->get();
+
+            $resultado = [];
+
+            foreach ($indicadores as $indicador) {
+                $base = [
+                    'idIndicador' => $indicador->idIndicador,
+                    'nombreIndicador' => $indicador->nombreIndicador,
+                    'origen' => $indicador->origenIndicador,
+                    'meta' => $indicador->meta,
+                    'interpretacion' => $interpretacion,
+                    'necesidad' => $necesidad,
+                ];
+
+                if ($indicador->origenIndicador === 'Encuesta') {
+                    $encuesta = \App\Models\Encuesta::where('idIndicador', $indicador->idIndicador)->first();
+
+                    if ($encuesta) {
+                        $total = $encuesta->noEncuestas ?? 0;
+                        $excelenteBueno = ($encuesta->bueno + $encuesta->excelente);
+                        $porcentaje = $total > 0 ? round(($excelenteBueno * 100) / $total, 2) : 0;
+
+                        $base += [
+                            'noEncuestas' => $total,
+                            'malo' => $encuesta->malo,
+                            'regular' => $encuesta->regular,
+                            'bueno' => $encuesta->bueno,
+                            'excelente' => $encuesta->excelente,
+                            'porcentajeEB' => $porcentaje,
+                        ];
+                    }
+                } elseif ($indicador->origenIndicador === 'Retroalimentacion') {
+                    $retro = \App\Models\Retroalimentacion::where('idIndicador', $indicador->idIndicador)->first();
+
+                    if ($retro) {
+                        $total = $retro->cantidadFelicitacion + $retro->cantidadSugerencia + $retro->cantidadQueja;
+
+                        $base += [
+                            'felicitaciones' => $retro->cantidadFelicitacion,
+                            'sugerencias' => $retro->cantidadSugerencia,
+                            'quejas' => $retro->cantidadQueja,
+                            'total' => $total
+                        ];
+                    }
+                }
+
+                $resultado[] = $base;
+            }
+
+            return response()->json($resultado, 200);
+        } catch (\Exception $e) {
+            \Log::error("❌ Error en indicadoresSatisfaccionCliente:", ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Error interno'], 500);
         }
-
-        return response()->json($resultado, 200);
-    } catch (\Exception $e) {
-        \Log::error("❌ Error en indicadoresSatisfaccionCliente:", ['error' => $e->getMessage()]);
-        return response()->json(['error' => 'Error interno'], 500);
     }
-}
 
-    
+
     public function obtenerSeguimiento($idProceso, $anio)
     {
         try {
-            
+
             $registroSeg = Registros::where('idProceso', $idProceso)
-            ->where('año', $anio)
-            ->where('apartado', 'Seguimiento')
-            ->first();
+                ->where('año', $anio)
+                ->where('apartado', 'Seguimiento')
+                ->first();
 
             if (!$registroSeg) {
                 return response()->json(['error' => 'No se encontró el registro.'], 404);
             }
             // Obtener los seguimientos relacionados
             $seguimientos = SeguimientoMinuta::where('idRegistro', $registroSeg->idRegistro)->get();
-            
+
             if ($seguimientos->isEmpty()) {
                 return response()->json(['error' => 'No se encontraron seguimientos para este proceso.'], 404);
             }
 
             $idSeguimientos = $seguimientos->pluck('idSeguimiento')->toArray();
-            
+
             // Obtener los asistentes, actividades y compromisos relacionados con los seguimientos
             $asistentes = Asistente::whereIn('idSeguimiento', $idSeguimientos)->get();
             $actividadesSeg = ActividadMinuta::whereIn('idSeguimiento', $idSeguimientos)->get();
@@ -413,24 +422,24 @@ class ReporteProcesoController extends Controller
     public function obtenerPM($idProceso, $anio)
     {
         try {
-            
+
             $registroAcMejora = Registros::where('idProceso', $idProceso)
-            ->where('año', $anio)
-            ->where('apartado', 'Acciones de Mejora')
-            ->first();
+                ->where('año', $anio)
+                ->where('apartado', 'Acciones de Mejora')
+                ->first();
 
             if (!$registroAcMejora) {
                 return response()->json(['error' => 'No se encontró el registro.'], 404);
             }
             // Obtener los seguimientos relacionados
             $acMejora = ActividadMejora::where('idRegistro', $registroAcMejora->idRegistro)->get();
-            
+
             $idAccMejora = $acMejora->pluck('idActividadMejora')->toArray();
-            $proyectoMejora= ProyectoMejora::whereIn('idActividadMejora', $idAccMejora)->first();
-            $recursos=Recurso::where('idProyectoMejora', $proyectoMejora->idProyectoMejora)->get();
-            $actividadesPM=ActividadesPM::where('idProyectoMejora', $proyectoMejora->idProyectoMejora)->get();
+            $proyectoMejora = ProyectoMejora::whereIn('idActividadMejora', $idAccMejora)->first();
+            $recursos = Recurso::where('idProyectoMejora', $proyectoMejora->idProyectoMejora)->get();
+            $actividadesPM = ActividadesPM::where('idProyectoMejora', $proyectoMejora->idProyectoMejora)->get();
             return response()->json([
-                'acMejora'=> $acMejora,
+                'acMejora' => $acMejora,
                 'proyectoMejora' => $proyectoMejora,
                 'recursos' => $recursos,
                 'actividadesPM' => $actividadesPM,

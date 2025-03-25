@@ -573,6 +573,92 @@
         @endif
     </div>
 
+    <div style="margin-top: 40px;">
+    <h2 class="title">9.1.3 b) Satisfacción del Cliente</h2>
+    @php
+        $encuestas = collect($indicadoresSatisfaccion)->where('origen', 'Encuesta');
+        $retroalimentaciones = collect($indicadoresSatisfaccion)->where('origen', 'Retroalimentacion');
+        $noEncuestas = $encuestas->first()['noEncuestas'] ?? 0;
+        $totalFelicitaciones = $retroalimentaciones->sum('felicitaciones');
+        $totalSugerencias = $retroalimentaciones->sum('sugerencias');
+        $totalQuejas = $retroalimentaciones->sum('quejas');
+        $totalRetro = $totalFelicitaciones + $totalSugerencias + $totalQuejas;
+        $sumRowTotals = $retroalimentaciones->sum('total');
+        $interpretacionGeneral = $encuestas->first()['interpretacion'] ?? 'No hay interpretación';
+        $necesidadGeneral = $encuestas->first()['necesidad'] ?? 'No hay necesidad';
+    @endphp
+
+    <table border="1" cellspacing="0" cellpadding="6" style="font-size: 11px; border-collapse: collapse; width: 100%;">
+        <thead class="encabezado">
+            <tr><th colspan="8" class="text-center">Encuesta de Satisfacción</th></tr>
+            <tr>
+                <th>No</th>
+                <th>Descripción del Indicador</th>
+                <th>No. Encuestas</th>
+                <th>E+B (%)</th>
+                <th>R (%)</th>
+                <th>M (%)</th>
+                <th>Meta (%)</th>
+                <th>Anual (%)</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($encuestas as $idx => $item)
+                <tr>
+                    <td>{{ $idx + 1 }}</td>
+                    <td>{{ $item['nombreIndicador'] }}</td>
+                    <td>{{ $item['noEncuestas'] }}</td>
+                    <td>{{ $item['porcentajeEB'] }}%</td>
+                    <td>{{ $noEncuestas > 0 ? round($item['regular'] * 100 / $noEncuestas, 2) : '-' }}%</td>
+                    <td>{{ $noEncuestas > 0 ? round($item['malo'] * 100 / $noEncuestas, 2) : '-' }}%</td>
+                    <td>{{ $item['meta'] ?? '-' }}%</td>
+                    <td>{{ $item['porcentajeEB'] }}%</td>
+                </tr>
+            @endforeach
+            <tr class="encabezado">
+                <th colspan="8">Retroalimentación</th>
+            </tr>
+            <tr>
+                <th>No</th>
+                <th>Descripción del Indicador</th>
+                <th>F</th>
+                <th>S</th>
+                <th>Q</th>
+                <th>Total</th>
+                <th colspan="2"></th>
+            </tr>
+            @foreach($retroalimentaciones as $idx => $item)
+                <tr>
+                    <td>{{ $idx + 1 }}</td>
+                    <td>{{ $item['nombreIndicador'] }}</td>
+                    <td>{{ $item['felicitaciones'] }}</td>
+                    <td>{{ $item['sugerencias'] }}</td>
+                    <td>{{ $item['quejas'] }}</td>
+                    <td>{{ $item['total'] }}</td>
+                    <td colspan="2"></td>
+                </tr>
+            @endforeach
+            <tr style="font-weight: bold; background-color: #f0f0f0">
+                <td colspan="2">Total Retroalimentación</td>
+                <td>{{ $totalFelicitaciones }}</td>
+                <td>{{ $totalSugerencias }}</td>
+                <td>{{ $totalQuejas }}</td>
+                <td>{{ $totalRetro }}</td>
+                <td colspan="2"></td>
+            </tr>
+            <tr>
+                <td colspan="2">Suma Totales Retroalimentación</td>
+                <td>{{ $sumRowTotals }}</td>
+                <td colspan="5"></td>
+            </tr>
+            <tr>
+                <td colspan="4"><strong>Interpretación:</strong> {{ $interpretacionGeneral }}</td>
+                <td colspan="4"><strong>Necesidad:</strong> {{ $necesidadGeneral }}</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
     <div style="margin-top: 40px; text-align: center;">
         <h3 style="font-size: 18px; font-weight: bold; margin-bottom: 15px;">Gráfica de Encuesta</h3>
         @if (file_exists($graficaEncuesta))
