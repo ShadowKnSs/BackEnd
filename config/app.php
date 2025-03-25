@@ -124,4 +124,12 @@ return [
     ],
 
    
+   /* 'providers' => [
+        Barryvdh\DomPDF\ServiceProvider::class,
+        Illuminate\Filesystem\FilesystemServiceProvider::class,
+    ],*/
+    /*'aliases' => [
+    'PDF' => Barryvdh\DomPDF\Facade::class,
+],*/
+
 ];

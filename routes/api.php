@@ -1,5 +1,6 @@
 <?php
 use Illuminate\Support\Facades\Route;
+use Illuminate\Http\Request;
 use App\Http\Controllers\Api\MacroProcesoController;
 use App\Http\Controllers\Api\EntidadDependenciaController;
 use App\Http\Controllers\Api\ProcessController;
@@ -44,6 +45,8 @@ use App\Http\Controllers\Api\BuscadorSemController;
 use App\Http\Controllers\Api\FormatosController;
 
 
+use App\Http\Controllers\Api\ReporteSemestralController;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 
 Route::get('macroprocesos', [MacroProcesoController::class, 'index']);
@@ -194,6 +197,48 @@ Route::post('/proyecto-mejora', [ProyectoMejoraController::class, 'store']);
 
 
 
+/*Route::post('/generar-pdf', function (Request $request) {
+    $data = $request->all(); // Ahora sí obtiene los datos correctamente
+
+    $pdf = Pdf::loadView('pdf.reporte', compact('data'));
+// Genera el PDF con la vista
+    return $pdf->download('reporte-semestral.pdf'); // Descarga el PDF
+});*/
+
+/*Route::post('/generar-pdf', function (Request $request) {
+    $conclusion = $request->input('conclusion');
+    $imageBase64 = $request->input('image'); // Recibe la imagen como base64
+
+    return Pdf::loadView('pdf.reporte', compact('conclusion', 'imageBase64'))
+        ->download('reporte-semestral.pdf');
+});*/
+
+/*Route::post('/generar-pdf', function (Request $request) {
+    dd($request->all()); // Muestra lo que recibe el backend y detiene la ejecución
+});*/
+/*Route::post('/generar-pdf', function (Request $request) {
+    try {
+        dd($request->all()); // Verifica qué está llegando desde el front
+    } catch (\Exception $e) {
+        return response()->json(['error' => $e->getMessage()], 500);
+    }
+});*/
+Route::post('/generar-pdf', function (Request $request) {
+    try {
+        Log::info('Solicitud recibida:', $request->all());
+
+        $data = $request->all();
+        Log::info('Datos procesados:', $data);
+
+        $pdf = Pdf::loadView('pdf.reporte', compact('data'));
+        Log::info('PDF generado correctamente');
+
+        return $pdf->download('reporte-semestral.pdf');
+    } catch (\Exception $e) {
+        Log::error('Error al generar el PDF: ' . $e->getMessage());
+        return response()->json(['error' => $e->getMessage()], 500);
+    }
+});
 
 //Reporte
 
