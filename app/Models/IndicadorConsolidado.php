@@ -10,12 +10,12 @@ class IndicadorConsolidado extends Model
     use HasFactory;
 
     protected $table = 'IndicadoresConsolidados';
-    protected $primaryKey = 'idIndicadorConsolidado';
+    protected $primaryKey = 'idIndicador';
 
     public $timestamps = false;
     protected $fillable = [
+        'idRegistro',
         'nombreIndicador',
-        'descripcionIndicador',
         'origenIndicador',
         'periodicidad'
     ];
@@ -23,6 +23,6 @@ class IndicadorConsolidado extends Model
     // Relación: Un indicador puede tener un análisis de datos (o varios, según tu lógica)
     public function analisisDatos()
     {
-        return $this->hasOne(AnalisisDatos::class, 'idIndicadorConsolidado', 'idIndicadorConsolidado');
+        return $this->hasOne(AnalisisDatos::class, 'idIndicadorConsolidado', 'idIndicador');
     }
 }

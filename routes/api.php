@@ -1,4 +1,10 @@
 <?php
+use App\Http\Controllers\Api\ActMejoraSemController;
+use App\Http\Controllers\Api\AuditoriaSemController;
+use App\Http\Controllers\Api\dataSemController;
+use App\Http\Controllers\Api\IndicadorSemController;
+use App\Http\Controllers\Api\SaveReportSemController;
+use App\Http\Controllers\Api\SeguimientoSemController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Api\MacroProcesoController;
@@ -35,8 +41,6 @@ use App\Http\Controllers\Api\PlanTrabajoController;
 use App\Http\Controllers\Api\FuentePtController;
 use App\Http\Controllers\Api\ProyectoMejoraController;
 use App\Http\Controllers\Api\ReporteSemestralController;
-use Barryvdh\DomPDF\Facade\Pdf;
-
 
 Route::get('macroprocesos', [MacroProcesoController::class, 'index']);
 Route::get('entidades', [EntidadDependenciaController::class, 'index']);
@@ -157,48 +161,11 @@ Route::apiResource('fuentept', FuentePtController::class);
 Route::get('/plantrabajo/registro/{idRegistro}', [PlanTrabajoController::class, 'getByRegistro']);
 Route::post('/proyecto-mejora', [ProyectoMejoraController::class, 'store']);
 
-
-
-/*Route::post('/generar-pdf', function (Request $request) {
-    $data = $request->all(); // Ahora sí obtiene los datos correctamente
-
-    $pdf = Pdf::loadView('pdf.reporte', compact('data'));
-// Genera el PDF con la vista
-    return $pdf->download('reporte-semestral.pdf'); // Descarga el PDF
-});*/
-
-/*Route::post('/generar-pdf', function (Request $request) {
-    $conclusion = $request->input('conclusion');
-    $imageBase64 = $request->input('image'); // Recibe la imagen como base64
-
-    return Pdf::loadView('pdf.reporte', compact('conclusion', 'imageBase64'))
-        ->download('reporte-semestral.pdf');
-});*/
-
-/*Route::post('/generar-pdf', function (Request $request) {
-    dd($request->all()); // Muestra lo que recibe el backend y detiene la ejecución
-});*/
-/*Route::post('/generar-pdf', function (Request $request) {
-    try {
-        dd($request->all()); // Verifica qué está llegando desde el front
-    } catch (\Exception $e) {
-        return response()->json(['error' => $e->getMessage()], 500);
-    }
-});*/
-Route::post('/generar-pdf', function (Request $request) {
-    try {
-        Log::info('Solicitud recibida:', $request->all());
-
-        $data = $request->all();
-        Log::info('Datos procesados:', $data);
-
-        $pdf = Pdf::loadView('pdf.reporte', compact('data'));
-        Log::info('PDF generado correctamente');
-
-        return $pdf->download('reporte-semestral.pdf');
-    } catch (\Exception $e) {
-        Log::error('Error al generar el PDF: ' . $e->getMessage());
-        return response()->json(['error' => $e->getMessage()], 500);
-    }
-});
-
+Route::post('/generar-pdf', [ReporteSemestralController::class, 'generarPDF']); // generar archivo pdf reporte semestral
+Route::get('/get-riesgos-sem', [dataSemController::class, 'obtenerData']); //obtener lista data semestral
+Route::get('/get-seguimiento-sem', [SeguimientoSemController::class, 'obtenerDatosSeguimiento']); //obtener la lista seguimiento semestral
+Route::get('/get-auditorias-sem', [AuditoriaSemController::class, 'obtenerDatosAuditorias']); //obtener la lista auditorias semestra
+Route::get('/get-acciones-sem', [ActMejoraSemController::class, 'obtenerDatosAccionesMejora']);//obtener la lista de Act mejora semestral
+Route::get('/get-indicador-sem', [IndicadorSemController::class, 'obtenerDatosIndicadores']);//obtener l alista indicadores semestral
+Route::post('/reporte-semestral', [SaveReportSemController::class, 'store']); //registrar la generacion de un reporte semestral
+Route::get('/reportes-semestrales', [SaveReportSemController::class, 'obtenerReportesSemestrales']); //obtener todos los reportes semestrales generados
