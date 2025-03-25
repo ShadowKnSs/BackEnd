@@ -1,5 +1,12 @@
 <?php
+use App\Http\Controllers\Api\ActMejoraSemController;
+use App\Http\Controllers\Api\AuditoriaSemController;
+use App\Http\Controllers\Api\dataSemController;
+use App\Http\Controllers\Api\IndicadorSemController;
+use App\Http\Controllers\Api\SaveReportSemController;
+use App\Http\Controllers\Api\SeguimientoSemController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Http\Request;
 use App\Http\Controllers\Api\MacroProcesoController;
 use App\Http\Controllers\Api\EntidadDependenciaController;
 use App\Http\Controllers\Api\ProcessController;
@@ -41,6 +48,7 @@ use App\Http\Controllers\Api\GraficaController;
 
 
 
+use App\Http\Controllers\Api\ReporteSemestralController;
 
 Route::get('macroprocesos', [MacroProcesoController::class, 'index']);
 Route::get('entidades', [EntidadDependenciaController::class, 'index']);
@@ -226,3 +234,11 @@ Route::get('/indicadores/evaluacion-proveedores/{idProceso}/{anio}', [ReportePro
 Route::get('/vista-reporte', function () {
     return view('proceso');
 });
+Route::post('/generar-pdf', [ReporteSemestralController::class, 'generarPDF']); // generar archivo pdf reporte semestral
+Route::get('/get-riesgos-sem', [dataSemController::class, 'obtenerData']); //obtener lista data semestral
+Route::get('/get-seguimiento-sem', [SeguimientoSemController::class, 'obtenerDatosSeguimiento']); //obtener la lista seguimiento semestral
+Route::get('/get-auditorias-sem', [AuditoriaSemController::class, 'obtenerDatosAuditorias']); //obtener la lista auditorias semestra
+Route::get('/get-acciones-sem', [ActMejoraSemController::class, 'obtenerDatosAccionesMejora']);//obtener la lista de Act mejora semestral
+Route::get('/get-indicador-sem', [IndicadorSemController::class, 'obtenerDatosIndicadores']);//obtener l alista indicadores semestral
+Route::post('/reporte-semestral', [SaveReportSemController::class, 'store']); //registrar la generacion de un reporte semestral
+Route::get('/reportes-semestrales', [SaveReportSemController::class, 'obtenerReportesSemestrales']); //obtener todos los reportes semestrales generados
