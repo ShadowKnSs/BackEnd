@@ -9,6 +9,7 @@ use App\Models\Encuesta;
 use App\Models\Retroalimentacion;
 use App\Models\EvaluaProveedores;
 use App\Models\ResultadoIndi;
+use App\Models\Registros;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 
@@ -204,20 +205,33 @@ class IndicadorResultadoController extends Controller
         }
     }
 
-    public function getResutadosRiesgos()
+    public function getResultadosRiesgos($idRegistro)
     {
         try {
-            $resultados = DB::table('IndicadoresConsolidados as ic')
-                ->join('ResultadoIndi as ri', 'ic.idIndicador', '=', 'ri.idIndicador')
-                ->where('ic.origenIndicador', '=', 'GestionRiesgo')
-                ->select('ic.nombreIndicador', 'ri.resultadoAnual', 'ri.resultadoSemestral1', 'ri.resultadoSemestral2')
+            // 1. Obtener el idProceso desde la tabla Registros
+            $registro = Registros::findOrFail($idRegistro);
+            $idProceso = $registro->idProceso;
+    
+            // 2. Buscar los indicadores de origen 'GestionRiesgo' del proceso
+            $indicadores = IndicadorConsolidado::where('idProceso', $idProceso)
+                ->where('origenIndicador', 'GestionRiesgo')
                 ->get();
-
-            return response()->json([$resultados], 200);
+    
+            // 3. Mapear cada indicador con su resultadoAnual desde ResultadoIndi
+            $resultados = $indicadores->map(function ($indicador) {
+                $resultado = ResultadoIndi::where('idIndicador', $indicador->idIndicador)->first();
+    
+                return [
+                    'nombreIndicador' => $indicador->nombreIndicador,
+                    'resultadoAnual' => $resultado->resultadoAnual ?? null
+                ];
+            });
+    
+            return response()->json($resultados, 200);
         } catch (\Exception $e) {
             Log::error("Error al obtener los resultados de Gestión de Riesgos", ['error' => $e->getMessage()]);
             return response()->json(['message' => 'Error al obtener los resultados de Gestión de Riesgos'], 500);
         }
     }
-
+    
 }

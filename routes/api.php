@@ -164,7 +164,7 @@ Route::get('analisisDatos/{idRegistro}', [FormAnalisisDatosController::class, 's
 //Ruta para obtener resultados de los resultados de plan de control
 Route::get('/plan-control', [IndicadorResultadoController::class, 'getResultadosPlanControl']);
 Route::get('/mapa-proceso', [IndicadorResultadoController::class, 'getResultadosIndMapaProceso']);
-Route::get('/gestion-riesgos', [IndicadorResultadoController::class, 'getResutadosRiesgos']);
+Route::get('/gestion-riesgos/{idRegistro}', [IndicadorResultadoController::class, 'getResultadosRiesgos']);
 
 //Ruta para los planes correctivos
 Route::get('/plan-correctivos', [PlanCorrectivoController::class, 'index']);
@@ -210,6 +210,9 @@ Route::post('/graficas/guardar', [GraficaController::class, 'guardar']);
 
 Route::get('/indicadores/actividad-control/{idProceso}/{anio}', [IndicadorConsolidadoController::class, 'actividadControl']);
 Route::get('/indicadores/satisfaccion-cliente/{idProceso}/{anio}', [ReporteProcesoController::class, 'indicadoresSatisfaccionCliente']);
+Route::get('/indicadores/mapa-proceso/{idProceso}/{anio}', [ReporteProcesoController::class, 'indicadoresMapaProceso']);
+Route::get('/indicadores/eficacia-riesgos/{idProceso}/{anio}', [ReporteProcesoController::class, 'eficaciaRiesgos']);
+Route::get('/indicadores/evaluacion-proveedores/{idProceso}/{anio}', [ReporteProcesoController::class, 'evaluacionProveedores']);
 
 
 Route::get('/vista-reporte', function () {

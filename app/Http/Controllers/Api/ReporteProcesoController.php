@@ -24,6 +24,7 @@ use App\Models\CompromisoMinuta;
 use App\Models\ProyectoMejora;
 use App\Models\Recurso;
 use App\Models\ActividadesPM;
+use App\Models\EvaluaProveedores;
 
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Log;
@@ -148,7 +149,117 @@ class ReporteProcesoController extends Controller
         //Segunda tabla de Analisis (Satisfacción)
         // Obtener indicadores de satisfacción para mostrar en tabla Blade
         $indicadoresJson = $this->indicadoresSatisfaccionCliente($idProceso, $anio)->getContent();
+
+        // ------------------------------------
+// Indicadores de tipo "MapaProceso"
+// ------------------------------------
+        $indicadoresMP = IndicadorConsolidado::where('idProceso', $idProceso)
+            ->where('origenIndicador', 'MapaProceso')
+            ->get();
+
+        $resultadoMP = $indicadoresMP->map(function ($indicador) {
+            $resultados = ResultadoIndi::where('idIndicador', $indicador->idIndicador)->first();
+
+            return (object) [
+                'nombreIndicador' => $indicador->nombreIndicador,
+                'meta' => $indicador->meta,
+                'resultadoSemestral1' => $resultados->resultadoSemestral1 ?? 0,
+                'resultadoSemestral2' => $resultados->resultadoSemestral2 ?? 0
+            ];
+        });
+
+        // Interpretación / Necesidad para MapaProceso (sección "Conformidad")
+        $interpretacionMP = $analisis?->interpretacion ?? 'No disponible';
+        $necesidadMP = $analisis?->necesidad ?? 'No disponible';
+
+
         $indicadoresSatisfaccion = json_decode($indicadoresJson, true);
+
+        $registroGestion = Registros::where('idProceso', $idProceso)
+            ->where('año', $anio)
+            ->where('apartado', 'Análisis de Datos')
+            ->first();
+
+        $interpretacionGR = null;
+        $necesidadGR = null;
+
+        if ($registroGestion) {
+            $analisisGR = AnalisisDatos::where('idRegistro', $registroGestion->idRegistro)
+                ->where('seccion', 'Eficacia')
+                ->first();
+
+            if ($analisisGR) {
+                $interpretacionGR = $analisisGR->interpretacion;
+                $necesidadGR = $analisisGR->necesidad;
+            }
+        }
+
+        $eficaciaRiesgos = IndicadorConsolidado::where('idProceso', $idProceso)
+            ->where('origenIndicador', 'GestionRiesgo')
+            ->get()
+            ->map(function ($indicador) use ($interpretacionGR, $necesidadGR) {
+                $resultado = ResultadoIndi::where('idIndicador', $indicador->idIndicador)->first();
+                return (object) [
+                    'nombreIndicador' => $indicador->nombreIndicador,
+                    'meta' => $indicador->meta,
+                    'resultadoAnual' => $resultado->resultadoAnual ?? null,
+                    'interpretacion' => $interpretacionGR,
+                    'necesidad' => $necesidadGR,
+                ];
+            });
+
+            // Evaluación de Proveedores Externos
+$registroEval = Registros::where('idProceso', $idProceso)
+->where('año', $anio)
+->where('apartado', 'Análisis de Datos')
+->first();
+
+$evaluacionProveedores = [
+'indicadores' => [],
+'interpretacion' => 'No disponible',
+'necesidad' => 'No disponible',
+];
+
+if ($registroEval) {
+$analisisEval = AnalisisDatos::where('idRegistro', $registroEval->idRegistro)
+    ->where('seccion', 'DesempeñoProveedores')
+    ->first();
+
+$evaluacionProveedores['interpretacion'] = $analisisEval->interpretacion ?? 'No disponible';
+$evaluacionProveedores['necesidad'] = $analisisEval->necesidad ?? 'No disponible';
+
+$indicadorEval = IndicadorConsolidado::where('idProceso', $idProceso)
+    ->where('origenIndicador', 'EvaluaProveedores')
+    ->first();
+
+if ($indicadorEval) {
+    $resultados = \App\Models\EvaluaProveedores::where('idIndicador', $indicadorEval->idIndicador)->first();
+
+    if ($resultados) {
+        $evaluacionProveedores['indicadores'] = [
+            [
+                'categoria' => 'Confiable',
+                'meta' => $resultados->metaConfiable,
+                'resultado1' => $resultados->resultadoConfiableSem1,
+                'resultado2' => $resultados->resultadoConfiableSem2,
+            ],
+            [
+                'categoria' => 'Condicionado',
+                'meta' => $resultados->metaCondicionado,
+                'resultado1' => $resultados->resultadoCondicionadoSem1,
+                'resultado2' => $resultados->resultadoCondicionadoSem2,
+            ],
+            [
+                'categoria' => 'No Confiable',
+                'meta' => $resultados->metaNoConfiable,
+                'resultado1' => $resultados->resultadoNoConfiableSem1,
+                'resultado2' => $resultados->resultadoNoConfiableSem2,
+            ]
+        ];
+    }
+}
+}
+
 
         $datos = [
             'nombreProceso' => $proceso->nombreProceso,
@@ -195,6 +306,12 @@ class ReporteProcesoController extends Controller
             'recursos' => $recursos,
             'actividadesPM' => $actividadesPM,
             'indicadoresSatisfaccion' => $indicadoresSatisfaccion,
+
+            'mapaProcesoIndicadores' => $resultadoMP,
+            'interpretacionMapaProceso' => $interpretacionMP,
+            'necesidadMapaProceso' => $necesidadMP,
+            'eficaciaRiesgos' => $eficaciaRiesgos,
+            'evaluacionProveedores' => $evaluacionProveedores
 
         ];
 
@@ -447,4 +564,187 @@ class ReporteProcesoController extends Controller
             return response()->json(['error' => 'Error al obtener', 'detalle' => $e->getMessage()], 500);
         }
     }
+
+    public function indicadoresMapaProceso($idProceso, $anio)
+    {
+        Log::info("🔍 Obteniendo indicadores MapaProceso", compact('idProceso', 'anio'));
+
+        // Obtener indicadores de origen MapaProceso
+        $indicadores = IndicadorConsolidado::where('idProceso', $idProceso)
+            ->where('origenIndicador', 'MapaProceso')
+            ->get();
+
+        // Obtener resultados
+        $resultados = ResultadoIndi::whereIn('idIndicador', $indicadores->pluck('idIndicador'))->get()
+            ->keyBy('idIndicador');
+
+        // Buscar idRegistro para análisis
+        $registro = Registros::where('idProceso', $idProceso)
+            ->where('año', $anio)
+            ->where('apartado', 'Análisis de Datos')
+            ->first();
+
+        $interpretacion = null;
+        $necesidad = null;
+
+        if ($registro) {
+            $interpretacion = AnalisisDatos::where('idRegistro', $registro->idRegistro)
+                ->where('seccion', 'DesempeñoProceso')
+                ->value('interpretacion');
+
+            $necesidad = AnalisisDatos::where('idRegistro', $registro->idRegistro)
+                ->where('seccion', 'DesempeñoProceso')
+                ->value('necesidad');
+        }
+
+        // Estructura final
+        $datos = $indicadores->map(function ($indicador) use ($resultados, $interpretacion, $necesidad) {
+            $res = $resultados[$indicador->idIndicador] ?? null;
+            return [
+                'idIndicador' => $indicador->idIndicador,
+                'nombreIndicador' => $indicador->nombreIndicador,
+                'meta' => $indicador->meta,
+                'resultadoSemestral1' => $res->resultadoSemestral1 ?? null,
+                'resultadoSemestral2' => $res->resultadoSemestral2 ?? null,
+                'interpretacion' => $interpretacion,
+                'necesidad' => $necesidad,
+            ];
+        });
+
+        return response()->json($datos);
+    }
+
+    public function eficaciaRiesgos($idProceso, $anio)
+    {
+        $registro = Registros::where('idProceso', $idProceso)
+            ->where('año', $anio)
+            ->where('apartado', 'Análisis de Datos')
+            ->first();
+
+        if (!$registro) {
+            return response()->json(['error' => 'Registro no encontrado'], 404);
+        }
+
+        $analisis = AnalisisDatos::where('idRegistro', $registro->idRegistro)
+            ->where('seccion', 'Eficacia')
+            ->first();
+
+        $interpretacion = $analisis->interpretacion ?? null;
+        $necesidad = $analisis->necesidad ?? null;
+
+        $indicadores = IndicadorConsolidado::where('idProceso', $idProceso)
+            ->where('origenIndicador', 'GestionRiesgo')
+            ->get();
+
+        $datos = $indicadores->map(function ($indicador) use ($interpretacion, $necesidad) {
+            $result = ResultadoIndi::where('idIndicador', $indicador->idIndicador)->first();
+            return [
+                'idIndicador' => $indicador->idIndicador,
+                'nombreIndicador' => $indicador->nombreIndicador,
+                'meta' => $indicador->meta,
+                'resultadoAnual' => $result->resultadoAnual ?? null,
+                'interpretacion' => $interpretacion,
+                'necesidad' => $necesidad,
+            ];
+        });
+
+        return response()->json($datos);
+    }
+
+    public function evaluacionProveedores($idProceso, $anio)
+    {
+        try {
+            Log::info("📥 Inicio de evaluación de proveedores", [
+                'idProceso' => $idProceso,
+                'anio' => $anio
+            ]);
+
+            // 1. Buscar idRegistro para sección AnálisisDatos
+            $registro = Registros::where('idProceso', $idProceso)
+                ->where('año', $anio)
+                ->where('apartado', 'Análisis de Datos')
+                ->first();
+
+            if (!$registro) {
+                Log::warning("⚠️ Registro no encontrado", ['idProceso' => $idProceso, 'anio' => $anio]);
+                return response()->json(['error' => 'Registro no encontrado'], 404);
+            }
+
+            Log::info("✅ Registro encontrado", ['idRegistro' => $registro->idRegistro]);
+
+            // 2. Obtener interpretación y necesidad de mejora de la sección "DesempeñoProveedores"
+            $analisis = AnalisisDatos::where('idRegistro', $registro->idRegistro)
+                ->where('seccion', 'DesempeñoProveedores')
+                ->first();
+
+            $interpretacion = $analisis->interpretacion ?? null;
+            $necesidad = $analisis->necesidad ?? null;
+
+            Log::info("📌 Interpretación y necesidad obtenidas", [
+                'interpretacion' => $interpretacion,
+                'necesidad' => $necesidad
+            ]);
+
+            // 3. Buscar el indicador tipo EvaluaProveedores
+            $indicador = IndicadorConsolidado::where('idProceso', $idProceso)
+                ->where('origenIndicador', 'EvaluaProveedores')
+                ->first();
+
+            if (!$indicador) {
+                Log::warning("⚠️ Indicador no encontrado para EvaluaProveedores");
+                return response()->json(['error' => 'Indicador no encontrado'], 404);
+            }
+
+            Log::info("✅ Indicador encontrado", ['idIndicador' => $indicador->idIndicador]);
+
+            // 4. Obtener los datos de evaluación desde la tabla específica
+            $resultados = \App\Models\EvaluaProveedores::where('idIndicador', $indicador->idIndicador)->first();
+
+            if (!$resultados) {
+                Log::warning("⚠️ Resultados de evaluación no encontrados");
+                return response()->json(['error' => 'Resultados no encontrados'], 404);
+            }
+
+            Log::info("📊 Resultados obtenidos", [
+                'confiable' => [$resultados->resultadoConfiableSem1, $resultados->resultadoConfiableSem2],
+                'condicionado' => [$resultados->resultadoCondicionadoSem1, $resultados->resultadoCondicionadoSem2],
+                'noConfiable' => [$resultados->resultadoNoConfiableSem1, $resultados->resultadoNoConfiableSem2]
+            ]);
+
+            // 5. Formato por categoría
+            $datos = [
+                [
+                    'categoria' => 'Confiable',
+                    'meta' => $resultados->metaConfiable,
+                    'resultado1' => $resultados->resultadoConfiableSem1,
+                    'resultado2' => $resultados->resultadoConfiableSem2,
+                ],
+                [
+                    'categoria' => 'Condicionado',
+                    'meta' => $resultados->metaCondicionado,
+                    'resultado1' => $resultados->resultadoCondicionadoSem1,
+                    'resultado2' => $resultados->resultadoCondicionadoSem2,
+                ],
+                [
+                    'categoria' => 'No Confiable',
+                    'meta' => $resultados->metaNoConfiable,
+                    'resultado1' => $resultados->resultadoNoConfiableSem1,
+                    'resultado2' => $resultados->resultadoNoConfiableSem2,
+                ]
+            ];
+
+            Log::info("📤 Enviando datos de evaluación de proveedores");
+
+            return response()->json([
+                'indicadores' => $datos,
+                'interpretacion' => $interpretacion,
+                'necesidad' => $necesidad
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('❌ Error en evaluacionProveedores', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Error al obtener evaluación de proveedores'], 500);
+        }
+    }
+
 }
