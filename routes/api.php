@@ -39,6 +39,10 @@ use App\Http\Controllers\Api\ProyectoMejoraController;
 //Reporte
 use App\Http\Controllers\Api\ReporteProcesoController;
 
+use App\Http\Controllers\Api\BuscadorSemController;
+
+use App\Http\Controllers\Api\FormatosController;
+
 
 
 
@@ -200,3 +204,8 @@ Route::get('/mapa-proceso/{idProceso}', [ReporteProcesoController::class, 'obten
 Route::get('/vista-reporte', function () {
     return view('proceso');
 });
+
+Route::get('/buscar-por-anio', [BuscadorSemController::class, 'buscarPorAnio']);
+
+Route::post('/formatos', [FormatosController::class, 'store']);
+Route::get('/formatos', [FormatosController::class, 'index']);
