@@ -24,7 +24,8 @@ use App\Models\CompromisoMinuta;
 use App\Models\ProyectoMejora;
 use App\Models\Recurso;
 use App\Models\ActividadesPM;
-
+use App\Models\PlanCorrectivo;
+use App\Models\ActividadPlan;
 
 
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -145,6 +146,10 @@ class ReporteProcesoController extends Controller
         $proyectoMejora= ProyectoMejora::whereIn('idActividadMejora', $idAccMejora)->first();
         $recursos=Recurso::where('idProyectoMejora', $proyectoMejora->idProyectoMejora)->get();
         $actividadesPM=ActividadesPM::where('idProyectoMejora', $proyectoMejora->idProyectoMejora)->get();
+
+        $planCorrectivo= PlanCorrectivo::whereIn('idActividadMejora', $idAccMejora)->first();
+        $actividadesPlan= ActividadPlan::where('idPlanCorrectivo', $planCorrectivo->idPlanCorrectivo)->get();
+
         $datos = [
             'nombreProceso' => $proceso->nombreProceso,
             'entidad' => $proceso->entidad->nombreEntidad ?? 'Entidad no disponible',
@@ -188,9 +193,12 @@ class ReporteProcesoController extends Controller
             'idAcciones'=> $idAccMejora,
             'proyectoMejora'=>$proyectoMejora,
             'recursos'=> $recursos,
-            'actividadesPM'=> $actividadesPM
+            'actividadesPM'=> $actividadesPM,
+            'planCorrectivo'=> $planCorrectivo,
+            'actividadesPlan'=>$actividadesPlan
         ];
 
+        Log::info("📄 Datos enviados a la vista:", ['datos' => $datos]);
         try {
             Log::info("📄 Generando PDF con datos enviados a la vista.");
             $pdf = Pdf::loadView('proceso', $datos);
@@ -218,7 +226,7 @@ class ReporteProcesoController extends Controller
                 'alcance' => $proceso->alcance ?? 'No especificado',
                 'norma' => $proceso->norma ?? 'No especificado',
                 'anioCertificacion' => $proceso->anioCertificado ?? 'No especificado',
-                'estado' => $proceso->estado ?? 'No especificado',
+                'estado' => $proceso->estado ?? 'No especificacccdo',
             ]);
 
 
@@ -435,6 +443,34 @@ class ReporteProcesoController extends Controller
                 'proyectoMejora' => $proyectoMejora,
                 'recursos' => $recursos,
                 'actividadesPM' => $actividadesPM,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Error al obtener', 'detalle' => $e->getMessage()], 500);
+        }
+    }
+    
+    public function obtenerPlanCorrectivo($idProceso, $anio)
+    {
+        try {
+            
+            $registroAcMejora = Registros::where('idProceso', $idProceso)
+            ->where('año', $anio)
+            ->where('apartado', 'Acciones de Mejora')
+            ->first();
+
+            if (!$registroAcMejora) {
+                return response()->json(['error' => 'No se encontró el registro.'], 404);
+            }
+            // Obtener los seguimientos relacionados
+            $acMejora = ActividadMejora::where('idRegistro', $registroAcMejora->idRegistro)->get();
+            
+            $idAccMejora = $acMejora->pluck('idActividadMejora')->toArray();
+            $planCorrectivo= PlanCorrectivo::whereIn('idActividadMejora', $idAccMejora)->first();
+            $actividadesPlan= ActividadPlan::where('idPlanCorrectivo', $planCorrectivo->idPlanCorrectivo)->get();
+            return response()->json([
+                'acMejora'=> $acMejora,
+                'planCorrectivo'=> $planCorrectivo,
+                'actividadesPlan'=>$actividadesPlan
             ]);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Error al obtener', 'detalle' => $e->getMessage()], 500);
