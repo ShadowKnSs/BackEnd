@@ -243,7 +243,7 @@ $indicadorEval = IndicadorConsolidado::where('idProceso', $idProceso)
     ->first();
 
 if ($indicadorEval) {
-    $resultados = \App\Models\EvaluaProveedores::where('idIndicador', $indicadorEval->idIndicador)->first();
+    $resultados = EvaluaProveedores::where('idIndicador', $indicadorEval->idIndicador)->first();
 
     if ($resultados) {
         $evaluacionProveedores['indicadores'] = [
@@ -316,17 +316,7 @@ if ($indicadorEval) {
             'recursos'=> $recursos,
             'actividadesPM'=> $actividadesPM,
             'planCorrectivo'=> $planCorrectivo,
-            'actividadesPlan'=>$actividadesPlan
-            'seguimientos' => $seguimientos,
-            'idseguimientos' => $idSeguimientos,
-            'asistentes' => $asistentes,
-            'actividadesSeg' => $actividadesSeg,
-            'compromisosSeg' => $compromisosSeg,
-            'Accion Mejora' => $acMejora,
-            'idAcciones' => $idAccMejora,
-            'proyectoMejora' => $proyectoMejora,
-            'recursos' => $recursos,
-            'actividadesPM' => $actividadesPM,
+            'actividadesPlan'=>$actividadesPlan,
             'indicadoresSatisfaccion' => $indicadoresSatisfaccion,
 
             'mapaProcesoIndicadores' => $resultadoMP,
