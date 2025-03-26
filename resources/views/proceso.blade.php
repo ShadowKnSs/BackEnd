@@ -391,6 +391,62 @@
             </tbody>
         </table>
     </div>
+    <!-- Plan Correctivo -->
+    <div class="container">
+        <h2>Plan Correctivo</h2>
+
+        <!-- Información básica del proyecto -->
+        <table class="table table-bordered">
+            <tr>
+                <th>Coordinador:</th>
+                <td>{{$planCorrectivo->coordinadorPlan}}</td>
+                <th>Codigo:</th>
+                <td>{{$planCorrectivo->codigo}}</td>
+                
+            </tr>
+            <tr>
+            <th>Fecha:</th>
+            <td>{{$planCorrectivo->fechaInicio}}</td>
+            </tr>
+        </table>
+
+        <h4>Origen de la no conformidad:</h4>
+        <p>{{ $planCorrectivo->origenConformidad}}</p>
+
+        
+        <h4>Equipo de mejora:</h4>
+        <p>{{ $planCorrectivo->equipoMejora}}</p>
+
+        <h4>Actividades de reacción:</h4>
+            <table border="1" cellspacing="0" cellpadding="6" style="font-size: 12px;">
+                <thead>
+                    <tr>
+                        <th>Actividad</th>
+                        <th>Responsable </th>
+                        <th>Fecha Programada</th>
+                        <th>Tipo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($actividadesPlan->where('idPlanCorrectivo', $planCorrectivo->idPlanCorrectivo) as $act)
+                        <tr>
+                            <td>{{ $act->descripcionAct }}</td>
+                            <td>{{ $act->responsable }}</td>
+                            <td>{{ $act->fechaProgramada }}</td>
+                            <td>{{ $act->tipo}}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+        </table>
+        <h4>Revision y analisis:</h4>
+        <p>{{ $planCorrectivo->revisionAnalisis }}</p>
+
+        <h4>Determinacón causa raíz:</h4>
+        <p>{{ $planCorrectivo->causaRaiz }}</p>
+
+
+            
+    </div>
     <!-- Gestión de Riesgos -->
     <div style="margin-top: 40px;">
         <h2 class="title">Gestión de Riesgos</h2>

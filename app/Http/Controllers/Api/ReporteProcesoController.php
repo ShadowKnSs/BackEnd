@@ -24,6 +24,9 @@ use App\Models\CompromisoMinuta;
 use App\Models\ProyectoMejora;
 use App\Models\Recurso;
 use App\Models\ActividadesPM;
+use App\Models\PlanCorrectivo;
+use App\Models\ActividadPlan;
+
 use App\Models\EvaluaProveedores;
 
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -142,6 +145,13 @@ class ReporteProcesoController extends Controller
         }
         $acMejora = ActividadMejora::where('idRegistro', $registroAcMejora->idRegistro)->get();
         $idAccMejora = $acMejora->pluck('idActividadMejora')->toArray();
+        $proyectoMejora= ProyectoMejora::whereIn('idActividadMejora', $idAccMejora)->first();
+        $recursos=Recurso::where('idProyectoMejora', $proyectoMejora->idProyectoMejora)->get();
+        $actividadesPM=ActividadesPM::where('idProyectoMejora', $proyectoMejora->idProyectoMejora)->get();
+
+        $planCorrectivo= PlanCorrectivo::whereIn('idActividadMejora', $idAccMejora)->first();
+        $actividadesPlan= ActividadPlan::where('idPlanCorrectivo', $planCorrectivo->idPlanCorrectivo)->get();
+
         $proyectoMejora = ProyectoMejora::whereIn('idActividadMejora', $idAccMejora)->first();
         $recursos = Recurso::where('idProyectoMejora', $proyectoMejora->idProyectoMejora)->get();
         $actividadesPM = ActividadesPM::where('idProyectoMejora', $proyectoMejora->idProyectoMejora)->get();
@@ -295,6 +305,18 @@ if ($indicadorEval) {
             'graficaRiesgos' => $graficaRiesgos,
             'graficaEvaluacion' => $graficaEvaluacion,
             'registro' => $registro->idRegistro,
+            'seguimientos'=> $seguimientos,
+            'idseguimientos'=> $idSeguimientos,
+            'asistentes'=> $asistentes,
+            'actividadesSeg'=> $actividadesSeg,
+            'compromisosSeg'=>$compromisosSeg,
+            'Accion Mejora'=>$acMejora,
+            'idAcciones'=> $idAccMejora,
+            'proyectoMejora'=>$proyectoMejora,
+            'recursos'=> $recursos,
+            'actividadesPM'=> $actividadesPM,
+            'planCorrectivo'=> $planCorrectivo,
+            'actividadesPlan'=>$actividadesPlan
             'seguimientos' => $seguimientos,
             'idseguimientos' => $idSeguimientos,
             'asistentes' => $asistentes,
@@ -315,6 +337,7 @@ if ($indicadorEval) {
 
         ];
 
+        Log::info("📄 Datos enviados a la vista:", ['datos' => $datos]);
         try {
             Log::info("📄 Generando PDF con datos enviados a la vista.");
             $pdf = Pdf::loadView('proceso', $datos);
@@ -342,7 +365,7 @@ if ($indicadorEval) {
                 'alcance' => $proceso->alcance ?? 'No especificado',
                 'norma' => $proceso->norma ?? 'No especificado',
                 'anioCertificacion' => $proceso->anioCertificado ?? 'No especificado',
-                'estado' => $proceso->estado ?? 'No especificado',
+                'estado' => $proceso->estado ?? 'No especificacccdo',
             ]);
 
 
@@ -559,6 +582,34 @@ if ($indicadorEval) {
                 'proyectoMejora' => $proyectoMejora,
                 'recursos' => $recursos,
                 'actividadesPM' => $actividadesPM,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Error al obtener', 'detalle' => $e->getMessage()], 500);
+        }
+    }
+    
+    public function obtenerPlanCorrectivo($idProceso, $anio)
+    {
+        try {
+            
+            $registroAcMejora = Registros::where('idProceso', $idProceso)
+            ->where('año', $anio)
+            ->where('apartado', 'Acciones de Mejora')
+            ->first();
+
+            if (!$registroAcMejora) {
+                return response()->json(['error' => 'No se encontró el registro.'], 404);
+            }
+            // Obtener los seguimientos relacionados
+            $acMejora = ActividadMejora::where('idRegistro', $registroAcMejora->idRegistro)->get();
+            
+            $idAccMejora = $acMejora->pluck('idActividadMejora')->toArray();
+            $planCorrectivo= PlanCorrectivo::whereIn('idActividadMejora', $idAccMejora)->first();
+            $actividadesPlan= ActividadPlan::where('idPlanCorrectivo', $planCorrectivo->idPlanCorrectivo)->get();
+            return response()->json([
+                'acMejora'=> $acMejora,
+                'planCorrectivo'=> $planCorrectivo,
+                'actividadesPlan'=>$actividadesPlan
             ]);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Error al obtener', 'detalle' => $e->getMessage()], 500);
