@@ -32,55 +32,34 @@ use App\Models\EvaluaProveedores;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Log;
 
-
 class ReporteProcesoController extends Controller
 {
-
     public function generarReporte($idProceso, $anio)
     {
-
         try {
             $proceso = Proceso::with(['entidad', 'usuario'])->findOrFail($idProceso);
             $mapa = MapaProceso::where('idProceso', $idProceso)->first();
             $planControlActividades = ActividadControl::where('idProceso', $idProceso)->get();
+            $auditorias = Auditoria::where('idProceso', $idProceso)->get();
         } catch (\Exception $e) {
-            Log::error("❌ Error cargando información del proceso", ['error' => $e->getMessage()]);
+            Log::error("Error cargando información del proceso", ['error' => $e->getMessage()]);
             return response()->json(['error' => 'Error al obtener información del proceso'], 500);
         }
 
-
-        // ✅ Gestión de Riesgos
-        $registroRiesgo = Registros::where('idProceso', $idProceso)->first();
-        $mapa = MapaProceso::where('idProceso', $idProceso)->first();
-        $actividades = ActividadControl::where('idProceso', $idProceso)->get();
-        $auditorias = Auditoria::where('idProceso', $idProceso)->get();
-
-        $registro = Registros::where('idProceso', $idProceso)
-            ->where('año', $anio)
-            ->where('apartado', 'Gestión de Riesgo')
-            ->first();
-
-        $gestion = $registroRiesgo ? GestionRiesgos::where('idRegistro', $registroRiesgo->idRegistro)->first() : null;
+        $registro = $this->getRegistro($idProceso, $anio, 'Gestión de Riesgo');
+        $gestion = $registro ? GestionRiesgos::where('idRegistro', $registro->idRegistro)->first() : null;
         $riesgos = $gestion ? Riesgo::where('idGesRies', $gestion->idGesRies)->get() : collect();
 
-        // ✅ Plan de Control: Indicadores + interpretación y necesidad
-        $registroIndicadores = Registros::where('idProceso', $idProceso)
-            ->where('año', $anio)
-            ->where('apartado', 'Análisis de Datos')
-            ->first();
-
+        $registroIndicadores = $this->getRegistro($idProceso, $anio, 'Análisis de Datos');
         $planControlIndicadores = [];
-        $interpretacion = null;
-        $necesidad = null;
+        $interpretacion = 'No disponible';
+        $necesidad = 'No disponible';
 
         if ($registroIndicadores) {
             $indicadores = IndicadorConsolidado::where('idProceso', $idProceso)
-                ->where('origenIndicador', 'ActividadControl')
-                ->get();
-
+                ->where('origenIndicador', 'ActividadControl')->get();
             foreach ($indicadores as $indicador) {
                 $resultados = ResultadoIndi::where('idIndicador', $indicador->idIndicador)->first();
-
                 $planControlIndicadores[] = (object) [
                     'nombreIndicador' => $indicador->nombreIndicador,
                     'meta' => $indicador->meta,
@@ -88,188 +67,54 @@ class ReporteProcesoController extends Controller
                     'resultadoSemestral2' => $resultados->resultadoSemestral2 ?? null,
                 ];
             }
-
             $analisis = AnalisisDatos::where('idRegistro', $registroIndicadores->idRegistro)
-                ->where('seccion', 'Conformidad')
-                ->first();
-
+                ->where('seccion', 'Conformidad')->first();
             if ($analisis) {
-                $interpretacion = $analisis->interpretacion;
-                $necesidad = $analisis->necesidad;
+                $interpretacion = $analisis->interpretacion ?? 'No disponible';
+                $necesidad = $analisis->necesidad ?? 'No disponible';
             }
         }
 
-        // ✅ Rutas de las gráficas
-        if (!$registro) {
-            return response()->json(['error' => 'No se encontró el registro.'], 404);
-        }
+        $graficaPlanControl = $this->verificaGrafica("plan_control_{$idProceso}_{$anio}.png");
+        $graficaEncuesta = $this->verificaGrafica("encuesta_{$idProceso}_{$anio}.png");
+        $graficaRetroalimentacion = $this->verificaGrafica("retroalimentacion_{$idProceso}_{$anio}.png");
+        $graficaMP = $this->verificaGrafica("mapaProceso_{$idProceso}_{$anio}.png");
+        $graficaRiesgos = $this->verificaGrafica("riesgos_{$idProceso}_{$anio}.png");
+        $graficaEvaluacion = $this->verificaGrafica("evaluacionProveedores_{$idProceso}_{$anio}.png");
 
-
-
-        $gestion = GestionRiesgos::where('idRegistro', $registro->idRegistro)->first();
-        if (!$gestion) {
-            return response()->json(['error' => 'No se encontró gestión de riesgos.'], 404);
-        }
-        $riesgos = Riesgo::where('idGesRies', $gestion->idGesRies)->get();
-        $graficaPlanControl = public_path("storage/graficas/plan_control_{$idProceso}_{$anio}.png");
-        $graficaEncuesta = public_path("storage/graficas/encuesta_{$idProceso}_{$anio}.png");
-        $graficaRetroalimentacion = public_path("storage/graficas/retroalimentacion_{$idProceso}_{$anio}.png");
-        $graficaMP = public_path("storage/graficas/mapaProceso_{$idProceso}_{$anio}.png");
-        $graficaRiesgos = public_path("storage/graficas/riesgos_{$idProceso}_{$anio}.png");
-        $graficaEvaluacion = public_path("storage/graficas/evaluacionProveedores_{$idProceso}_{$anio}.png");
-
-
-        /* Segumientos */
-        $registroSeg = Registros::where('idProceso', $idProceso)
-            ->where('año', $anio)
-            ->where('apartado', 'Seguimiento')
-            ->first();
-
-        if (!$registroSeg) {
-            return response()->json(['error' => 'No se encontró el registro.'], 404);
-        }
-
-        $seguimientos = SeguimientoMinuta::where('idRegistro', $registroSeg->idRegistro)->get();
+        $registroSeg = $this->getRegistro($idProceso, $anio, 'Seguimiento');
+        $seguimientos = $registroSeg ? SeguimientoMinuta::where('idRegistro', $registroSeg->idRegistro)->get() : collect();
         $idSeguimientos = $seguimientos->pluck('idSeguimiento')->toArray();
         $asistentes = Asistente::whereIn('idSeguimiento', $idSeguimientos)->get();
         $actividadesSeg = ActividadMinuta::whereIn('idSeguimiento', $idSeguimientos)->get();
         $compromisosSeg = CompromisoMinuta::whereIn('idSeguimiento', $idSeguimientos)->get();
 
-        $registroAcMejora = Registros::where('idProceso', $idProceso)
-            ->where('año', $anio)
-            ->where('apartado', 'Acciones de Mejora')
-            ->first();
-
-        if (!$registroAcMejora) {
-            return response()->json(['error' => 'No se encontró el registro.'], 404);
-        }
-        $acMejora = ActividadMejora::where('idRegistro', $registroAcMejora->idRegistro)->get();
+        $registroAcMejora = $this->getRegistro($idProceso, $anio, 'Acciones de Mejora');
+        $acMejora = $registroAcMejora ? ActividadMejora::where('idRegistro', $registroAcMejora->idRegistro)->get() : collect();
         $idAccMejora = $acMejora->pluck('idActividadMejora')->toArray();
-        $proyectoMejora= ProyectoMejora::whereIn('idActividadMejora', $idAccMejora)->first();
-        $recursos=Recurso::where('idProyectoMejora', $proyectoMejora->idProyectoMejora)->get();
-        $actividadesPM=ActividadesPM::where('idProyectoMejora', $proyectoMejora->idProyectoMejora)->get();
-
-        $planCorrectivo= PlanCorrectivo::whereIn('idActividadMejora', $idAccMejora)->first();
-        $actividadesPlan= ActividadPlan::where('idPlanCorrectivo', $planCorrectivo->idPlanCorrectivo)->get();
-
         $proyectoMejora = ProyectoMejora::whereIn('idActividadMejora', $idAccMejora)->first();
-        $recursos = Recurso::where('idProyectoMejora', $proyectoMejora->idProyectoMejora)->get();
-        $actividadesPM = ActividadesPM::where('idProyectoMejora', $proyectoMejora->idProyectoMejora)->get();
+        $recursos = optional($proyectoMejora)->idProyectoMejora ? Recurso::where('idProyectoMejora', $proyectoMejora->idProyectoMejora)->get() : collect();
+        $actividadesPM = optional($proyectoMejora)->idProyectoMejora ? ActividadesPM::where('idProyectoMejora', $proyectoMejora->idProyectoMejora)->get() : collect();
+        $planCorrectivo = PlanCorrectivo::whereIn('idActividadMejora', $idAccMejora)->first();
+        $actividadesPlan = optional($planCorrectivo)->idPlanCorrectivo ? ActividadPlan::where('idPlanCorrectivo', $planCorrectivo->idPlanCorrectivo)->get() : collect();
 
-        //Segunda tabla de Analisis (Satisfacción)
-        // Obtener indicadores de satisfacción para mostrar en tabla Blade
         $indicadoresJson = $this->indicadoresSatisfaccionCliente($idProceso, $anio)->getContent();
+        $indicadoresSatisfaccion = json_decode($indicadoresJson, true);
 
-        // ------------------------------------
-// Indicadores de tipo "MapaProceso"
-// ------------------------------------
         $indicadoresMP = IndicadorConsolidado::where('idProceso', $idProceso)
-            ->where('origenIndicador', 'MapaProceso')
-            ->get();
-
+            ->where('origenIndicador', 'MapaProceso')->get();
         $resultadoMP = $indicadoresMP->map(function ($indicador) {
-            $resultados = ResultadoIndi::where('idIndicador', $indicador->idIndicador)->first();
-
+            $res = ResultadoIndi::where('idIndicador', $indicador->idIndicador)->first();
             return (object) [
                 'nombreIndicador' => $indicador->nombreIndicador,
                 'meta' => $indicador->meta,
-                'resultadoSemestral1' => $resultados->resultadoSemestral1 ?? 0,
-                'resultadoSemestral2' => $resultados->resultadoSemestral2 ?? 0
+                'resultadoSemestral1' => $res->resultadoSemestral1 ?? 0,
+                'resultadoSemestral2' => $res->resultadoSemestral2 ?? 0
             ];
         });
 
-        // Interpretación / Necesidad para MapaProceso (sección "Conformidad")
-        $interpretacionMP = $analisis?->interpretacion ?? 'No disponible';
-        $necesidadMP = $analisis?->necesidad ?? 'No disponible';
-
-
-        $indicadoresSatisfaccion = json_decode($indicadoresJson, true);
-
-        $registroGestion = Registros::where('idProceso', $idProceso)
-            ->where('año', $anio)
-            ->where('apartado', 'Análisis de Datos')
-            ->first();
-
-        $interpretacionGR = null;
-        $necesidadGR = null;
-
-        if ($registroGestion) {
-            $analisisGR = AnalisisDatos::where('idRegistro', $registroGestion->idRegistro)
-                ->where('seccion', 'Eficacia')
-                ->first();
-
-            if ($analisisGR) {
-                $interpretacionGR = $analisisGR->interpretacion;
-                $necesidadGR = $analisisGR->necesidad;
-            }
-        }
-
-        $eficaciaRiesgos = IndicadorConsolidado::where('idProceso', $idProceso)
-            ->where('origenIndicador', 'GestionRiesgo')
-            ->get()
-            ->map(function ($indicador) use ($interpretacionGR, $necesidadGR) {
-                $resultado = ResultadoIndi::where('idIndicador', $indicador->idIndicador)->first();
-                return (object) [
-                    'nombreIndicador' => $indicador->nombreIndicador,
-                    'meta' => $indicador->meta,
-                    'resultadoAnual' => $resultado->resultadoAnual ?? null,
-                    'interpretacion' => $interpretacionGR,
-                    'necesidad' => $necesidadGR,
-                ];
-            });
-
-            // Evaluación de Proveedores Externos
-$registroEval = Registros::where('idProceso', $idProceso)
-->where('año', $anio)
-->where('apartado', 'Análisis de Datos')
-->first();
-
-$evaluacionProveedores = [
-'indicadores' => [],
-'interpretacion' => 'No disponible',
-'necesidad' => 'No disponible',
-];
-
-if ($registroEval) {
-$analisisEval = AnalisisDatos::where('idRegistro', $registroEval->idRegistro)
-    ->where('seccion', 'DesempeñoProveedores')
-    ->first();
-
-$evaluacionProveedores['interpretacion'] = $analisisEval->interpretacion ?? 'No disponible';
-$evaluacionProveedores['necesidad'] = $analisisEval->necesidad ?? 'No disponible';
-
-$indicadorEval = IndicadorConsolidado::where('idProceso', $idProceso)
-    ->where('origenIndicador', 'EvaluaProveedores')
-    ->first();
-
-if ($indicadorEval) {
-    $resultados = EvaluaProveedores::where('idIndicador', $indicadorEval->idIndicador)->first();
-
-    if ($resultados) {
-        $evaluacionProveedores['indicadores'] = [
-            [
-                'categoria' => 'Confiable',
-                'meta' => $resultados->metaConfiable,
-                'resultado1' => $resultados->resultadoConfiableSem1,
-                'resultado2' => $resultados->resultadoConfiableSem2,
-            ],
-            [
-                'categoria' => 'Condicionado',
-                'meta' => $resultados->metaCondicionado,
-                'resultado1' => $resultados->resultadoCondicionadoSem1,
-                'resultado2' => $resultados->resultadoCondicionadoSem2,
-            ],
-            [
-                'categoria' => 'No Confiable',
-                'meta' => $resultados->metaNoConfiable,
-                'resultado1' => $resultados->resultadoNoConfiableSem1,
-                'resultado2' => $resultados->resultadoNoConfiableSem2,
-            ]
-        ];
-    }
-}
-}
-
+        $interpretacionMP = $interpretacion;
+        $necesidadMP = $necesidad;
 
         $datos = [
             'nombreProceso' => $proceso->nombreProceso,
@@ -288,14 +133,11 @@ if ($indicadorEval) {
             'salidas' => $mapa->salidas ?? 'No disponible',
             'receptores' => $mapa->receptores ?? 'No disponible',
             'diagramaFlujo' => $mapa->diagramaFlujo ?? 'No disponible',
-
-            // ✅ Nuevas claves para el Blade
             'planControlActividades' => $planControlActividades,
             'planControlIndicadores' => $planControlIndicadores,
             'interpretacionPlanControl' => $interpretacion,
             'necesidadPlanControl' => $necesidad,
-
-            'planControl' => $actividades,
+            'planControl' => $planControlActividades,
             'auditorias' => $auditorias,
             'riesgos' => $riesgos,
             'graficaPlanControl' => $graficaPlanControl,
@@ -304,41 +146,46 @@ if ($indicadorEval) {
             'graficaMP' => $graficaMP,
             'graficaRiesgos' => $graficaRiesgos,
             'graficaEvaluacion' => $graficaEvaluacion,
-            'registro' => $registro->idRegistro,
-            'seguimientos'=> $seguimientos,
-            'idseguimientos'=> $idSeguimientos,
-            'asistentes'=> $asistentes,
-            'actividadesSeg'=> $actividadesSeg,
-            'compromisosSeg'=>$compromisosSeg,
-            'Accion Mejora'=>$acMejora,
-            'idAcciones'=> $idAccMejora,
-            'proyectoMejora'=>$proyectoMejora,
-            'recursos'=> $recursos,
-            'actividadesPM'=> $actividadesPM,
-            'planCorrectivo'=> $planCorrectivo,
-            'actividadesPlan'=>$actividadesPlan,
+            'seguimientos' => $seguimientos,
+            'idseguimientos' => $idSeguimientos,
+            'asistentes' => $asistentes,
+            'actividadesSeg' => $actividadesSeg,
+            'compromisosSeg' => $compromisosSeg,
+            'Accion Mejora' => $acMejora,
+            'idAcciones' => $idAccMejora,
+            'proyectoMejora' => $proyectoMejora,
+            'recursos' => $recursos,
+            'actividadesPM' => $actividadesPM,
+            'planCorrectivo' => $planCorrectivo,
+            'actividadesPlan' => $actividadesPlan,
             'indicadoresSatisfaccion' => $indicadoresSatisfaccion,
-
             'mapaProcesoIndicadores' => $resultadoMP,
             'interpretacionMapaProceso' => $interpretacionMP,
             'necesidadMapaProceso' => $necesidadMP,
-            'eficaciaRiesgos' => $eficaciaRiesgos,
-            'evaluacionProveedores' => $evaluacionProveedores
-
         ];
 
-        Log::info("📄 Datos enviados a la vista:", ['datos' => $datos]);
         try {
-            Log::info("📄 Generando PDF con datos enviados a la vista.");
             $pdf = Pdf::loadView('proceso', $datos);
             return $pdf->download("reporte_proceso_{$anio}.pdf");
         } catch (\Exception $e) {
-            Log::error("❌ Error al generar PDF", ['error' => $e->getMessage()]);
+            Log::error("Error al generar PDF", ['error' => $e->getMessage()]);
             return response()->json(['error' => 'Error al generar el PDF'], 500);
         }
     }
 
+    private function getRegistro($idProceso, $anio, $apartado)
+    {
+        return Registros::where('idProceso', $idProceso)
+            ->where('año', $anio)
+            ->where('apartado', $apartado)
+            ->first();
+    }
 
+    private function verificaGrafica($filename)
+    {
+        $path = public_path("storage/graficas/$filename");
+        return file_exists($path) ? $path : null;
+    }
 
 
     public function obtenerDatosReporte($idProceso, $anio)
@@ -347,10 +194,20 @@ if ($indicadorEval) {
             // Obtener el proceso con la entidad y usuario líder
             $proceso = Proceso::with(['entidad', 'usuario'])->where('idProceso', $idProceso)->firstOrFail();
             // $mapaProceso = MapaProceso::where('idProceso', $idProceso)->get();
+
+            $liderProceso = 'Líder no asignado';
+            if (isset($proceso->usuario)) {
+                $liderProceso = $proceso->usuario->nombre;
+                // Si existen ambos apellidos, los concatenamos
+                if (isset($proceso->usuario->apellidoPat) && isset($proceso->usuario->apellidoMat)) {
+                    $liderProceso .= ' ' . $proceso->usuario->apellidoPat . ' ' . $proceso->usuario->apellidoMat;
+                }
+            }
+
             return response()->json([
                 'nombreProceso' => $proceso->nombreProceso,
                 'entidad' => $proceso->entidad->nombreEntidad ?? 'Entidad no disponible',
-                'liderProceso' => $proceso->usuario->nombre ?? 'Líder no asignado',
+                'liderProceso' => $liderProceso,
                 'objetivo' => $proceso->objetivo ?? 'No especificado',
                 'alcance' => $proceso->alcance ?? 'No especificado',
                 'norma' => $proceso->norma ?? 'No especificado',
@@ -577,29 +434,29 @@ if ($indicadorEval) {
             return response()->json(['error' => 'Error al obtener', 'detalle' => $e->getMessage()], 500);
         }
     }
-    
+
     public function obtenerPlanCorrectivo($idProceso, $anio)
     {
         try {
-            
+
             $registroAcMejora = Registros::where('idProceso', $idProceso)
-            ->where('año', $anio)
-            ->where('apartado', 'Acciones de Mejora')
-            ->first();
+                ->where('año', $anio)
+                ->where('apartado', 'Acciones de Mejora')
+                ->first();
 
             if (!$registroAcMejora) {
                 return response()->json(['error' => 'No se encontró el registro.'], 404);
             }
             // Obtener los seguimientos relacionados
             $acMejora = ActividadMejora::where('idRegistro', $registroAcMejora->idRegistro)->get();
-            
+
             $idAccMejora = $acMejora->pluck('idActividadMejora')->toArray();
-            $planCorrectivo= PlanCorrectivo::whereIn('idActividadMejora', $idAccMejora)->first();
-            $actividadesPlan= ActividadPlan::where('idPlanCorrectivo', $planCorrectivo->idPlanCorrectivo)->get();
+            $planCorrectivo = PlanCorrectivo::whereIn('idActividadMejora', $idAccMejora)->first();
+            $actividadesPlan = ActividadPlan::where('idPlanCorrectivo', $planCorrectivo->idPlanCorrectivo)->get();
             return response()->json([
-                'acMejora'=> $acMejora,
-                'planCorrectivo'=> $planCorrectivo,
-                'actividadesPlan'=>$actividadesPlan
+                'acMejora' => $acMejora,
+                'planCorrectivo' => $planCorrectivo,
+                'actividadesPlan' => $actividadesPlan
             ]);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Error al obtener', 'detalle' => $e->getMessage()], 500);
@@ -739,7 +596,7 @@ if ($indicadorEval) {
             Log::info("✅ Indicador encontrado", ['idIndicador' => $indicador->idIndicador]);
 
             // 4. Obtener los datos de evaluación desde la tabla específica
-            $resultados = \App\Models\EvaluaProveedores::where('idIndicador', $indicador->idIndicador)->first();
+            $resultados = EvaluaProveedores::where('idIndicador', $indicador->idIndicador)->first();
 
             if (!$resultados) {
                 Log::warning("⚠️ Resultados de evaluación no encontrados");
@@ -787,5 +644,6 @@ if ($indicadorEval) {
             return response()->json(['error' => 'Error al obtener evaluación de proveedores'], 500);
         }
     }
+
 
 }

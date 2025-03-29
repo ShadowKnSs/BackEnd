@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use Illuminate\Http\Request;
 use App\Models\Registros;
+use App\Models\Proceso;
+use Carbon\Carbon;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Log;
 
@@ -86,18 +88,32 @@ class RegistrosController extends Controller
 
     public function obtenerAnios($idProceso)
     {
-        // Log del idProceso recibido
-        Log::info("Obteniendo años para el proceso: " . $idProceso);
+        $proceso = Proceso::find($idProceso);
+        $processYear = null;
+        if ($proceso) {
+            // Se asume que el año se obtiene a partir del campo created_at
+            $processYear = Carbon::parse($proceso->created_at)->year;
+        }
 
         // Obtener los años distintos de los registros asociados al idProceso
         $years = Registros::where('idProceso', $idProceso)
             ->distinct()
-            ->pluck('año');
+            ->pluck('año')
+            ->toArray();
 
-        Log::info("Años obtenidos: " . $years->implode(', '));
+        // Agregar el año de creación del proceso si no se encuentra ya en el listado
+        if ($processYear && !in_array($processYear, $years)) {
+            $years[] = $processYear;
+        }
+
+        // Ordenar el arreglo de años (por ejemplo, en orden ascendente)
+        sort($years);
+
+        Log::info("Años obtenidos: " . implode(', ', $years));
 
         return response()->json($years);
     }
+
 
     public function obtenerIdRegistro(Request $request)
     {

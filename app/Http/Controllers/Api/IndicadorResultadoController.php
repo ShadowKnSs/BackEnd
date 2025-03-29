@@ -173,21 +173,23 @@ class IndicadorResultadoController extends Controller
         }
     }
 
-    public function getResultadosPlanControl()
-    {
-        try {
-            $resultados = DB::table('IndicadoresConsolidados as ic')
-                ->join('ResultadoIndi as ri', 'ic.idIndicador', '=', 'ri.idIndicador')
-                ->where('ic.origenIndicador', '=', 'ActividadControl')
-                ->select('ic.nombreIndicador', 'ri.resultadoSemestral1', 'ri.resultadoSemestral2')
-                ->get();
+    public function getResultadosPlanControl($idProceso) 
+{
+    try {
+        $resultados = DB::table('IndicadoresConsolidados as ic')
+            ->join('ResultadoIndi as ri', 'ic.idIndicador', '=', 'ri.idIndicador')
+            ->where('ic.origenIndicador', '=', 'ActividadControl')
+            ->where('ic.idProceso', '=', $idProceso)
+            ->select('ic.nombreIndicador', 'ri.resultadoSemestral1', 'ri.resultadoSemestral2')
+            ->get();
 
-            return response()->json([$resultados], 200);
-        } catch (\Exception $e) {
-            Log::error("Error al obtener los resultados de Plan de Control", ['error' => $e->getMessage()]);
-            return response()->json(['message' => 'Error al obtener los resultados de Plan de Control'], 500);
-        }
+        return response()->json($resultados, 200);
+    } catch (\Exception $e) {
+        Log::error("Error al obtener los resultados de Plan de Control", ['error' => $e->getMessage()]);
+        return response()->json(['message' => 'Error al obtener los resultados de Plan de Control'], 500);
     }
+}
+
 
     public function getResultadosIndMapaProceso()
     {

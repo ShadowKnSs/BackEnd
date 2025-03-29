@@ -360,5 +360,18 @@ class IndicadorConsolidadoController extends Controller
         return response()->json($resultado);
     }
 
+
+    public function obtenerIndicadoresConsolidados($idProceso)
+{
+    try {
+        // Suponiendo que tienes un modelo IndicadorConsolidado que representa la tabla de indicadores consolidados
+        $indicadores = IndicadorConsolidado::where('idProceso', $idProceso)->get();
+
+        return response()->json(['indicadores' => $indicadores], 200);
+    } catch (\Exception $e) {
+        \Log::error('Error al obtener indicadores consolidados: ' . $e->getMessage());
+        return response()->json(['error' => 'Error al obtener indicadores consolidados'], 500);
+    }
+}
 }
 

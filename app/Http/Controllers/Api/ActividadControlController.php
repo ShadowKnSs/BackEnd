@@ -11,26 +11,13 @@ use App\Models\IndicadorConsolidado;
 class ActividadControlController extends Controller
 {
     // Obtener todas las actividades
-    public function index(Request $request)
+    public function index($idProceso)
     {
-        // 1) Leer el query param "proceso" que te llega como ?proceso=XX
-        $idProceso = $request->query('proceso');  // ó $request->get('proceso')
-    
-        // 2) Construir la query
-        $query = ActividadControl::query();
-    
-        // 3) Si el usuario manda el param, filtramos
-        if ($idProceso) {
-            // Filtramos por idProceso
-            $query->where('idProceso', $idProceso);
-        }
-    
-        // 4) Obtenemos la colección resultante
-        $actividades = $query->get();
-    
-        // 5) Devolvemos en JSON
+        // Obtener las actividades de control asociadas al idProceso
+        $actividades = ActividadControl::where('idProceso', $idProceso)->get();
         return response()->json($actividades, 200);
     }
+    
     
 
     // Crear una nueva actividad

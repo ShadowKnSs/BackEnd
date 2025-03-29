@@ -82,6 +82,8 @@ Route::get('/registros/{idRegistro}', [RegistrosController::class, 'show']);
 // Route::post('procesos', [ProcessController::class, 'store']);
 Route::apiResource('procesos', controller: ProcessController::class);
 // Rutas principales de Indicadores Consolidados
+Route::get('indicadoresconsolidados/{idProceso}', [IndicadorConsolidadoController::class, 'obtenerIndicadoresConsolidados']);
+
 Route::apiResource('indicadoresconsolidados', IndicadorConsolidadoController::class);
 Route::get('indicadoresconsolidados', [IndicadorConsolidadoController::class, 'index']);
 
@@ -128,10 +130,13 @@ Route::put('cronograma/{id}', [CronogramaController::class, 'update']);
 //*********************************************************/
 //                  Para Manual Operativo
 //*********************************************************/
+Route::get('actividadcontrol/{idProceso}', [ActividadControlController::class, 'index']);
 Route::apiResource('controlcambios', ControlCambioController::class);
 Route::apiResource('mapaproceso', MapaProcesoController::class);
 Route::apiResource('indmapaproceso', IndMapaProcesoController::class);
 Route::apiResource('actividadcontrol', ActividadControlController::class);
+
+
 
 //Para Auditoria Interna
 Route::apiResource('auditorias', AuditoriaInternaController::class);
@@ -178,7 +183,7 @@ Route::put('analisisDatos/{idRegistro}/necesidad-interpretacion', [FormAnalisisD
 Route::get('analisisDatos/{idRegistro}', [FormAnalisisDatosController::class, 'show']);
 
 //Ruta para obtener resultados de los resultados de plan de control
-Route::get('/plan-control', [IndicadorResultadoController::class, 'getResultadosPlanControl']);
+Route::get('/plan-control/{idProceso}', [IndicadorResultadoController::class, 'getResultadosPlanControl']);
 Route::get('/mapa-proceso', [IndicadorResultadoController::class, 'getResultadosIndMapaProceso']);
 Route::get('/gestion-riesgos/{idRegistro}', [IndicadorResultadoController::class, 'getResultadosRiesgos']);
 
