@@ -8,6 +8,7 @@ use App\Models\Proceso; // Import the Process model
 use Illuminate\Support\Facades\Log;
 
 
+
 class ProcessController extends Controller
 {
     public function store(Request $request)
@@ -66,4 +67,25 @@ class ProcessController extends Controller
         $proceso->delete();
         return response()->json(['proceso' => $proceso], 200);
     }
+
+    // Obtener solo los nombres de los procesos
+    public function getNombres()
+    {
+        $nombres = Proceso::pluck('nombreProceso');
+        return response()->json(['procesos' => $nombres], 200);
+    }
+    
+
+    public function obtenerProcesosPorEntidad($idEntidad){
+         // Obtener todos los procesos de la entidad específica
+    $procesos = Proceso::where('idEntidad', $idEntidad)->get();
+
+    if ($procesos->isEmpty()) {
+        return response()->json(['message' => 'No se encontraron procesos para esta entidad'], 404);
+    }
+
+    return response()->json($procesos);
+    }
+   
 }
+

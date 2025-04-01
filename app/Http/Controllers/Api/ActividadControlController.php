@@ -4,35 +4,69 @@ namespace App\Http\Controllers\Api;
 
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\DB;
 use App\Models\ActividadControl;
+use App\Models\IndicadorConsolidado;
 
 class ActividadControlController extends Controller
 {
     // Obtener todas las actividades
-    public function index()
+    public function index($idProceso)
     {
-        return response()->json(ActividadControl::all(), 200);
+        // Obtener las actividades de control asociadas al idProceso
+        $actividades = ActividadControl::where('idProceso', $idProceso)->get();
+        return response()->json($actividades, 200);
     }
+    
+    
 
     // Crear una nueva actividad
     public function store(Request $request)
     {
-        $request->validate([
-            'idProceso' => 'required|integer',
-            'idFormulario' => 'required|integer',
-            'idResponsable' => 'required|integer',
-            'nombreActividad' => 'required|string|max:255',
-            'procedimiento' => 'required|string|max:255',
-            'caracteristicasVerificar' => 'required|string',
-            'criterioAceptacion' => 'required|string',
-            'frecuencia' => 'required|string|max:255',
-            'identificacionSalida' => 'required|string',
-            'registroSalida' => 'required|string',
-            'tratameinto' => 'required|string'
-        ]);
+        DB::beginTransaction();
+        try {
+            // 1) Crear la ActividadControl
+            // Ajusta los campos que recibes desde el front.
+            // Ejemplo: name="nombreActividad", name="idProceso", etc.
+            $actividad = ActividadControl::create([
+                'idProceso'              => $request->get('idProceso'),
+                'nombreActividad'        => $request->get('nombreActividad'),
+                'procedimiento'          => $request->get('procedimiento'),
+                'caracteriticasVerificar'=> $request->get('caracteriticasVerificar'),
+                'criterioAceptacion'     => $request->get('criterioAceptacion'),
+                'frecuencia'             => $request->get('frecuencia'),
+                'identificacionSalida'   => $request->get('identificacionSalida'),
+                'registroSalida'         => $request->get('registroSalida'),
+                'tratamiento'            => $request->get('tratamiento'),
+                'responsable'            => $request->get('responsable'),
+            ]);
 
-        $actividad = ActividadControl::create($request->all());
-        return response()->json($actividad, 201);
+            // 2) Crear el IndicadorConsolidado asociado
+            $indicador = IndicadorConsolidado::create([
+                'idRegistro'       => null, // o lo que tú necesites
+                'idProceso'        => $actividad->idProceso,
+                'nombreIndicador'  => $actividad->nombreActividad,  // clave
+                'origenIndicador'  => 'ActividadControl',
+                'periodicidad'     => 'Semestral',
+                'meta'             => 100,
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'message'   => 'ActividadControl y su indicador creados exitosamente.',
+                'actividad' => $actividad,
+                'indicador' => $indicador,
+            ], 201);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Error al crear ActividadControl e indicador: ' . $e->getMessage());
+            return response()->json([
+                'message' => 'Error al crear la actividad y el indicador',
+                'error'   => $e->getMessage()
+            ], 500);
+        }
     }
 
     // Mostrar una actividad específica
@@ -64,7 +98,7 @@ class ActividadControlController extends Controller
             'frecuencia' => 'string|max:255',
             'identificacionSalida' => 'string',
             'registroSalida' => 'string',
-            'tratameinto' => 'string'
+            'tratamiento' => 'string'
         ]);
 
         $actividad->update($request->all());

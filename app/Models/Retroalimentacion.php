@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class Retroalimentacion extends Model
 {
@@ -14,16 +14,17 @@ class Retroalimentacion extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'idIndicador',      // Se asume que es la FK al indicador consolidado
-        'metodo',           // Debe ser uno de los valores del ENUM ('Buzón Virtual', 'Encuesta', 'Buzón Físico')
+        'idIndicador',
+        'metodo',   // 'Buzon Virtual','Encuesta','Buzon Fisico'
         'cantidadFelicitacion',
         'cantidadSugerencia',
-        'cantidadQueja'
+        'cantidadQueja',
+        'total',
+        'idProceso'
     ];
 
-    // Relación: cada registro de retroalimentación pertenece a un indicador.
     public function indicador()
     {
-        return $this->belongsTo(AnalisisDatos::class, 'idIndicador', 'idAnalisisDatos');
+        return $this->belongsTo(IndicadorConsolidado::class, 'idIndicador', 'idIndicador');
     }
 }

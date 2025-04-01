@@ -11,7 +11,7 @@ class PlanCorrectivo extends Model
     public $timestamps = false; // O true, si usas timestamps
 
     protected $fillable = [
-        'idRegistro',
+        'idActividadMejora',
         'fechaInicio',
         'origenConformidad',
         'equipoMejora',
@@ -22,7 +22,9 @@ class PlanCorrectivo extends Model
         'causaRaiz',
         'estadoSimilares',
         'estadoConformidad',
-        'coordinadorPlan'
+        'coordinadorPlan',
+        'entidad',
+        'codigo'
     ];
 
     public function actividades()

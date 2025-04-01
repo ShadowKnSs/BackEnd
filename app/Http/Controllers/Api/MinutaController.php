@@ -148,4 +148,26 @@ class MinutaController extends Controller
             return response()->json(['error' => 'Error al eliminar la minuta'], 500);
         }
     }
+
+    public function getMinutasByRegistro($idRegistro)
+{
+    try {
+        Log::info("Obteniendo minutas para idRegistro: " . $idRegistro);
+
+        $minutas = SeguimientoMinuta::with(['actividades', 'asistentes', 'compromisos'])
+                    ->where('idRegistro', $idRegistro)
+                    ->get();
+
+        if ($minutas->isEmpty()) {
+            return response()->json(['message' => 'No hay minutas para este registro'], 404);
+        }
+
+        Log::info("Minutas obtenidas correctamente.");
+        return response()->json($minutas);
+    } catch (\Exception $e) {
+        Log::error("Error al obtener minutas por idRegistro: " . $e->getMessage());
+        return response()->json(['error' => 'Error al obtener minutas'], 500);
+    }
+}
+
 }

@@ -8,9 +8,14 @@ use HasFactory;
 class Registros extends Model
 {
     protected $table = 'Registros'; // Nombre de la tabla
+    protected $primaryKey = 'idRegistro';
 
-    protected $fillable = ['idProceso', 'año']; // Asegúrate de llenar estos campos
+    protected $fillable = ['idProceso', 'año', 'Apartado'];
 
-    // Opcionalmente, si tienes una columna de timestamps, la puedes desactivar si no es necesaria
     public $timestamps = false; 
+
+    public function proceso()
+    {
+        return $this->belongsTo(Proceso::class, 'idProceso', 'idProceso');
+    }
 }

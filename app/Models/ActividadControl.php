@@ -11,19 +11,18 @@ class ActividadControl extends Model
 
     protected $table = 'actividadcontrol';
     protected $primaryKey = 'idActividad';
-    public $timestamps = true;
-    
+    public $timestamps = false; // si no tienes created_at/updated_at
+
     protected $fillable = [
         'idProceso',
-        'idFormulario',
-        'idResponsable',
         'nombreActividad',
         'procedimiento',
-        'caracteristicasVerificar',
+        'caracteriticasVerificar',
         'criterioAceptacion',
         'frecuencia',
         'identificacionSalida',
         'registroSalida',
-        'tratameinto' // Posible error en el nombre
+        'tratamiento', //Posible error en el nombre
+        'responsable' 
     ];
 }
