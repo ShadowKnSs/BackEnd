@@ -42,11 +42,20 @@ use App\Http\Controllers\Api\PlanCorrectivoController;
 use App\Http\Controllers\Api\PlanTrabajoController;
 use App\Http\Controllers\Api\FuentePtController;
 use App\Http\Controllers\Api\ProyectoMejoraController;
+
+
+
 //Reporte
 use App\Http\Controllers\Api\ReporteProcesoController;
+
+use App\Http\Controllers\Api\BuscadorSemController;
+
+use App\Http\Controllers\Api\FormatosController;
 use App\Http\Controllers\Api\GraficaController;
 
 
+use App\Http\Controllers\Api\ReporteSemestralController;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 use App\Http\Controllers\Api\ReporteSemestralController;
 
@@ -241,6 +250,12 @@ Route::get('/indicadores/evaluacion-proveedores/{idProceso}/{anio}', [ReportePro
 Route::get('/vista-reporte', function () {
     return view('proceso');
 });
+
+Route::get('/buscar-por-anio', [BuscadorSemController::class, 'buscarPorAnio']);
+
+Route::post('/formatos', [FormatosController::class, 'store']);
+Route::get('/formatos', [FormatosController::class, 'index']);
+
 Route::post('/generar-pdf', [ReporteSemestralController::class, 'generarPDF']); // generar archivo pdf reporte semestral
 Route::get('/get-riesgos-sem', [dataSemController::class, 'obtenerData']); //obtener lista data semestral
 Route::get('/get-seguimiento-sem', [SeguimientoSemController::class, 'obtenerDatosSeguimiento']); //obtener la lista seguimiento semestral
