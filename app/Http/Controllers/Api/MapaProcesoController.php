@@ -10,9 +10,15 @@ use App\Models\MapaProceso;
 class MapaProcesoController extends Controller
 {
     // Obtener todos los registros
-    public function index()
+    public function index($idProceso)
     {
-        return response()->json(MapaProceso::all());
+        $mapa = MapaProceso::where('idProceso', $idProceso)->first();
+
+        if ($mapa) {
+            return response()->json($mapa);
+        } else {
+            return response()->json(['message' => 'Mapa de proceso no encontrado'], 404);
+        }
     }
 
     // Obtener un solo registro

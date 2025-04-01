@@ -40,15 +40,17 @@ class ReporteProcesoController extends Controller
         $validated = $request->validate([
             'idProceso' => 'required|integer',
             'nombreReporte' => 'required|string|max:255',
+            'anio' => 'required|string|max:4'
         ]);
-
+    
         try {
             $reporte = new ReporteProceso();
             $reporte->idProceso = $validated['idProceso'];
             $reporte->nombreReporte = $validated['nombreReporte'];
-            $reporte->fechaElaboracion = now(); // Se asigna la fecha actual
+            $reporte->anio = $validated['anio'];
+            $reporte->fechaElaboracion = now();
             $reporte->save();
-
+    
             return response()->json([
                 'message' => 'Reporte guardado correctamente',
                 'reporte' => $reporte,
@@ -58,6 +60,7 @@ class ReporteProcesoController extends Controller
             return response()->json(['error' => 'Error al guardar el reporte'], 500);
         }
     }
+    
 
     public function index()
     {

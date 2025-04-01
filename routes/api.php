@@ -139,6 +139,7 @@ Route::put('cronograma/{id}', [CronogramaController::class, 'update']);
 //                  Para Manual Operativo
 //*********************************************************/
 Route::get('actividadcontrol/{idProceso}', [ActividadControlController::class, 'index']);
+Route::get('mapaproceso/{idProceso}', [MapaProcesoController::class, 'index']);
 Route::apiResource('controlcambios', ControlCambioController::class);
 Route::apiResource('mapaproceso', MapaProcesoController::class);
 Route::apiResource('indmapaproceso', IndMapaProcesoController::class);
@@ -228,7 +229,7 @@ Route::post('/proyecto-mejora', [ProyectoMejoraController::class, 'store']);
 
 Route::post('/reportes-proceso', [ReporteProcesoController::class, 'store']);
 Route::get('/reportes-proceso', [ReporteProcesoController::class, 'index']);
-Route::delete('reportes-proceso/{idReporteProceso}', [ReporteProcesoController::class, 'destroy']);
+Route::delete('/reportes-proceso/{idReporteProceso}', [ReporteProcesoController::class, 'destroy']);
 Route::get('/generar-reporte/{idProceso}/{anio}', [ReporteProcesoController::class, 'generarReporte']);
 Route::get('/datos-reporte/{idProceso}/{anio}', [ReporteProcesoController::class, 'obtenerDatosReporte']);
 Route::get('/mapa-proceso/{idProceso}', [ReporteProcesoController::class, 'obtenerMapaProceso']);
