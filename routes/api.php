@@ -218,7 +218,8 @@ Route::post('/proyecto-mejora', [ProyectoMejoraController::class, 'store']);
 //                  Para Reporte de Procesos
 //*********************************************************/
 
-// Route::get('/generar-reporte', [ReporteProcesoController::class, 'generarReporte']);
+Route::post('/reportes-proceso', [ReporteProcesoController::class, 'store']);
+Route::get('/reportes-proceso', [ReporteProcesoController::class, 'index']);
 Route::get('/generar-reporte/{idProceso}/{anio}', [ReporteProcesoController::class, 'generarReporte']);
 Route::get('/datos-reporte/{idProceso}/{anio}', [ReporteProcesoController::class, 'obtenerDatosReporte']);
 Route::get('/mapa-proceso/{idProceso}', [ReporteProcesoController::class, 'obtenerMapaProceso']);

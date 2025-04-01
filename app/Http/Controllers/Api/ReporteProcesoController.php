@@ -26,6 +26,7 @@ use App\Models\Recurso;
 use App\Models\ActividadesPM;
 use App\Models\PlanCorrectivo;
 use App\Models\ActividadPlan;
+use App\Models\ReporteProceso;
 
 use App\Models\EvaluaProveedores;
 
@@ -34,6 +35,41 @@ use Illuminate\Support\Facades\Log;
 
 class ReporteProcesoController extends Controller
 {
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'idProceso' => 'required|integer',
+            'nombreReporte' => 'required|string|max:255',
+        ]);
+
+        try {
+            $reporte = new ReporteProceso();
+            $reporte->idProceso = $validated['idProceso'];
+            $reporte->nombreReporte = $validated['nombreReporte'];
+            $reporte->fechaElaboracion = now(); // Se asigna la fecha actual
+            $reporte->save();
+
+            return response()->json([
+                'message' => 'Reporte guardado correctamente',
+                'reporte' => $reporte,
+            ], 201);
+        } catch (\Exception $e) {
+            \Log::error("Error al guardar reporte", ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Error al guardar el reporte'], 500);
+        }
+    }
+
+    public function index()
+    {
+        try {
+            // Obtener todos los reportes ordenados por fecha de elaboración (descendente)
+            $reportes = ReporteProceso::orderBy('fechaElaboracion', 'desc')->get();
+            return response()->json(['reportes' => $reportes], 200);
+        } catch (\Exception $e) {
+            Log::error('Error al obtener reportes', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Error al obtener reportes'], 500);
+        }
+    }
     public function generarReporte($idProceso, $anio)
     {
         try {
