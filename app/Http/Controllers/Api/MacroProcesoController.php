@@ -14,4 +14,13 @@ class MacroProcesoController extends Controller
         $macroprocesos = MacroProceso::all();
         return response()->json(['macroprocesos' => $macroprocesos], 200);
     }
+
+    public function index1()
+    {
+        $macroprocesos = Macroproceso::select('idMacroproceso', 'tipoMacroproceso')
+                                   ->orderBy('tipoMacroproceso')
+                                   ->get();
+        
+        return response()->json(['macroprocesos' => $macroprocesos]);
+    }
 }

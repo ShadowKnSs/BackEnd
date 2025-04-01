@@ -13,4 +13,9 @@ class Registros extends Model
     protected $fillable = ['idProceso', 'año', 'Apartado'];
 
     public $timestamps = false; 
+
+    public function proceso()
+    {
+        return $this->belongsTo(Proceso::class, 'idProceso', 'idProceso');
+    }
 }
