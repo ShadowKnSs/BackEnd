@@ -18,69 +18,64 @@ class NoticiasController extends Controller
 
         $noticias = Noticia::all();
 
-        Log::info('[NoticiasController@index] Se cargaron '.count($noticias).' noticias.');
+        Log::info('[NoticiasController@index] Se cargaron ' . count($noticias) . 'Noticias.');
 
-        return response()->json([$noticias], 200);
+        return response()->json($noticias, 200);
     }
 
     // POST /api/noticias
     public function store(Request $request)
     {
-        Log::info('[NoticiasController@store] Iniciando creación de noticia.', [
-            'request_data' => $request->all()
-        ]);
-
-        //Valida campos
+        // 1. Validar
         $request->validate([
             'idUsuario' => 'required|integer',
             'titulo' => 'required|string',
             'descripcion' => 'nullable|string',
             'imagen' => 'nullable|file|mimes:jpg,png,jpeg|max:2048'
         ]);
-      
-        //dd($request->all(), $request->file('imagen'));
-        //Manejo de la imagen
-        $rutaImg = null;
-        if ($request->hasFile('imagen')) {
-            $file = $request->file('imagen');
-            $path = $file->store('public/img'); 
-// Por defecto: /storage/img/xxxxx.png
 
-            $relativeUrl = Storage::url($path); // "/storage/img/xxxxx.png"
-
-// Generamos la URL absoluta con la URL de la app
-            $absoluteUrl = config('app.url') . $relativeUrl;
-// => "http://localhost:8000/storage/img/xxxxx.png"
-
-            $rutaImg = $relativeUrl;
-
-            Log::info('[NoticiasController@store] Imagen guardada en: '.$rutaImg);
-        }
-
-        //Manejo de fecha
-        $fechaPublicacion = Carbon::now();
-
+        // 2. Crear el registro SIN la imagen
+        $fechaPublicacion = now();
         $noticia = Noticia::create([
             'idUsuario' => $request->idUsuario,
             'titulo' => $request->titulo,
             'descripcion' => $request->descripcion,
             'fechaPublicacion' => $fechaPublicacion,
-            'rutaImg' => $rutaImg
+            'rutaImg' => null // por ahora vacío
         ]);
 
-        Log::info('[NoticiasController@store] Noticia creada con ID: '.$noticia->idNoticias);
+        // 3. Subir la imagen con nombre usando $noticia->id
+        $rutaImg = null;
+        if ($request->hasFile('imagen')) {
+            $file = $request->file('imagen');
+            $fileName = time() . '_' . $file->getClientOriginalName();
+            $filePath = 'img/' . $fileName;
+    
+            // Guardamos el archivo en /storage/app/public/img
+            Storage::disk('public')->putFileAs('img', $file, $fileName);
+    
+            // Ruta absoluta (opcional)
+            $rutaImg = config('app.url') . Storage::url($filePath);
+        }
+    
+        // 4. Actualizar la noticia con la ruta final
+        $noticia->rutaImg = $rutaImg;
+        $noticia->save();
+
+       
 
         return response()->json($noticia, 201);
     }
 
+
     // GET /api/noticias/{id}
     public function show($id)
     {
-        Log::info('[NoticiasController@show] Cargando noticia con ID: '.$id);
+        Log::info('[NoticiasController@show] Cargando noticia con ID: ' . $id);
 
         $noticia = Noticia::findOrFail($id);
 
-        Log::info('[NoticiasController@show] Noticia encontrada: '.$noticia->titulo);
+        Log::info('[NoticiasController@show] Noticia encontrada: ' . $noticia->titulo);
 
         return response()->json($noticia);
     }
@@ -88,58 +83,60 @@ class NoticiasController extends Controller
     // PUT /api/noticias/{id}
     public function update(Request $request, $id)
     {
-        Log::info('[NoticiasController@update] Iniciando actualización de noticia con ID: '.$id, [
-            'request_data' => $request->all()
-        ]);
-
         $noticia = Noticia::findOrFail($id);
 
         $request->validate([
             'titulo' => 'required|string',
             'descripcion' => 'nullable|string',
-            'imagen' => 'nullable|file|mimes:jpg,png,jpeg'
+            'imagen' => 'nullable|file|mimes:jpg,png,jpeg|max:2048'
         ]);
 
         $rutaImg = $noticia->rutaImg;
 
+        // Si hay nueva imagen
         if ($request->hasFile('imagen')) {
-            Log::info('[NoticiasController@update] Se subió una nueva imagen.');
-
+            // Eliminar imagen anterior
+            if ($noticia->rutaImg) {
+                $oldPath = str_replace('/storage', 'public', $noticia->rutaImg);
+                Storage::delete($oldPath);
+            }
+            
+            // Guardar nueva imagen
             $file = $request->file('imagen');
-            $path = $file->store('public/img'); 
-// Por defecto: /storage/img/xxxxx.png
+            $fileName = time() . '_' . $file->getClientOriginalName();
+            $filePath = 'img/' . $fileName;
+            Storage::disk('public')->putFileAs('img', $file, $fileName);
 
-        $relativeUrl = Storage::url($path); // "/storage/img/xxxxx.png"
-
-// Generamos la URL absoluta con la URL de la app
-        $absoluteUrl = config('app.url') . $relativeUrl;
-// => "http://localhost:8000/storage/img/xxxxx.png"
-
-        $rutaImg = $relativeUrl;
-
-            Log::info('[NoticiasController@update] Nueva imagen guardada en: '.$rutaImg);
+            // Ruta absoluta (opcional)
+            $rutaImg = config('app.url') . Storage::url($filePath);
         }
 
+        // Actualizar
         $noticia->update([
             'titulo' => $request->titulo,
             'descripcion' => $request->descripcion,
             'rutaImg' => $rutaImg
         ]);
 
-        Log::info('[NoticiasController@update] Noticia actualizada con ID: '.$id);
-
         return response()->json($noticia);
     }
+
 
     // DELETE /api/noticias/{id}
     public function destroy($id)
     {
-        Log::info('[NoticiasController@destroy] Eliminando noticia con ID: '.$id);
+        Log::info('[NoticiasController@destroy] Eliminando noticia con ID: ' . $id);
 
         $noticia = Noticia::findOrFail($id);
+
+        if ($noticia->rutaImg) {
+            $oldPath = str_replace('/storage', 'public', $noticia->rutaImg);
+            Storage::delete($oldPath);
+        }
+
         $noticia->delete();
 
-        Log::info('[NoticiasController@destroy] Noticia con ID: '.$id.' eliminada correctamente.');
+        Log::info('[NoticiasController@destroy] Noticia con ID: ' . $id . ' eliminada correctamente.');
 
         return response()->json(['message' => 'Noticia eliminada correctamente']);
     }

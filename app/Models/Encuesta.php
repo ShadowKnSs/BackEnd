@@ -17,7 +17,8 @@ class Encuesta extends Model
         'idIndicador',         // FK que relaciona con la tabla AnalisisDatos o Indicadores
         'malo',
         'regular',
-        'excelenteBueno',
+        'bueno',
+        'excelente',
         'noEncuestas'
     ];
 }

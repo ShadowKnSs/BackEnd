@@ -4,34 +4,28 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Carbon\Carbon; 
 
 class EventoAviso extends Model
 {
     use HasFactory;
 
-    protected $table = 'eventosavisos';
+    protected $table = 'EventosAvisos';
     protected $primaryKey = 'idEventosAvisos';
 
+    public $timestamps = false;
+
     protected $fillable = [
-        'idUsario',
+        'idUsuario',
         'fechaPublicacion',
         'tipo',
         'rutaImg'
     ];
 
-    protected $casts = [
-        'fechaPublicacion' => 'datetime',
-    ];
-
-    // Al serializar en JSON, puedes mutar la fecha
-    protected $appends = ['fechaPublicacionFormatted'];
-
-    public function getFechaPublicacionFormattedAttribute()
+    
+    public function getFechaPublicacionAttribute($value)
     {
-        if ($this->fechaPublicacion) {
-            // Formato dd-mm-yyyy HH:mm
-            return $this->fechaPublicacion->format('d-m-Y H:i');
-        }
-        return null;
+        if (!$value) return null;
+        return \Carbon\Carbon::parse($value)->format('d-m-Y H:i');
     }
 }
