@@ -263,3 +263,4 @@ Route::get('/get-acciones-sem', [ActMejoraSemController::class, 'obtenerDatosAcc
 Route::get('/get-indicador-sem', [IndicadorSemController::class, 'obtenerDatosIndicadores']);//obtener l alista indicadores semestral
 Route::post('/reporte-semestral', [SaveReportSemController::class, 'store']); //registrar la generacion de un reporte semestral
 Route::get('/reportes-semestrales', [SaveReportSemController::class, 'obtenerReportesSemestrales']); //obtener todos los reportes semestrales generados
+Route::get('/verificar-reporte', [SaveReportSemController::class, 'verificarReporteExistente']);
