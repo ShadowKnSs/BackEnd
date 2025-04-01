@@ -682,4 +682,16 @@ class ReporteProcesoController extends Controller
     }
 
 
+    public function destroy($idReporteProceso)
+    {
+        try {
+            $reporte = ReporteProceso::findOrFail($idReporteProceso);
+            $reporte->delete();
+            return response()->json(['message' => 'Reporte eliminado correctamente'], 200);
+        } catch (\Exception $e) {
+            \Log::error("Error al eliminar el reporte", ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Error al eliminar el reporte'], 500);
+        }
+    }
+
 }
