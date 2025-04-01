@@ -57,3 +57,4 @@ class AuditoriaInterna extends Model
     }
 
 }
+
