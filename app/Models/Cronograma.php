@@ -23,7 +23,8 @@ class Cronograma extends Model
         'estado',
         'descripcion',
         'nombreProceso',
-        'nombreEntidad'
+        'nombreEntidad',
+        'auditorLider'
     ];
 
     public function proceso()
