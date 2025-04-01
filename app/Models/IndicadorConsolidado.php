@@ -9,13 +9,12 @@ class IndicadorConsolidado extends Model
 {
     use HasFactory;
 
-    protected $table = 'IndicadoresConsolidados'; // Nombre exacto de tu tabla
-    protected $primaryKey = 'idIndicador';        // Nueva PK
+    protected $table = 'IndicadoresConsolidados';
+    protected $primaryKey = 'idIndicadorConsolidado';
+
     public $timestamps = false;
 
     protected $fillable = [
-        'idRegistro',
-        'idProceso',
         'nombreIndicador',
         'origenIndicador',
         'periodicidad',
@@ -37,12 +36,6 @@ class IndicadorConsolidado extends Model
     // Relación 1:1 con Retroalimentacion
     public function retroalimentacion()
     {
-        return $this->hasOne(Retroalimentacion::class, 'idIndicador', 'idIndicador');
-    }
-
-    // Relación 1:1 con EvaluaProveedores
-    public function evaluaProveedores()
-    {
-        return $this->hasOne(EvaluaProveedores::class, 'idIndicador', 'idIndicador');
+        return $this->hasOne(AnalisisDatos::class, 'idIndicadorConsolidado', 'idIndicadorConsolidado');
     }
 }

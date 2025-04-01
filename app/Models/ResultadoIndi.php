@@ -13,6 +13,7 @@ class ResultadoIndi extends Model
     // Asumes que la PK es el mismo idIndicador (1:1 con IndicadoresConsolidados)
     protected $primaryKey = 'idIndicador';
     public $incrementing = false;  // si no quieres que sea autoincremental
+
     public $timestamps = false;
 
     protected $fillable = [
@@ -26,5 +27,6 @@ class ResultadoIndi extends Model
     {
         // belongsTo => la FK local es idIndicador, la PK remota es idIndicador
         return $this->belongsTo(IndicadorConsolidado::class, 'idIndicador', 'idIndicador');
+        return $this->belongsTo(IndicadorConsolidado::class, 'idIndicador');
     }
 }

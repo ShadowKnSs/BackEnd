@@ -8,7 +8,7 @@ class EntidadDependencia extends Model
 {
     protected $table = 'entidaddependencia';
 
-    protected $primaryKey = 'idEntidadDependecia';
+    protected $primaryKey = 'idEntidadDependencia';
 
     protected $fillable = ['ubicacion', 'nombreEntidad' ];
 

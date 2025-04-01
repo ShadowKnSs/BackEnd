@@ -13,6 +13,15 @@ class EntidadDependenciaController extends Controller
         return response()->json(['entidades' => $entidades], 200);
     }
 
+    public function index1()
+    {
+        $entidades = EntidadDependencia::select('idEntidadDependecia', 'nombreEntidad')
+                                     ->orderBy('nombreEntidad')
+                                     ->get();
+        
+        return response()->json(['entidades' => $entidades]);
+    }
+
     // Función para obtener los nombres de las entidades
     public function getNombres()
     {

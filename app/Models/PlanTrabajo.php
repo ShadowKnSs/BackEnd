@@ -16,7 +16,10 @@ class PlanTrabajo extends Model
         'fechaElaboracion',
         'objetivo',
         'fechaRevision',
-        'revisadoPor'
+        'revisadoPor', 
+        'estado',
+        'fuente',
+        'entregable'
         
     ];
 

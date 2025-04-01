@@ -1,4 +1,10 @@
 <?php
+use App\Http\Controllers\Api\ActMejoraSemController;
+use App\Http\Controllers\Api\AuditoriaSemController;
+use App\Http\Controllers\Api\dataSemController;
+use App\Http\Controllers\Api\IndicadorSemController;
+use App\Http\Controllers\Api\SaveReportSemController;
+use App\Http\Controllers\Api\SeguimientoSemController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Api\MacroProcesoController;
@@ -41,13 +47,13 @@ use App\Http\Controllers\Api\ProyectoMejoraController;
 use App\Http\Controllers\Api\ReporteProcesoController;
 
 use App\Http\Controllers\Api\BuscadorSemController;
+use App\Http\Controllers\Api\BuscadorAudiController;
+use App\Http\Controllers\Api\BuscadorProcController;
 
 use App\Http\Controllers\Api\FormatosController;
 
 
 use App\Http\Controllers\Api\ReporteSemestralController;
-use Barryvdh\DomPDF\Facade\Pdf;
-
 
 Route::get('macroprocesos', [MacroProcesoController::class, 'index']);
 Route::get('entidades', [EntidadDependenciaController::class, 'index']);
@@ -240,17 +246,11 @@ Route::post('/generar-pdf', function (Request $request) {
     }
 });
 
-//Reporte
-
-// Route::get('/generar-reporte', [ReporteProcesoController::class, 'generarReporte']);
-Route::get('/generar-reporte/{idProceso}/{anio}', [ReporteProcesoController::class, 'generarReporte']);
-Route::get('/datos-reporte/{idProceso}/{anio}', [ReporteProcesoController::class, 'obtenerDatosReporte']);
-Route::get('/mapa-proceso/{idProceso}', [ReporteProcesoController::class, 'obtenerMapaProceso']);
-Route::get('/vista-reporte', function () {
-    return view('proceso');
-});
+Route::get('/formatos', [FormatosController::class, 'index']);
+Route::post('/formatos', [FormatosController::class, 'store']);
 
 Route::get('/buscar-por-anio', [BuscadorSemController::class, 'buscarPorAnio']);
 
-Route::post('/formatos', [FormatosController::class, 'store']);
-Route::get('/formatos', [FormatosController::class, 'index']);
+Route::get('/buscar-auditorias', [BuscadorAudiController::class, 'buscarPorAnio']);
+
+Route::get('/procesos-buscar', [BuscadorProcController::class, 'buscarPorAnio']);

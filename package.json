@@ -16,6 +16,7 @@
         "vite": "^6.0"
     },
     "dependencies": {
+        "chart.js": "^4.4.8",
         "react": "^15.7.0",
         "react.dom": "^1.0.1"
     }

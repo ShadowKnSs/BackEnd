@@ -18,19 +18,13 @@ class EvaluaProveedores extends Model
         'confiable',
         'noConfiable',
         'condicionado',
-        'metaCondicionado',
-        'metaNoConfiable',
-        'resultadoConfiableSem1',
-        'resultadoConfiableSem2',
-        'resultadoCondicionadoSem1',
-        'resultadoCondicionadoSem2',
-        'resultadoNoConfiableSem1',
-        'resultadoNoConfiableSem2'
-
+        'noConfiable',
+        'idformAnalisisDatos',
+        'necesidad',
+        'interpretacion'
     ];
-
-    public function indicador()
+    public function formAnalisisDatos()
     {
-        return $this->belongsTo(IndicadorConsolidado::class, 'idIndicador', 'idIndicador');
+        return $this->belongsTo(formAnalisisDatos::class, 'id_formAnalisisDatos', 'idformAnalisisDatos');
     }
 }

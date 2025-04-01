@@ -6,38 +6,52 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\View;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
+use Dompdf\Dompdf;
+use Dompdf\Options;
 
 class ReporteSemestralController extends Controller
 {
-    //
-    /*public function generarPDF(Request $request)
-    {
-        // Recibimos los datos desde React
-        $data = $request->all();
-
-        // Renderizamos la vista del PDF con los datos recibidos
-        $pdf = Pdf::loadView('pdf.reporte_semestral', compact('data'));
-
-        // Devolver el PDF para descargar
-        return $pdf->download('ReporteSemestral.pdf');
-    }*/
     public function generarPDF(Request $request)
-    {
-        // Validar los datos recibidos
-        $validatedData = $request->validate([
-            'reportData' => 'required|array',
-            'reportData.nombreProceso' => 'required|string',
-            'reportData.entidad' => 'required|string',
-            // Añadir más validaciones para cada campo según lo que recibas
-        ]);
+{
+    // Validar que las variables obligatorias estén presentes
+    $request->validate([
+        'anio' => 'required',
+        'periodo' => 'required',
+        'conclusion' => 'required'
+    ]);
 
-        // Obtener los datos que se pasan desde el frontend
-        $data = $request->input('reportData');
+    // Obtener los datos del request
+    $imagenes = $request->input('imagenes', []);
+    $datosRiesgos = $request->input('listas.datosRiesgos', []);
+    $datosIndicadores = $request->input('listas.datosIndicadores', []);
+    $datosAccionesMejora = $request->input('listas.datosAccionesMejora', []);
+    $datosAuditorias = $request->input('listas.datosAuditorias', []);
+    $datosSeguimiento = $request->input('listas.datosSeguimiento', []);
+    $fortalezas = $request->input('fortalezas', []);
+    $debilidades = $request->input('debilidades', []);
+    $conclusion = $request->input('conclusion');
+    $anio = $request->input('anio');
+    $periodo = $request->input('periodo');
 
-        // Generar el PDF con los datos
-        $pdf = Pdf::loadView('reportes.reporte_semestral', compact('data'));
+    // Generar el PDF con los datos recibidos
+    $pdf = PDF::loadView('pdf.reporte', compact(
+        'imagenes',
+        'datosRiesgos',
+        'datosIndicadores',
+        'datosAccionesMejora',
+        'datosAuditorias',
+        'datosSeguimiento',
+        'fortalezas',
+        'debilidades',
+        'conclusion',
+        'anio',
+        'periodo'
+    ));
 
-        // Retornar el PDF como una respuesta
-        return $pdf->download('reporte_semestral.pdf');
-    }
+    // Descargar el archivo PDF
+    return $pdf->download('reporte_semestral.pdf');
+}
+
 }
