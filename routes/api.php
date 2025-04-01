@@ -57,7 +57,6 @@ use App\Http\Controllers\Api\GraficaController;
 use App\Http\Controllers\Api\ReporteSemestralController;
 use Barryvdh\DomPDF\Facade\Pdf;
 
-use App\Http\Controllers\Api\ReporteSemestralController;
 
 Route::get('macroprocesos', [MacroProcesoController::class, 'index']);
 Route::get('entidades', [EntidadDependenciaController::class, 'index']);
