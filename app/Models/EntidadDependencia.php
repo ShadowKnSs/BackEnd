@@ -14,7 +14,7 @@ class EntidadDependencia extends Model
 
     public function procesos()
     {
-        return $this->hasMany(Proceso::class, 'idEntidad', 'idEntidadDependecia');
+        return $this->hasMany(Proceso::class, 'idEntidad', 'idEntidadDependencia');
     }
 
 }

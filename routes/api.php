@@ -61,6 +61,10 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 
 Route::get('macroprocesos', [MacroProcesoController::class, 'index']);
+//*********************************************************/
+//                  Entidades/Dependencias
+//*********************************************************/
+Route::post('/entidades-por-usuario', [EntidadDependenciaController::class, 'entidadesPorUsuario']); //Agregada por JRH 05/04/2025
 Route::get('entidades', [EntidadDependenciaController::class, 'index']);
 Route::get('/entidades/{id}', [EntidadDependenciaController::class, 'show']);
 Route::get('lideres', [LiderController::class, 'index']); 
@@ -132,7 +136,7 @@ Route::apiResource('eventos-avisos', EventosAvisosController::class);
 //Route::apiResource('cronogramas', CronogramaController::class);
 Route::get('entidad-nombres', [EntidadDependenciaController::class, 'getNombres']);
 Route::get('procesos-nombres', [ProcessController::class, 'getNombres']);
-Route::get('cronograma', [CronogramaController::class, 'index']);
+Route::post('cronograma/filtrar', [CronogramaController::class, 'index']);
 Route::post('cronograma', [CronogramaController::class, 'store']);
 Route::put('cronograma/{id}', [CronogramaController::class, 'update']);
 

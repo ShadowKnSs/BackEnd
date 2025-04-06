@@ -39,6 +39,6 @@ class Proceso extends Model
      // Relación con EntidadDependencia
      public function entidad()
      {
-         return $this->belongsTo(EntidadDependencia::class, 'idEntidad', 'idEntidadDependecia');
+         return $this->belongsTo(EntidadDependencia::class, 'idEntidad', 'idEntidadDependencia');
      }
 }
