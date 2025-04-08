@@ -39,6 +39,9 @@ use App\Http\Controllers\Api\GraficaController;
 
 
 
+use App\Http\Controllers\Api\TokenTemporalController;
+
+
 
 Route::get('macroprocesos', [MacroProcesoController::class, 'index']);
 Route::get('entidades', [EntidadDependenciaController::class, 'index']);
@@ -159,7 +162,6 @@ Route::delete('gestionriesgos/{idGesRies}/riesgos/{idRiesgo}', [RiesgoController
 
 Route::get('analisisDatos/{idformAnalisisDatos}/analisis', [FormAnalisisDatosController::class, 'show']);
 Route::put('analisisDatos/{idRegistro}/necesidad-interpretacion', [FormAnalisisDatosController::class, 'updateNecesidadInterpretacion']);
-Route::get('analisisDatos/{idRegistro}', [FormAnalisisDatosController::class, 'show']);
 
 //Ruta para obtener resultados de los resultados de plan de control
 Route::get('/plan-control', [IndicadorResultadoController::class, 'getResultadosPlanControl']);
@@ -216,3 +218,5 @@ Route::get('/indicadores/satisfaccion-cliente/{idProceso}/{anio}', [ReporteProce
 Route::get('/vista-reporte', function () {
     return view('proceso');
 });
+
+Route::post('/generar-token', [TokenTemporalController::class, 'generar']);
