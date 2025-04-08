@@ -19,7 +19,6 @@ class ActividadControlController extends Controller
     }
     
     
-
     // Crear una nueva actividad
     public function store(Request $request)
     {
