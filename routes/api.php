@@ -220,3 +220,4 @@ Route::get('/vista-reporte', function () {
 });
 
 Route::post('/generar-token', [TokenTemporalController::class, 'generar']);
+Route::post('/validar-token', [TokenTemporalController::class, 'validar']);
