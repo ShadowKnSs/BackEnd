@@ -6,7 +6,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reporte de Proceso</title>
     <style>
-        /* Estilos generales */
+        table {
+            word-break: break-word;
+            table-layout: fixed;
+        }
+
+        th,
+        td {
+            word-wrap: break-word;
+            word-break: break-word;
+        }
+
         body {
             font-family: Arial, sans-serif;
             margin: 40px;
@@ -32,8 +42,11 @@
             font-size: 24px;
             font-weight: bold;
             margin-bottom: 20px;
+            position: relative;
+            display: inline-block;
             color: #0e75cb;
         }
+
 
         .section {
             margin-bottom: 15px;
@@ -89,30 +102,34 @@
         </p>
     @endif
 
-    <!-- Información General del Proceso -->
+    <!-- Norma y Año de Certificación en la misma línea -->
     <div class="section">
         <span class="bold">Norma:</span> {{ $norma }} |
         <span class="bold">Año de Certificación:</span> {{ $anioCertificacion }}
     </div>
 
+    <!-- Entidad y Nombre del Proceso en el mismo renglón -->
     <div class="section">
         <span class="bold">Entidad/Dependencia:</span> {{ $entidad }} |
         <span class="bold">Nombre del Proceso:</span> {{ $nombreProceso }}
     </div>
 
+    <!-- Líder del Proceso -->
     <div class="section">
         <span class="bold">Líder del Proceso:</span> {{ $liderProceso }}
     </div>
 
+    <!-- Objetivo -->
     <div class="section">
         <span class="bold">Objetivo:</span> {{ $objetivo }}
     </div>
 
+    <!-- Alcance -->
     <div class="section">
         <span class="bold">Alcance:</span> {{ $alcance }}
     </div>
 
-    <!-- Estado del Proceso -->
+    <!-- Estado con color -->
     <div class="section">
         @if ($estado == 'Activo')
             <span class="status status-activo">Activo</span>
@@ -498,6 +515,9 @@
                     @endforeach
                 </tbody>
             </table>
+                @endforeach
+            </tbody>
+        </table>
 
             <!-- Evaluación de la Efectividad -->
             <h3 style="margin-top: 20px;">4. Evaluación de la Efectividad</h3>

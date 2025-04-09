@@ -55,6 +55,9 @@ use App\Http\Controllers\Api\FormatosController;
 use App\Http\Controllers\Api\GraficaController;
 
 
+
+use App\Http\Controllers\Api\TokenTemporalController;
+
 use App\Http\Controllers\Api\ReporteSemestralController;
 use Barryvdh\DomPDF\Facade\Pdf;
 
@@ -202,7 +205,6 @@ Route::delete('gestionriesgos/{idGesRies}/riesgos/{idRiesgo}', [RiesgoController
 
 Route::get('analisisDatos/{idformAnalisisDatos}/analisis', [FormAnalisisDatosController::class, 'show']);
 Route::put('analisisDatos/{idRegistro}/necesidad-interpretacion', [FormAnalisisDatosController::class, 'updateNecesidadInterpretacion']);
-Route::get('analisisDatos/{idRegistro}', [FormAnalisisDatosController::class, 'show']);
 
 //Ruta para obtener resultados de los resultados de plan de control
 Route::get('/plan-control/{idProceso}', [IndicadorResultadoController::class, 'getResultadosPlanControl']);
@@ -311,6 +313,9 @@ Route::get('/indicadores/evaluacion-proveedores/{idProceso}/{anio}', [ReportePro
 Route::get('/vista-reporte', function () {
     return view('proceso');
 });
+
+Route::post('/generar-token', [TokenTemporalController::class, 'generar']);
+Route::post('/validar-token', [TokenTemporalController::class, 'validar']);
 
 Route::get('/buscar-por-anio', [BuscadorSemController::class, 'buscarPorAnio']);
 

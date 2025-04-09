@@ -99,6 +99,7 @@ class ReporteProcesoController extends Controller
                 ->where('origenIndicador', 'ActividadControl')->get();
             foreach ($indicadores as $indicador) {
                 $resultados = ResultadoIndi::where('idIndicador', $indicador->idIndicador)->first();
+
                 $planControlIndicadores[] = (object) [
                     'nombreIndicador' => $indicador->nombreIndicador,
                     'meta' => $indicador->meta,
@@ -125,11 +126,18 @@ class ReporteProcesoController extends Controller
         $seguimientos = $registroSeg ? SeguimientoMinuta::where('idRegistro', $registroSeg->idRegistro)->get() : collect();
         $idSeguimientos = $seguimientos->pluck('idSeguimiento')->toArray();
         $asistentes = Asistente::whereIn('idSeguimiento', $idSeguimientos)->get();
-        $actividadesSeg = ActividadMinuta::whereIn('idSeguimiento', $idSeguimientos)->get();
-        $compromisosSeg = CompromisoMinuta::whereIn('idSeguimiento', $idSeguimientos)->get();
+        $actividadesSeg= ActividadMinuta::whereIn('idSeguimiento', $idSeguimientos)->get();
+        $compromisosSeg= CompromisoMinuta::whereIn('idSeguimiento', $idSeguimientos)->get();
 
-        $registroAcMejora = $this->getRegistro($idProceso, $anio, 'Acciones de Mejora');
-        $acMejora = $registroAcMejora ? ActividadMejora::where('idRegistro', $registroAcMejora->idRegistro)->get() : collect();
+        $registroAcMejora = Registros::where('idProceso', $idProceso)
+            ->where('año', $anio)
+            ->where('apartado', 'Acciones de Mejora')
+            ->first();
+
+        if (!$registroAcMejora) {
+            return response()->json(['error' => 'No se encontró el registro.'], 404);
+        }
+        $acMejora = ActividadMejora::where('idRegistro', $registroAcMejora->idRegistro)->get();
         $idAccMejora = $acMejora->pluck('idActividadMejora')->toArray();
         $proyectoMejora = ProyectoMejora::whereIn('idActividadMejora', $idAccMejora)->first();
         $recursos = optional($proyectoMejora)->idProyectoMejora ? Recurso::where('idProyectoMejora', $proyectoMejora->idProyectoMejora)->get() : collect();
@@ -373,20 +381,20 @@ class ReporteProcesoController extends Controller
                         $excelenteBueno = ($encuesta->bueno + $encuesta->excelente);
                         $porcentaje = $total > 0 ? round(($excelenteBueno * 100) / $total, 2) : 0;
 
-                        $base += [
-                            'noEncuestas' => $total,
-                            'malo' => $encuesta->malo,
-                            'regular' => $encuesta->regular,
-                            'bueno' => $encuesta->bueno,
-                            'excelente' => $encuesta->excelente,
-                            'porcentajeEB' => $porcentaje,
-                        ];
-                    }
-                } elseif ($indicador->origenIndicador === 'Retroalimentacion') {
-                    $retro = \App\Models\Retroalimentacion::where('idIndicador', $indicador->idIndicador)->first();
+                    $base += [
+                        'noEncuestas' => $total,
+                        'malo' => $encuesta->malo,
+                        'regular' => $encuesta->regular,
+                        'bueno' => $encuesta->bueno,
+                        'excelente' => $encuesta->excelente,
+                        'porcentajeEB' => $porcentaje,
+                    ];
+                }
+            } elseif ($indicador->origenIndicador === 'Retroalimentacion') {
+                $retro = \App\Models\Retroalimentacion::where('idIndicador', $indicador->idIndicador)->first();
 
-                    if ($retro) {
-                        $total = $retro->cantidadFelicitacion + $retro->cantidadSugerencia + $retro->cantidadQueja;
+                if ($retro) {
+                    $total = $retro->cantidadFelicitacion + $retro->cantidadSugerencia + $retro->cantidadQueja;
 
                         $base += [
                             'felicitaciones' => $retro->cantidadFelicitacion,
@@ -400,14 +408,14 @@ class ReporteProcesoController extends Controller
                 $resultado[] = $base;
             }
 
-            return response()->json($resultado, 200);
-        } catch (\Exception $e) {
-            \Log::error("❌ Error en indicadoresSatisfaccionCliente:", ['error' => $e->getMessage()]);
-            return response()->json(['error' => 'Error interno'], 500);
-        }
+        return response()->json($resultado, 200);
+    } catch (\Exception $e) {
+        \Log::error("❌ Error en indicadoresSatisfaccionCliente:", ['error' => $e->getMessage()]);
+        return response()->json(['error' => 'Error interno'], 500);
     }
+}
 
-
+    
     public function obtenerSeguimiento($idProceso, $anio)
     {
         try {
@@ -501,200 +509,4 @@ class ReporteProcesoController extends Controller
             return response()->json(['error' => 'Error al obtener', 'detalle' => $e->getMessage()], 500);
         }
     }
-
-    public function indicadoresMapaProceso($idProceso, $anio)
-    {
-        Log::info("🔍 Obteniendo indicadores MapaProceso", compact('idProceso', 'anio'));
-
-        // Obtener indicadores de origen MapaProceso
-        $indicadores = IndicadorConsolidado::where('idProceso', $idProceso)
-            ->where('origenIndicador', 'MapaProceso')
-            ->get();
-
-        // Obtener resultados
-        $resultados = ResultadoIndi::whereIn('idIndicador', $indicadores->pluck('idIndicador'))->get()
-            ->keyBy('idIndicador');
-
-        // Buscar idRegistro para análisis
-        $registro = Registros::where('idProceso', $idProceso)
-            ->where('año', $anio)
-            ->where('apartado', 'Análisis de Datos')
-            ->first();
-
-        $interpretacion = null;
-        $necesidad = null;
-
-        if ($registro) {
-            $interpretacion = AnalisisDatos::where('idRegistro', $registro->idRegistro)
-                ->where('seccion', 'DesempeñoProceso')
-                ->value('interpretacion');
-
-            $necesidad = AnalisisDatos::where('idRegistro', $registro->idRegistro)
-                ->where('seccion', 'DesempeñoProceso')
-                ->value('necesidad');
-        }
-
-        // Estructura final
-        $datos = $indicadores->map(function ($indicador) use ($resultados, $interpretacion, $necesidad) {
-            $res = $resultados[$indicador->idIndicador] ?? null;
-            return [
-                'idIndicador' => $indicador->idIndicador,
-                'nombreIndicador' => $indicador->nombreIndicador,
-                'meta' => $indicador->meta,
-                'resultadoSemestral1' => $res->resultadoSemestral1 ?? null,
-                'resultadoSemestral2' => $res->resultadoSemestral2 ?? null,
-                'interpretacion' => $interpretacion,
-                'necesidad' => $necesidad,
-            ];
-        });
-
-        return response()->json($datos);
-    }
-
-    public function eficaciaRiesgos($idProceso, $anio)
-    {
-        $registro = Registros::where('idProceso', $idProceso)
-            ->where('año', $anio)
-            ->where('apartado', 'Análisis de Datos')
-            ->first();
-
-        if (!$registro) {
-            return response()->json(['error' => 'Registro no encontrado'], 404);
-        }
-
-        $analisis = AnalisisDatos::where('idRegistro', $registro->idRegistro)
-            ->where('seccion', 'Eficacia')
-            ->first();
-
-        $interpretacion = $analisis->interpretacion ?? null;
-        $necesidad = $analisis->necesidad ?? null;
-
-        $indicadores = IndicadorConsolidado::where('idProceso', $idProceso)
-            ->where('origenIndicador', 'GestionRiesgo')
-            ->get();
-
-        $datos = $indicadores->map(function ($indicador) use ($interpretacion, $necesidad) {
-            $result = ResultadoIndi::where('idIndicador', $indicador->idIndicador)->first();
-            return [
-                'idIndicador' => $indicador->idIndicador,
-                'nombreIndicador' => $indicador->nombreIndicador,
-                'meta' => $indicador->meta,
-                'resultadoAnual' => $result->resultadoAnual ?? null,
-                'interpretacion' => $interpretacion,
-                'necesidad' => $necesidad,
-            ];
-        });
-
-        return response()->json($datos);
-    }
-
-    public function evaluacionProveedores($idProceso, $anio)
-    {
-        try {
-            Log::info("📥 Inicio de evaluación de proveedores", [
-                'idProceso' => $idProceso,
-                'anio' => $anio
-            ]);
-
-            // 1. Buscar idRegistro para sección AnálisisDatos
-            $registro = Registros::where('idProceso', $idProceso)
-                ->where('año', $anio)
-                ->where('apartado', 'Análisis de Datos')
-                ->first();
-
-            if (!$registro) {
-                Log::warning("⚠️ Registro no encontrado", ['idProceso' => $idProceso, 'anio' => $anio]);
-                return response()->json(['error' => 'Registro no encontrado'], 404);
-            }
-
-            Log::info("✅ Registro encontrado", ['idRegistro' => $registro->idRegistro]);
-
-            // 2. Obtener interpretación y necesidad de mejora de la sección "DesempeñoProveedores"
-            $analisis = AnalisisDatos::where('idRegistro', $registro->idRegistro)
-                ->where('seccion', 'DesempeñoProveedores')
-                ->first();
-
-            $interpretacion = $analisis->interpretacion ?? null;
-            $necesidad = $analisis->necesidad ?? null;
-
-            Log::info("📌 Interpretación y necesidad obtenidas", [
-                'interpretacion' => $interpretacion,
-                'necesidad' => $necesidad
-            ]);
-
-            // 3. Buscar el indicador tipo EvaluaProveedores
-            $indicador = IndicadorConsolidado::where('idProceso', $idProceso)
-                ->where('origenIndicador', 'EvaluaProveedores')
-                ->first();
-
-            if (!$indicador) {
-                Log::warning("⚠️ Indicador no encontrado para EvaluaProveedores");
-                return response()->json(['error' => 'Indicador no encontrado'], 404);
-            }
-
-            Log::info("✅ Indicador encontrado", ['idIndicador' => $indicador->idIndicador]);
-
-            // 4. Obtener los datos de evaluación desde la tabla específica
-            $resultados = EvaluaProveedores::where('idIndicador', $indicador->idIndicador)->first();
-
-            if (!$resultados) {
-                Log::warning("⚠️ Resultados de evaluación no encontrados");
-                return response()->json(['error' => 'Resultados no encontrados'], 404);
-            }
-
-            Log::info("📊 Resultados obtenidos", [
-                'confiable' => [$resultados->resultadoConfiableSem1, $resultados->resultadoConfiableSem2],
-                'condicionado' => [$resultados->resultadoCondicionadoSem1, $resultados->resultadoCondicionadoSem2],
-                'noConfiable' => [$resultados->resultadoNoConfiableSem1, $resultados->resultadoNoConfiableSem2]
-            ]);
-
-            // 5. Formato por categoría
-            $datos = [
-                [
-                    'categoria' => 'Confiable',
-                    'meta' => $resultados->metaConfiable,
-                    'resultado1' => $resultados->resultadoConfiableSem1,
-                    'resultado2' => $resultados->resultadoConfiableSem2,
-                ],
-                [
-                    'categoria' => 'Condicionado',
-                    'meta' => $resultados->metaCondicionado,
-                    'resultado1' => $resultados->resultadoCondicionadoSem1,
-                    'resultado2' => $resultados->resultadoCondicionadoSem2,
-                ],
-                [
-                    'categoria' => 'No Confiable',
-                    'meta' => $resultados->metaNoConfiable,
-                    'resultado1' => $resultados->resultadoNoConfiableSem1,
-                    'resultado2' => $resultados->resultadoNoConfiableSem2,
-                ]
-            ];
-
-            Log::info("📤 Enviando datos de evaluación de proveedores");
-
-            return response()->json([
-                'indicadores' => $datos,
-                'interpretacion' => $interpretacion,
-                'necesidad' => $necesidad
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error('❌ Error en evaluacionProveedores', ['error' => $e->getMessage()]);
-            return response()->json(['error' => 'Error al obtener evaluación de proveedores'], 500);
-        }
-    }
-
-
-    public function destroy($idReporteProceso)
-    {
-        try {
-            $reporte = ReporteProceso::findOrFail($idReporteProceso);
-            $reporte->delete();
-            return response()->json(['message' => 'Reporte eliminado correctamente'], 200);
-        } catch (\Exception $e) {
-            \Log::error("Error al eliminar el reporte", ['error' => $e->getMessage()]);
-            return response()->json(['error' => 'Error al eliminar el reporte'], 500);
-        }
-    }
-
 }
