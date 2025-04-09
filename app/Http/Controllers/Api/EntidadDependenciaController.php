@@ -56,7 +56,7 @@ class EntidadDependenciaController extends Controller
                 ->get();
         }
         // Si es Líder de Proceso, solo su entidad (desde proceso)
-        elseif ($rolActivo === 'Líder de Proceso') {
+        elseif ($rolActivo === 'Líder') {
             $entidades = EntidadDependencia::whereIn('idEntidadDependencia', function ($query) use ($idUsuario) {
                 $query->select('idEntidad')
                     ->from('proceso')

@@ -21,6 +21,6 @@ class Usuario extends Model
     ];
 
     public function tipoUsuario(){
-        return $this->belongsTo(TipoUsuario::class, 'idTipoUsuario', 'idTipoUsuario');
+        return $this->belongsToMany(TipoUsuario::class, 'usuario_tipo', 'idUsuario', 'idTipoUsuario');
     }
 }

@@ -44,7 +44,6 @@ use App\Http\Controllers\Api\FuentePtController;
 use App\Http\Controllers\Api\ProyectoMejoraController;
 
 
-
 //Reporte
 use App\Http\Controllers\Api\ReporteProcesoController;
 
@@ -58,6 +57,14 @@ use App\Http\Controllers\Api\GraficaController;
 
 use App\Http\Controllers\Api\ReporteSemestralController;
 use Barryvdh\DomPDF\Facade\Pdf;
+
+//Login
+use App\Http\Controllers\Api\AuthController;
+
+//*********************************************************/
+//                  Login
+//*********************************************************/
+Route::post('/login', [AuthController::class, 'login']);
 
 
 Route::get('macroprocesos', [MacroProcesoController::class, 'index']);
