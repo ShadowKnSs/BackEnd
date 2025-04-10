@@ -316,6 +316,8 @@ Route::get('/vista-reporte', function () {
 
 Route::post('/generar-token', [TokenTemporalController::class, 'generar']);
 Route::post('/validar-token', [TokenTemporalController::class, 'validar']);
+Route::get('/usuarios-temporales', [TokenTemporalController::class, 'index']);
+Route::delete('/usuarios-temporales/{id}', [TokenTemporalController::class, 'destroy']);
 
 Route::get('/buscar-por-anio', [BuscadorSemController::class, 'buscarPorAnio']);
 
