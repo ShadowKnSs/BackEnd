@@ -59,6 +59,9 @@ use App\Http\Controllers\Api\GraficaController;
 use App\Http\Controllers\Api\ReporteSemestralController;
 use Barryvdh\DomPDF\Facade\Pdf;
 
+use App\Http\Controllers\Api\UsuarioController;
+use App\Http\Controllers\Api\TipoUsuarioController;
+
 
 Route::get('macroprocesos', [MacroProcesoController::class, 'index']);
 Route::get('entidades', [EntidadDependenciaController::class, 'index']);
@@ -318,3 +321,13 @@ Route::get('/get-indicador-sem', [IndicadorSemController::class, 'obtenerDatosIn
 Route::post('/reporte-semestral', [SaveReportSemController::class, 'store']); //registrar la generacion de un reporte semestral
 Route::get('/reportes-semestrales', [SaveReportSemController::class, 'obtenerReportesSemestrales']); //obtener todos los reportes semestrales generados
 Route::get('/verificar-reporte', [SaveReportSemController::class, 'verificarReporteExistente']);
+
+/*Route::post('/usuarios', [UsuarioController::class, 'store']);
+Route::get('/tiposusuario', [TipoUsuarioController::class, 'index']);
+Route::get('/supervisores', [UsuarioController::class, 'getSupervisores']);*/
+
+Route::apiResource('usuarios', UsuarioController::class);
+Route::get('tiposusuario', [TipoUsuarioController::class, 'index']);
+Route::get('supervisores', [UsuarioController::class, 'getSupervisores']);
+
+

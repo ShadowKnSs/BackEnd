@@ -8,6 +8,8 @@ class Usuario extends Model
 {
     protected $table = 'usuario';
     protected $primaryKey = 'idUsuario';
+    public $timestamps = false;
+
     protected $fillable = [
         'idTipoUsuario',
         'nombre',
@@ -17,10 +19,13 @@ class Usuario extends Model
         'correo',
         'gradoAcademico',
         'activo',
-        'fechaRegistro'
+        'fechaRegistro',
+        'RPE',
+        'pass'
     ];
 
-    public function tipoUsuario(){
+    public function tipoUsuario()
+    {
         return $this->belongsTo(TipoUsuario::class, 'idTipoUsuario', 'idTipoUsuario');
     }
 }
