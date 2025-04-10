@@ -37,6 +37,8 @@ class TokenTemporalController extends Controller
 
     public function validar(Request $request)
     {
+        date_default_timezone_set('America/Mexico_City');
+
         $request->validate([
             'token' => 'required|string',
         ]);
@@ -51,7 +53,15 @@ class TokenTemporalController extends Controller
             ], 401);
         }
 
-        if (Carbon::now()->greaterThan($registro->expiracion)) {
+        $ahora = Carbon::now();
+        $expiracion = Carbon::parse($registro->expiracion);
+
+        Log::info('🕐 Validando expiración del token', [
+            'ahora' => $ahora->toDateTimeString(),
+            'expiracion' => $expiracion->toDateTimeString(),
+        ]);
+
+        if ($ahora->greaterThan($expiracion)) {
             return response()->json([
                 'message' => 'El token ha expirado',
             ], 401);
@@ -73,6 +83,17 @@ class TokenTemporalController extends Controller
             'message' => 'Token válido',
             'rol' => $rol
         ]);
+    }
+    public function index()
+    {
+        return TokenTemporal::all();
+    }
+
+    public function destroy($id)
+    {
+        $token = TokenTemporal::findOrFail($id);
+        $token->delete();
+        return response()->json(['message' => 'Token eliminado']);
     }
 
 }
