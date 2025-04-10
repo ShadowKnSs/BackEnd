@@ -10,7 +10,6 @@ use Illuminate\Support\Facades\Hash;
 
 class UsuarioController extends Controller
 {
-
     public function store(Request $request)
     {
         $validated = $request->validate([
