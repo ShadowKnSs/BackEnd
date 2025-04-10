@@ -21,113 +21,234 @@ class CronogramaController extends Controller
     }
 
     public function store(Request $request)
-{
-    Log::info('Iniciando el método store');
+    {
+        Log::info('Iniciando el método store');
 
-    $request->validate([
-        'fechaProgramada' => 'required|date',
-        'horaProgramada' => 'required',
-        'tipoAuditoria' => 'required|in:interna,externa',
-        'estado' => 'required|in:Pendiente,Finalizada,Cancelada',
-        'descripcion' => 'required',
-        'nombreProceso' => 'required|string',
-        'nombreEntidad' => 'required|string',
-        'auditorLider' => 'nullable|integer'
-    ]);
+        $request->validate([
+            'fechaProgramada' => 'required|date',
+            'horaProgramada' => 'required',
+            'tipoAuditoria' => 'required|in:interna,externa',
+            'estado' => 'required|in:Pendiente,Finalizada,Cancelada',
+            'descripcion' => 'required',
+            'nombreProceso' => 'required|string',
+            'nombreEntidad' => 'required|string',
+            'auditorLider' => 'nullable|integer'
+        ]);
 
-    Log::info('Validación de datos completada', ['request_data' => $request->all()]);
+        Log::info('Validación de datos completada', ['request_data' => $request->all()]);
 
-    $proceso = Proceso::where('nombreProceso', $request->nombreProceso)->first();
-    if (!$proceso) {
-        Log::warning('Proceso no encontrado', ['nombreProceso' => $request->nombreProceso]);
-        return response()->json([
-            'message' => 'El proceso no existe'
-        ], 404);
-    }
+        $proceso = Proceso::where('nombreProceso', $request->nombreProceso)->first();
+        if (!$proceso) {
+            Log::warning('Proceso no encontrado', ['nombreProceso' => $request->nombreProceso]);
+            return response()->json([
+                'message' => 'El proceso no existe'
+            ], 404);
+        }
 
-    $idProceso = $proceso->idProceso;
-    $idUsuario = $proceso->idUsuario;
-    Log::info('Proceso encontrado', ['idProceso' => $idProceso, 'idUsuario' => $idUsuario]);
+        $idProceso = $proceso->idProceso;
+        $idUsuario = $proceso->idUsuario;
+        Log::info('Proceso encontrado', ['idProceso' => $idProceso, 'idUsuario' => $idUsuario]);
 
-    $auditoriaData = $request->only([
-        'fechaProgramada', 'horaProgramada', 'tipoAuditoria', 'estado', 'descripcion', 'nombreProceso', 'nombreEntidad', 'auditorLider'
-    ]);
-    $auditoriaData['idProceso'] = $idProceso;
-    
-    $auditoria = Cronograma::create($auditoriaData);
-    Log::info('Auditoría creada', ['auditoria' => $auditoria]);
+        $auditoriaData = $request->only([
+            'fechaProgramada',
+            'horaProgramada',
+            'tipoAuditoria',
+            'estado',
+            'descripcion',
+            'nombreProceso',
+            'nombreEntidad',
+            'auditorLider'
+        ]);
+        $auditoriaData['idProceso'] = $idProceso;
 
-    $usersList = [];
-    $emails = [];
+        $auditoria = Cronograma::create($auditoriaData);
+        Log::info('Auditoría creada', ['auditoria' => $auditoria]);
 
-    if ($request->auditorLider) {
-        $auditorLider = Usuario::where('idUsuario', $request->auditorLider)->first();
-        if ($auditorLider) {
-            $usersList[] = $auditorLider->nombre . ' ' . $auditorLider->apellidoPat . ' ' . $auditorLider->apellidoMat;
-            $emails[] = $auditorLider->correo;
-            Log::info('Auditor líder encontrado', ['auditorLider' => $auditorLider->correo]);
+        $usersList = [];
+        $emails = [];
+
+        if ($request->auditorLider) {
+            $auditorLider = Usuario::where('idUsuario', $request->auditorLider)->first();
+            if ($auditorLider) {
+                $usersList[] = $auditorLider->nombre . ' ' . $auditorLider->apellidoPat . ' ' . $auditorLider->apellidoMat;
+                $emails[] = $auditorLider->correo;
+                Log::info('Auditor líder encontrado', ['auditorLider' => $auditorLider->correo]);
+            } else {
+                Log::warning('Auditor líder no encontrado', ['idUsuario' => $request->auditorLider]);
+            }
+        }
+
+        $usuarioProceso = Usuario::where('idUsuario', $idUsuario)->first();
+        if ($usuarioProceso) {
+            $usersList[] = $usuarioProceso->nombre . ' ' . $usuarioProceso->apellidoPat . ' ' . $usuarioProceso->apellidoMat;
+            $emails[] = $usuarioProceso->correo;
+            Log::info('Usuario responsable del proceso encontrado', ['usuario' => $usuarioProceso->correo]);
         } else {
-            Log::warning('Auditor líder no encontrado', ['idUsuario' => $request->auditorLider]);
+            Log::warning('Usuario responsable del proceso no encontrado', ['idUsuario' => $idUsuario]);
         }
-    }
 
-    $usuarioProceso = Usuario::where('idUsuario', $idUsuario)->first();
-    if ($usuarioProceso) {
-        $usersList[] = $usuarioProceso->nombre . ' ' . $usuarioProceso->apellidoPat . ' ' . $usuarioProceso->apellidoMat;
-        $emails[] = $usuarioProceso->correo;
-        Log::info('Usuario responsable del proceso encontrado', ['usuario' => $usuarioProceso->correo]);
-    } else {
-        Log::warning('Usuario responsable del proceso no encontrado', ['idUsuario' => $idUsuario]);
-    }
+        Log::info('Correos a notificar', ['emails' => $emails]);
 
-    Log::info('Correos a notificar', ['emails' => $emails]);
+        $cronogramaData = [
+            'tipoAuditoria' => $request->tipoAuditoria,
+            'fechaProgramada' => $request->fechaProgramada,
+            'horaProgramada' => $request->horaProgramada,
+            'nombreProceso' => $request->nombreProceso,
+            'nombreEntidad' => $request->nombreEntidad
+        ];
 
-    $cronogramaData = [
-        'tipoAuditoria' => $request->tipoAuditoria,
-        'fechaProgramada' => $request->fechaProgramada,
-        'horaProgramada' => $request->horaProgramada,
-        'nombreProceso' => $request->nombreProceso,
-        'nombreEntidad' => $request->nombreEntidad
-    ];
-
-    foreach ($emails as $email) {
-        try {
-            Notification::route('mail', $email)->notify(new AuditoriaNotificacion($cronogramaData, $usersList, $emails));
-            Log::info('Notificación enviada', ['email' => $email]);
-        } catch (\Exception $e) {
-            Log::error('Error al enviar la notificación', ['email' => $email, 'error' => $e->getMessage()]);
+        foreach ($emails as $email) {
+            try {
+                // Enviar correo
+               // Notification::route('mail', $email)->notify(new AuditoriaNotificacion($cronogramaData, $usersList, $emails));
+               Notification::route('mail', $email)->notify(new AuditoriaNotificacion($cronogramaData, $usersList, $emails, 'creado'));
+                Log::info('Notificación enviada por correo', ['email' => $email]);
+            } catch (\Exception $e) {
+                Log::error('Error al enviar la notificación por correo', ['email' => $email, 'error' => $e->getMessage()]);
+            }
         }
+
+        // Enviar notificación por base de datos
+        if ($request->auditorLider && isset($auditorLider)) {
+            //$auditorLider->notify(new AuditoriaNotificacion($cronogramaData, $usersList, $emails));
+            $auditorLider->notify(new AuditoriaNotificacion($cronogramaData, $usersList, $emails, 'creado'));
+        
+            Log::info('Notificación almacenada en database para auditor líder', ['idUsuario' => $auditorLider->idUsuario]);
+        }
+
+        if (isset($usuarioProceso)) {
+            $usuarioProceso->notify(new AuditoriaNotificacion($cronogramaData, $usersList, $emails, 'creado'));
+            Log::info('Notificación almacenada en database para usuario del proceso', ['idUsuario' => $usuarioProceso->idUsuario]);
+        }
+
+        Log::info('Finalizando el método store');
+
+        return response()->json([
+            'message' => 'Auditoría guardada en el cronograma y notificación enviada',
+            'auditoria' => $auditoria
+        ], 201);
     }
 
-    Log::info('Finalizando el método store');
+    public function update(Request $request, $id)
+    {
+        Log::info('Iniciando el método update');
 
-    return response()->json([
-        'message' => 'Auditoría guardada en el cronograma y notificación enviada',
-        'auditoria' => $auditoria
-    ], 201);
-}
+        $request->validate([
+            'fechaProgramada' => 'required|date',
+            'horaProgramada' => 'required',
+            'tipoAuditoria' => 'required|in:interna,externa',
+            'estado' => 'required|in:Pendiente,Finalizada,Cancelada',
+            'descripcion' => 'required',
+            'nombreProceso' => 'required|string',
+            'nombreEntidad' => 'required|string',
+            'auditorLider' => 'nullable|integer'
+        ]);
 
-public function update(Request $request, $id)
-{
-    $request->validate([
-        'fechaProgramada' => 'required|date',
-        'horaProgramada' => 'required',
-        'tipoAuditoria' => 'required|in:interna,externa',
-        'estado' => 'required|in:Pendiente,Finalizada,Cancelada',
-        'descripcion' => 'required|string',
-        'nombreProceso' => 'required|string',
-        'nombreEntidad' => 'required|string',
-        'auditorLider' => 'nullable|string'
-    ]);
+        $auditoria = Cronograma::findOrFail($id);
 
-    $auditoria = Cronograma::findOrFail($id);
-    $auditoria->update($request->all());
+        $proceso = Proceso::where('nombreProceso', $request->nombreProceso)->first();
+        if (!$proceso) {
+            return response()->json(['message' => 'El proceso no existe'], 404);
+        }
 
-    return response()->json([
-        'message' => 'Auditoría actualizada con éxito',
-        'auditoria' => $auditoria
-    ], 200);
-}
+        $auditoria->update([
+            'fechaProgramada' => $request->fechaProgramada,
+            'horaProgramada' => $request->horaProgramada,
+            'tipoAuditoria' => $request->tipoAuditoria,
+            'estado' => $request->estado,
+            'descripcion' => $request->descripcion,
+            'nombreProceso' => $request->nombreProceso,
+            'nombreEntidad' => $request->nombreEntidad,
+            'auditorLider' => $request->auditorLider,
+            'idProceso' => $proceso->idProceso
+        ]);
+
+        // Obtener usuarios
+        $usersList = [];
+        $emails = [];
+
+        if ($request->auditorLider) {
+            $auditorLider = Usuario::find($request->auditorLider);
+            if ($auditorLider) {
+                $usersList[] = $auditorLider->nombre . ' ' . $auditorLider->apellidoPat . ' ' . $auditorLider->apellidoMat;
+                $emails[] = $auditorLider->correo;
+            }
+        }
+
+        $usuarioProceso = Usuario::find($proceso->idUsuario);
+        if ($usuarioProceso) {
+            $usersList[] = $usuarioProceso->nombre . ' ' . $usuarioProceso->apellidoPat . ' ' . $usuarioProceso->apellidoMat;
+            $emails[] = $usuarioProceso->correo;
+        }
+
+        $cronogramaData = [
+            'tipoAuditoria' => $request->tipoAuditoria,
+            'fechaProgramada' => $request->fechaProgramada,
+            'horaProgramada' => $request->horaProgramada,
+            'nombreProceso' => $request->nombreProceso,
+            'nombreEntidad' => $request->nombreEntidad
+        ];
+
+        foreach ($emails as $email) {
+            Notification::route('mail', $email)->notify(new AuditoriaNotificacion($cronogramaData, $usersList, $emails, 'actualizado'));
+        }
+
+        if (isset($auditorLider))
+            $auditorLider->notify(new AuditoriaNotificacion($cronogramaData, $usersList, $emails, 'actualizado'));
+        if (isset($usuarioProceso))
+            $usuarioProceso->notify(new AuditoriaNotificacion($cronogramaData, $usersList, $emails, 'actualizado'));
+
+        return response()->json(['message' => 'Auditoría actualizada y notificación enviada']);
+    }
+
+    public function destroy($id)
+    {
+        Log::info('Iniciando el método destroy');
+
+        $auditoria = Cronograma::findOrFail($id);
+
+        // Obtener datos antes de eliminar
+        $proceso = Proceso::where('nombreProceso', $auditoria->nombreProceso)->first();
+        $usersList = [];
+        $emails = [];
+
+        if ($auditoria->auditorLider) {
+            $auditorLider = Usuario::find($auditoria->auditorLider);
+            if ($auditorLider) {
+                $usersList[] = $auditorLider->nombre . ' ' . $auditorLider->apellidoPat . ' ' . $auditorLider->apellidoMat;
+                $emails[] = $auditorLider->correo;
+            }
+        }
+
+        if ($proceso) {
+            $usuarioProceso = Usuario::find($proceso->idUsuario);
+            if ($usuarioProceso) {
+                $usersList[] = $usuarioProceso->nombre . ' ' . $usuarioProceso->apellidoPat . ' ' . $usuarioProceso->apellidoMat;
+                $emails[] = $usuarioProceso->correo;
+            }
+        }
+
+        $cronogramaData = [
+            'tipoAuditoria' => $auditoria->tipoAuditoria,
+            'fechaProgramada' => $auditoria->fechaProgramada,
+            'horaProgramada' => $auditoria->horaProgramada,
+            'nombreProceso' => $auditoria->nombreProceso,
+            'nombreEntidad' => $auditoria->nombreEntidad
+        ];
+
+        foreach ($emails as $email) {
+            Notification::route('mail', $email)->notify(new AuditoriaNotificacion($cronogramaData, $usersList, $emails, 'eliminado'));
+        }
+
+        if (isset($auditorLider))
+            $auditorLider->notify(new AuditoriaNotificacion($cronogramaData, $usersList, $emails, 'eliminado'));
+        if (isset($usuarioProceso))
+            $usuarioProceso->notify(new AuditoriaNotificacion($cronogramaData, $usersList, $emails, 'eliminado'));
+
+        $auditoria->delete();
+
+        return response()->json(['message' => 'Auditoría eliminada y notificación enviada']);
+    }
 
 }
 

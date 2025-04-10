@@ -57,7 +57,11 @@ use App\Http\Controllers\Api\GraficaController;
 
 
 use App\Http\Controllers\Api\ReporteSemestralController;
+use App\Http\Controllers\Api\NotificacionController;
+use App\Http\Controllers\NotificacionTestController;
+
 use Barryvdh\DomPDF\Facade\Pdf;
+
 
 
 Route::get('macroprocesos', [MacroProcesoController::class, 'index']);
@@ -132,9 +136,7 @@ Route::apiResource('eventos-avisos', EventosAvisosController::class);
 //Route::apiResource('cronogramas', CronogramaController::class);
 Route::get('entidad-nombres', [EntidadDependenciaController::class, 'getNombres']);
 Route::get('procesos-nombres', [ProcessController::class, 'getNombres']);
-Route::get('cronograma', [CronogramaController::class, 'index']);
-Route::post('cronograma', [CronogramaController::class, 'store']);
-Route::put('cronograma/{id}', [CronogramaController::class, 'update']);
+
 
 
 //*********************************************************/
@@ -318,3 +320,20 @@ Route::get('/get-indicador-sem', [IndicadorSemController::class, 'obtenerDatosIn
 Route::post('/reporte-semestral', [SaveReportSemController::class, 'store']); //registrar la generacion de un reporte semestral
 Route::get('/reportes-semestrales', [SaveReportSemController::class, 'obtenerReportesSemestrales']); //obtener todos los reportes semestrales generados
 Route::get('/verificar-reporte', [SaveReportSemController::class, 'verificarReporteExistente']);
+
+Route::get('cronograma', [CronogramaController::class, 'index']);
+Route::post('cronograma', [CronogramaController::class, 'store']);
+//Route::put('cronograma/{id}', [CronogramaController::class, 'update']);
+
+// Actualizar una auditoría 
+Route::put('/cronograma/{id}', [CronogramaController::class, 'update']);
+
+// Eliminar una auditoría 
+Route::delete('/cronograma/{id}', [CronogramaController::class, 'destroy']);
+
+Route::get('/notificaciones/{idUsuario}', [NotificacionController::class, 'getNotificaciones']);
+Route::post('/notificaciones/marcar-leidas/{idUsuarios}/{notificationId}', [NotificacionController::class, 'marcarComoLeidas']);
+Route::get('/notificaciones/count/{idUsuario}', [NotificacionController::class, 'contarNotificacionesNoLeidas']);
+
+
+//Route::get('/emitir-notificacion/{idUsuario}', [NotificacionTestController::class, 'enviarNotificacion']);
