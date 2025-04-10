@@ -112,14 +112,29 @@ class CronogramaController extends Controller
             'nombreEntidad' => $request->nombreEntidad
         ];
 
-        foreach ($emails as $email) {
-            try {
-                Notification::route('mail', $email)->notify(new AuditoriaNotificacion($cronogramaData, $usersList, $emails));
-                Log::info('Notificación enviada', ['email' => $email]);
-            } catch (\Exception $e) {
-                Log::error('Error al enviar la notificación', ['email' => $email, 'error' => $e->getMessage()]);
-            }
+            foreach ($emails as $email) {
+                try {
+                    // Enviar correo
+               // Notification::route('mail', $email)->notify(new AuditoriaNotificacion($cronogramaData, $usersList, $emails));
+               Notification::route('mail', $email)->notify(new AuditoriaNotificacion($cronogramaData, $usersList, $emails, 'creado'));
+                    Log::info('Notificación enviada por correo', ['email' => $email]);
+                } catch (\Exception $e) {
+                    Log::error('Error al enviar la notificación por correo', ['email' => $email, 'error' => $e->getMessage()]);
+                }
         }
+
+        // Enviar notificación por base de datos
+        if ($request->auditorLider && isset($auditorLider)) {
+            //$auditorLider->notify(new AuditoriaNotificacion($cronogramaData, $usersList, $emails));
+            $auditorLider->notify(new AuditoriaNotificacion($cronogramaData, $usersList, $emails, 'creado'));
+        
+            Log::info('Notificación almacenada en database para auditor líder', ['idUsuario' => $auditorLider->idUsuario]);
+        }
+
+        if (isset($usuarioProceso)) {
+            $usuarioProceso->notify(new AuditoriaNotificacion($cronogramaData, $usersList, $emails, 'creado'));
+            Log::info('Notificación almacenada en database para usuario del proceso', ['idUsuario' => $usuarioProceso->idUsuario]);
+            }
 
         Log::info('Finalizando el método store');
 
@@ -131,24 +146,123 @@ class CronogramaController extends Controller
 
     public function update(Request $request, $id)
     {
+        Log::info('Iniciando el método update');
+
         $request->validate([
             'fechaProgramada' => 'required|date',
             'horaProgramada' => 'required',
             'tipoAuditoria' => 'required|in:interna,externa',
             'estado' => 'required|in:Pendiente,Finalizada,Cancelada',
-            'descripcion' => 'required|string',
+            'descripcion' => 'required',
             'nombreProceso' => 'required|string',
             'nombreEntidad' => 'required|string',
-            'auditorLider' => 'nullable|string'
+            'auditorLider' => 'nullable|integer'
         ]);
 
         $auditoria = Cronograma::findOrFail($id);
-        $auditoria->update($request->all());
 
-        return response()->json([
-            'message' => 'Auditoría actualizada con éxito',
-            'auditoria' => $auditoria
-        ], 200);
+        $proceso = Proceso::where('nombreProceso', $request->nombreProceso)->first();
+        if (!$proceso) {
+            return response()->json(['message' => 'El proceso no existe'], 404);
+        }
+
+        $auditoria->update([
+            'fechaProgramada' => $request->fechaProgramada,
+            'horaProgramada' => $request->horaProgramada,
+            'tipoAuditoria' => $request->tipoAuditoria,
+            'estado' => $request->estado,
+            'descripcion' => $request->descripcion,
+            'nombreProceso' => $request->nombreProceso,
+            'nombreEntidad' => $request->nombreEntidad,
+            'auditorLider' => $request->auditorLider,
+            'idProceso' => $proceso->idProceso
+        ]);
+
+        // Obtener usuarios
+        $usersList = [];
+        $emails = [];
+
+        if ($request->auditorLider) {
+            $auditorLider = Usuario::find($request->auditorLider);
+            if ($auditorLider) {
+                $usersList[] = $auditorLider->nombre . ' ' . $auditorLider->apellidoPat . ' ' . $auditorLider->apellidoMat;
+                $emails[] = $auditorLider->correo;
+            }
+        }
+
+        $usuarioProceso = Usuario::find($proceso->idUsuario);
+        if ($usuarioProceso) {
+            $usersList[] = $usuarioProceso->nombre . ' ' . $usuarioProceso->apellidoPat . ' ' . $usuarioProceso->apellidoMat;
+            $emails[] = $usuarioProceso->correo;
+        }
+
+        $cronogramaData = [
+            'tipoAuditoria' => $request->tipoAuditoria,
+            'fechaProgramada' => $request->fechaProgramada,
+            'horaProgramada' => $request->horaProgramada,
+            'nombreProceso' => $request->nombreProceso,
+            'nombreEntidad' => $request->nombreEntidad
+        ];
+
+        foreach ($emails as $email) {
+            Notification::route('mail', $email)->notify(new AuditoriaNotificacion($cronogramaData, $usersList, $emails, 'actualizado'));
+        }
+
+        if (isset($auditorLider))
+            $auditorLider->notify(new AuditoriaNotificacion($cronogramaData, $usersList, $emails, 'actualizado'));
+        if (isset($usuarioProceso))
+            $usuarioProceso->notify(new AuditoriaNotificacion($cronogramaData, $usersList, $emails, 'actualizado'));
+
+        return response()->json(['message' => 'Auditoría actualizada y notificación enviada']);
+    }
+
+    public function destroy($id)
+    {
+        Log::info('Iniciando el método destroy');
+
+        $auditoria = Cronograma::findOrFail($id);
+
+        // Obtener datos antes de eliminar
+        $proceso = Proceso::where('nombreProceso', $auditoria->nombreProceso)->first();
+        $usersList = [];
+        $emails = [];
+
+        if ($auditoria->auditorLider) {
+            $auditorLider = Usuario::find($auditoria->auditorLider);
+            if ($auditorLider) {
+                $usersList[] = $auditorLider->nombre . ' ' . $auditorLider->apellidoPat . ' ' . $auditorLider->apellidoMat;
+                $emails[] = $auditorLider->correo;
+            }
+        }
+
+        if ($proceso) {
+            $usuarioProceso = Usuario::find($proceso->idUsuario);
+            if ($usuarioProceso) {
+                $usersList[] = $usuarioProceso->nombre . ' ' . $usuarioProceso->apellidoPat . ' ' . $usuarioProceso->apellidoMat;
+                $emails[] = $usuarioProceso->correo;
+            }
+        }
+
+        $cronogramaData = [
+            'tipoAuditoria' => $auditoria->tipoAuditoria,
+            'fechaProgramada' => $auditoria->fechaProgramada,
+            'horaProgramada' => $auditoria->horaProgramada,
+            'nombreProceso' => $auditoria->nombreProceso,
+            'nombreEntidad' => $auditoria->nombreEntidad
+        ];
+
+        foreach ($emails as $email) {
+            Notification::route('mail', $email)->notify(new AuditoriaNotificacion($cronogramaData, $usersList, $emails, 'eliminado'));
+        }
+
+        if (isset($auditorLider))
+            $auditorLider->notify(new AuditoriaNotificacion($cronogramaData, $usersList, $emails, 'eliminado'));
+        if (isset($usuarioProceso))
+            $usuarioProceso->notify(new AuditoriaNotificacion($cronogramaData, $usersList, $emails, 'eliminado'));
+
+        $auditoria->delete();
+
+        return response()->json(['message' => 'Auditoría eliminada y notificación enviada']);
     }
 
 }
