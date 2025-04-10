@@ -21,20 +21,18 @@ use App\Http\Controllers\Api\EncuestaController;
 use App\Http\Controllers\Api\EvaluaProveedoresController;
 use App\Http\Controllers\Api\NoticiasController;
 use App\Http\Controllers\Api\EventosAvisosController;
-<<<<<<<<< Temporary merge branch 1
 
 // Controlador de Plan Correctivo
 use App\Http\Controllers\Api\PlanCorrectivoController;
 
 
-=========
 use App\Http\Controllers\Api\ControlCambioController;
 use App\Http\Controllers\Api\MapaProcesoController;
 use App\Http\Controllers\Api\IndMapaProcesoController;
 use App\Http\Controllers\Api\ActividadControlController;
 use App\Http\Controllers\Api\AuditoriaInternaController;
 use App\Http\Controllers\Api\ReporteAuditoriaController;
->>>>>>>>> Temporary merge branch 2
+
 use App\Http\Controllers\Api\GestionRiesgoController;
 use App\Http\Controllers\Api\RiesgoController;
 use App\Http\Controllers\Api\FormAnalisisDatosController;
@@ -42,7 +40,6 @@ use App\Http\Controllers\Api\FormAnalisisDatosController;
 
 use App\Http\Controllers\Api\ActividadMejoraController;
 // Controlador de Plan Correctivo
-use App\Http\Controllers\Api\PlanCorrectivoController;
 // Controlador de Plan Trabajo
 use App\Http\Controllers\Api\PlanTrabajoController;
 use App\Http\Controllers\Api\FuentePtController;
@@ -152,7 +149,6 @@ Route::get('/indicadores/retroalimentacion', [IndicadorConsolidadoController::cl
 Route::apiResource('noticias', NoticiasController::class);
 Route::apiResource('eventos-avisos', EventosAvisosController::class);
 
-<<<<<<<<< Temporary merge branch 1
 //Route::apiResource('cronogramas', CronogramaController::class);
 Route::get('entidad-nombres', [EntidadDependenciaController::class, 'getNombres']);
 Route::get('procesos-nombres', [ProcessController::class, 'getNombres']);
@@ -238,7 +234,7 @@ Route::post('/actividades', [PlanCorrectivoController::class,'createActividad'])
 Route::put('/actividades/{idActividadPlan}', [PlanCorrectivoController::class,'updateActividad']);
 Route::delete('/actividades/{idActividadPlan}', [PlanCorrectivoController::class,'deleteActividad']);
 
-=========
+
 // Para Manual Operativo
 Route::apiResource('controlcambios', ControlCambioController::class);
 Route::apiResource('mapaproceso', MapaProcesoController::class);
@@ -249,7 +245,6 @@ Route::apiResource('actividadcontrol', ActividadControlController::class);
 Route::apiResource('auditorias', AuditoriaInternaController::class);
 Route::apiResource('reportesauditoria', ReporteAuditoriaController::class)->only([ 'index', 'store', 'destroy' ]);
 Route::get('/reporte-pdf/{id}', [ReporteAuditoriaController::class, 'descargarPDF']);
->>>>>>>>> Temporary merge branch 2
 
 Route::get('/plan-correctivos/registro/{idRegistro}', [PlanCorrectivoController::class, 'getByRegistro']);
 
