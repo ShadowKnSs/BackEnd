@@ -24,8 +24,13 @@ class Usuario extends Model
         'pass'
     ];
 
-    public function tipoUsuario()
+    public function roles()
     {
-        return $this->belongsTo(TipoUsuario::class, 'idTipoUsuario', 'idTipoUsuario');
+        return $this->belongsToMany(TipoUsuario::class, 'usuario_tipo', 'idUsuario', 'idTipoUsuario');
     }
-}
+
+    public function tipoPrincipal()
+    {
+        return $this->belongsTo(TipoUsuario::class, 'idTipoUsuario');
+    }
+}  

@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Usuario;
 use App\Models\TipoUsuario;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 
 class UsuarioController extends Controller
 {
@@ -21,27 +22,49 @@ class UsuarioController extends Controller
             'gradoAcademico' => 'nullable|string',
             'RPE' => 'required|string|unique:usuario,RPE',
             'pass' => 'required|string|min:8',
-            'idTipoUsuario' => 'required|integer',
+            'roles' => 'required|array|min:1',
+            'roles.*' => 'integer|exists:tipousuario,idTipoUsuario',
         ]);
 
-        $usuario = Usuario::create([
-            'nombre' => $validated['nombre'],
-            'apellidoPat' => $validated['apellidoPat'],
-            'apellidoMat' => $validated['apellidoMat'],
-            'correo' => $validated['correo'],
-            'telefono' => $validated['telefono'],
-            'gradoAcademico' => $validated['gradoAcademico'],
-            'RPE' => $validated['RPE'],
-            'pass' => Hash::make($validated['pass']),
-            'idTipoUsuario' => $validated['idTipoUsuario'],
-            'activo' => 1,
-            'fechaRegistro' => now(),
-        ]);
+        DB::beginTransaction();
 
-        return response()->json([
-            'message' => 'Usuario creado exitosamente',
-            'usuario' => $usuario
-        ], 201);
+        try {
+            $usuario = Usuario::create([
+                'nombre' => $validated['nombre'],
+                'apellidoPat' => $validated['apellidoPat'],
+                'apellidoMat' => $validated['apellidoMat'],
+                'correo' => $validated['correo'],
+                'telefono' => $validated['telefono'],
+                'gradoAcademico' => $validated['gradoAcademico'],
+                'RPE' => $validated['RPE'],
+                'pass' => Hash::make($validated['pass']),
+                'idTipoUsuario' => 1,
+                'activo' => 1,
+                'fechaRegistro' => now(),
+            ]);
+
+            $usuario->roles()->sync($validated['roles']);
+
+            if (!empty($validated['roles'])) {
+                $usuario->update(['idTipoUsuario' => $validated['roles'][0]]);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Usuario creado exitosamente',
+                'usuario' => $usuario->load('roles')
+            ], 201);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Error al crear usuario: '.$e->getMessage());
+            return response()->json([
+                'message' => 'Error al crear usuario',
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ], 500);
+        }
     }
 
     public function getSupervisores()
@@ -75,8 +98,7 @@ class UsuarioController extends Controller
 
     public function index()
     {
-        $usuarios = Usuario::with('tipoUsuario')->get();
-
+        $usuarios = Usuario::with(['roles', 'tipoPrincipal'])->get();
         return response()->json(['data' => $usuarios]);
     }
 
@@ -93,22 +115,36 @@ class UsuarioController extends Controller
             'gradoAcademico' => 'nullable|string',
             'RPE' => 'sometimes|string|unique:usuario,RPE,'.$id.',idUsuario',
             'pass' => 'sometimes|string|min:8',
-            'idTipoUsuario' => 'sometimes|integer|exists:tipousuario,idTipoUsuario',
-            'idSupervisor' => 'nullable|integer|exists:usuario,idUsuario'
+            'roles' => 'sometimes|array',
+            'roles.*' => 'integer|exists:tipousuario,idTipoUsuario',
         ]);
 
-        if (isset($validated['pass'])) {
-            $validated['pass'] = Hash::make($validated['pass']);
+        DB::beginTransaction();
+
+        try {
+            $usuario->update($validated);
+
+            if (isset($validated['roles'])) {
+                $usuario->roles()->sync($validated['roles']);
+                if (count($validated['roles'])) {
+                    $usuario->update(['idTipoUsuario' => $validated['roles'][0]]);
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'data' => $usuario->load(['roles', 'tipoPrincipal'])
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage()
+            ], 500);
         }
-
-        $usuario->update($validated);
-        
-        $usuario->load('tipoUsuario');
-
-        return response()->json([
-            'success' => true,
-            'data' => $usuario
-        ]);
     }
 
     public function destroy($id)
