@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\TokenTemporal;
+use App\Models\TipoUsuario;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -56,8 +57,22 @@ class TokenTemporalController extends Controller
             ], 401);
         }
 
+        // Buscar permisos para el idTipoUsuario = 4 (Auditor)
+        $permisos = \DB::table('permiso')
+            ->where('idTipoUser', 4)
+            ->get(['modulo', 'tipoAcceso']);
+
+        // Construir el objeto de rol manualmente
+        $rol = [
+            'idTipoUsuario' => 4,
+            'nombreRol' => 'Auditor',
+            'permisos' => $permisos
+        ];
+
         return response()->json([
             'message' => 'Token válido',
-        ], 200);
+            'rol' => $rol
+        ]);
     }
+
 }
