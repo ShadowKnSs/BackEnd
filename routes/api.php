@@ -66,6 +66,9 @@ use App\Http\Controllers\NotificacionTestController;
 
 use Barryvdh\DomPDF\Facade\Pdf;
 
+use App\Http\Controllers\Api\UsuarioController;
+use App\Http\Controllers\Api\TipoUsuarioController;
+
 
 //Login
 use App\Http\Controllers\Api\AuthController;
@@ -356,6 +359,17 @@ Route::get('/get-indicador-sem', [IndicadorSemController::class, 'obtenerDatosIn
 Route::post('/reporte-semestral', [SaveReportSemController::class, 'store']); //registrar la generacion de un reporte semestral
 Route::get('/reportes-semestrales', [SaveReportSemController::class, 'obtenerReportesSemestrales']); //obtener todos los reportes semestrales generados
 Route::get('/verificar-reporte', [SaveReportSemController::class, 'verificarReporteExistente']);
+
+/*Route::post('/usuarios', [UsuarioController::class, 'store']);
+Route::get('/tiposusuario', [TipoUsuarioController::class, 'index']);
+Route::get('/supervisores', [UsuarioController::class, 'getSupervisores']);*/
+
+Route::apiResource('usuarios', UsuarioController::class);
+Route::get('tiposusuario', [TipoUsuarioController::class, 'index']);
+Route::get('supervisores', [UsuarioController::class, 'getSupervisores']);
+
+
+
 
 Route::get('cronograma', [CronogramaController::class, 'index']);
 Route::post('cronograma', [CronogramaController::class, 'store']);

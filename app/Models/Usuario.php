@@ -14,6 +14,8 @@ class Usuario extends Authenticatable
     use HasFactory, Notifiable;
     protected $table = 'usuario';
     protected $primaryKey = 'idUsuario';
+    public $timestamps = false;
+
     protected $fillable = [
         'idTipoUsuario',
         'nombre',
@@ -23,10 +25,18 @@ class Usuario extends Authenticatable
         'correo',
         'gradoAcademico',
         'activo',
-        'fechaRegistro'
+        'fechaRegistro',
+        'RPE',
+        'pass'
     ];
 
-    public function tipoUsuario(){
+    public function roles()
+    {
         return $this->belongsToMany(TipoUsuario::class, 'usuario_tipo', 'idUsuario', 'idTipoUsuario');
     }
-}
+
+    public function tipoPrincipal()
+    {
+        return $this->belongsTo(TipoUsuario::class, 'idTipoUsuario');
+    }
+}  
