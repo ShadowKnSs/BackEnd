@@ -68,6 +68,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 
 use App\Http\Controllers\Api\UsuarioController;
 use App\Http\Controllers\Api\TipoUsuarioController;
+use App\Http\Controllers\Api\CronogramaController;
 
 
 //Login
@@ -371,12 +372,12 @@ Route::get('supervisores', [UsuarioController::class, 'getSupervisores']);
 
 
 
-Route::get('cronograma', [CronogramaController::class, 'index']);
-Route::post('cronograma', [CronogramaController::class, 'store']);
-//Route::put('cronograma/{id}', [CronogramaController::class, 'update']);
+// Route::get('cronograma', [CronogramaController::class, 'index']);
+// Route::post('cronograma', [CronogramaController::class, 'store']);
+// //Route::put('cronograma/{id}', [CronogramaController::class, 'update']);
 
-// Actualizar una auditoría 
-Route::put('/cronograma/{id}', [CronogramaController::class, 'update']);
+// // Actualizar una auditoría 
+// Route::put('/cronograma/{id}', [CronogramaController::class, 'update']);
 
 // Eliminar una auditoría 
 Route::delete('/cronograma/{id}', [CronogramaController::class, 'destroy']);
