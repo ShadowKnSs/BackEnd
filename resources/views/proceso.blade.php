@@ -88,7 +88,7 @@
 
     <!-- Encabezado del reporte -->
     <div style="text-align: center; margin-bottom: 20px;">
-        <img src="{{ public_path('logo.png') }}" alt="Logo" width="80">
+        <img src="{{ public_path('/storage/logo/logoSical.png') }}" alt="Logo" width="80">
         <h2>Sistema de Gestión de Calidad</h2>
         <p>Reporte generado el {{ date('d/m/Y') }}</p>
     </div>
@@ -515,10 +515,7 @@
                     @endforeach
                 </tbody>
             </table>
-                @endforeach
-            </tbody>
-        </table>
-
+           
             <!-- Evaluación de la Efectividad -->
             <h3 style="margin-top: 20px;">4. Evaluación de la Efectividad</h3>
             <table width="100%" border="1" cellspacing="0" cellpadding="6"
