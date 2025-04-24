@@ -21,7 +21,9 @@ use App\Http\Controllers\Api\EncuestaController;
 use App\Http\Controllers\Api\EvaluaProveedoresController;
 use App\Http\Controllers\Api\NoticiasController;
 use App\Http\Controllers\Api\EventosAvisosController;
-use App\Http\Controllers\Api\CronogramaController;
+
+// Controlador de Plan Correctivo
+use App\Http\Controllers\Api\PlanCorrectivoController;
 
 
 use App\Http\Controllers\Api\ControlCambioController;
@@ -30,6 +32,7 @@ use App\Http\Controllers\Api\IndMapaProcesoController;
 use App\Http\Controllers\Api\ActividadControlController;
 use App\Http\Controllers\Api\AuditoriaInternaController;
 use App\Http\Controllers\Api\ReporteAuditoriaController;
+
 use App\Http\Controllers\Api\GestionRiesgoController;
 use App\Http\Controllers\Api\RiesgoController;
 use App\Http\Controllers\Api\FormAnalisisDatosController;
@@ -37,7 +40,6 @@ use App\Http\Controllers\Api\FormAnalisisDatosController;
 
 use App\Http\Controllers\Api\ActividadMejoraController;
 // Controlador de Plan Correctivo
-use App\Http\Controllers\Api\PlanCorrectivoController;
 // Controlador de Plan Trabajo
 use App\Http\Controllers\Api\PlanTrabajoController;
 use App\Http\Controllers\Api\FuentePtController;
@@ -63,6 +65,10 @@ use App\Http\Controllers\Api\NotificacionController;
 use App\Http\Controllers\NotificacionTestController;
 
 use Barryvdh\DomPDF\Facade\Pdf;
+
+use App\Http\Controllers\Api\UsuarioController;
+use App\Http\Controllers\Api\TipoUsuarioController;
+use App\Http\Controllers\Api\CronogramaController;
 
 
 //Login
@@ -212,16 +218,16 @@ Route::get('analisisDatos/{idformAnalisisDatos}/analisis', [FormAnalisisDatosCon
 Route::put('analisisDatos/{idRegistro}/necesidad-interpretacion', [FormAnalisisDatosController::class, 'updateNecesidadInterpretacion']);
 
 //Ruta para obtener resultados de los resultados de plan de control
-Route::get('/plan-control/{idProceso}', [IndicadorResultadoController::class, 'getResultadosPlanControl']);
+Route::get('/plan-control', [IndicadorResultadoController::class, 'getResultadosPlanControl']);
 Route::get('/mapa-proceso', [IndicadorResultadoController::class, 'getResultadosIndMapaProceso']);
-Route::get('/gestion-riesgos/{idRegistro}', [IndicadorResultadoController::class, 'getResultadosRiesgos']);
+Route::get('/gestion-riesgos', [IndicadorResultadoController::class, 'getResutadosRiesgos']);
 
 //Ruta para los planes correctivos
 Route::get('/plan-correctivos', [PlanCorrectivoController::class, 'index']);
 //Ruta para obtener la informacion de un plan
 Route::get('/plan-correctivo/{id}', [PlanCorrectivoController::class,'show']);
 //Ruta para crear un nuevo plan
-Route::post('/plan-correctivos', [PlanCorrectivoController::class,'store']);
+Route::post('/plan-correctivo', [PlanCorrectivoController::class,'store']);
 //Ruta para actualizar un plan
 Route::put('/plan-correctivo/{id}', [PlanCorrectivoController::class,'update']);
 //Ruta para eliminar un plan
@@ -231,6 +237,18 @@ Route::delete('/plan-correctivo/{id}', [PlanCorrectivoController::class,'destroy
 Route::post('/actividades', [PlanCorrectivoController::class,'createActividad']);
 Route::put('/actividades/{idActividadPlan}', [PlanCorrectivoController::class,'updateActividad']);
 Route::delete('/actividades/{idActividadPlan}', [PlanCorrectivoController::class,'deleteActividad']);
+
+
+// Para Manual Operativo
+Route::apiResource('controlcambios', ControlCambioController::class);
+Route::apiResource('mapaproceso', MapaProcesoController::class);
+Route::apiResource('indmapaproceso', IndMapaProcesoController::class);
+Route::apiResource('actividadcontrol', ActividadControlController::class);
+
+//Para Auditoria Interna
+Route::apiResource('auditorias', AuditoriaInternaController::class);
+Route::apiResource('reportesauditoria', ReporteAuditoriaController::class)->only([ 'index', 'store', 'destroy' ]);
+Route::get('/reporte-pdf/{id}', [ReporteAuditoriaController::class, 'descargarPDF']);
 
 Route::get('/plan-correctivos/registro/{idRegistro}', [PlanCorrectivoController::class, 'getByRegistro']);
 
@@ -343,12 +361,23 @@ Route::post('/reporte-semestral', [SaveReportSemController::class, 'store']); //
 Route::get('/reportes-semestrales', [SaveReportSemController::class, 'obtenerReportesSemestrales']); //obtener todos los reportes semestrales generados
 Route::get('/verificar-reporte', [SaveReportSemController::class, 'verificarReporteExistente']);
 
-Route::get('cronograma', [CronogramaController::class, 'index']);
-Route::post('cronograma', [CronogramaController::class, 'store']);
-//Route::put('cronograma/{id}', [CronogramaController::class, 'update']);
+/*Route::post('/usuarios', [UsuarioController::class, 'store']);
+Route::get('/tiposusuario', [TipoUsuarioController::class, 'index']);
+Route::get('/supervisores', [UsuarioController::class, 'getSupervisores']);*/
 
-// Actualizar una auditoría 
-Route::put('/cronograma/{id}', [CronogramaController::class, 'update']);
+Route::apiResource('usuarios', UsuarioController::class);
+Route::get('tiposusuario', [TipoUsuarioController::class, 'index']);
+Route::get('supervisores', [UsuarioController::class, 'getSupervisores']);
+
+
+
+
+// Route::get('cronograma', [CronogramaController::class, 'index']);
+// Route::post('cronograma', [CronogramaController::class, 'store']);
+// //Route::put('cronograma/{id}', [CronogramaController::class, 'update']);
+
+// // Actualizar una auditoría 
+// Route::put('/cronograma/{id}', [CronogramaController::class, 'update']);
 
 // Eliminar una auditoría 
 Route::delete('/cronograma/{id}', [CronogramaController::class, 'destroy']);
