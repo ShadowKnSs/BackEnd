@@ -70,6 +70,4 @@ class EntidadDependenciaController extends Controller
         return response()->json(['entidades' => $entidades]);
     }
 
-
-
 }

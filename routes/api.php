@@ -70,6 +70,7 @@ use App\Http\Controllers\Api\UsuarioController;
 use App\Http\Controllers\Api\TipoUsuarioController;
 use App\Http\Controllers\Api\CronogramaController;
 
+use App\Http\Controllers\Api\SupervisorController;
 
 //Login
 use App\Http\Controllers\Api\AuthController;
@@ -259,33 +260,6 @@ Route::get('/plantrabajo/registro/{idRegistro}', [PlanTrabajoController::class, 
 Route::post('/proyecto-mejora', [ProyectoMejoraController::class, 'store']);
 
 
-
-/*Route::post('/generar-pdf', function (Request $request) {
-    $data = $request->all(); // Ahora sí obtiene los datos correctamente
-
-    $pdf = Pdf::loadView('pdf.reporte', compact('data'));
-// Genera el PDF con la vista
-    return $pdf->download('reporte-semestral.pdf'); // Descarga el PDF
-});*/
-
-/*Route::post('/generar-pdf', function (Request $request) {
-    $conclusion = $request->input('conclusion');
-    $imageBase64 = $request->input('image'); // Recibe la imagen como base64
-
-    return Pdf::loadView('pdf.reporte', compact('conclusion', 'imageBase64'))
-        ->download('reporte-semestral.pdf');
-});*/
-
-/*Route::post('/generar-pdf', function (Request $request) {
-    dd($request->all()); // Muestra lo que recibe el backend y detiene la ejecución
-});*/
-/*Route::post('/generar-pdf', function (Request $request) {
-    try {
-        dd($request->all()); // Verifica qué está llegando desde el front
-    } catch (\Exception $e) {
-        return response()->json(['error' => $e->getMessage()], 500);
-    }
-});*/
 Route::post('/generar-pdf', function (Request $request) {
     try {
         Log::info('Solicitud recibida:', $request->all());
@@ -369,16 +343,6 @@ Route::apiResource('usuarios', UsuarioController::class);
 Route::get('tiposusuario', [TipoUsuarioController::class, 'index']);
 Route::get('supervisores', [UsuarioController::class, 'getSupervisores']);
 
-
-
-
-// Route::get('cronograma', [CronogramaController::class, 'index']);
-// Route::post('cronograma', [CronogramaController::class, 'store']);
-// //Route::put('cronograma/{id}', [CronogramaController::class, 'update']);
-
-// // Actualizar una auditoría 
-// Route::put('/cronograma/{id}', [CronogramaController::class, 'update']);
-
 // Eliminar una auditoría 
 Route::delete('/cronograma/{id}', [CronogramaController::class, 'destroy']);
 
@@ -388,3 +352,12 @@ Route::get('/notificaciones/count/{idUsuario}', [NotificacionController::class, 
 
 
 //Route::get('/emitir-notificacion/{idUsuario}', [NotificacionTestController::class, 'enviarNotificacion']);
+
+
+//*********************************************************/
+//                  Busqueda de Supervisores
+//*********************************************************/
+Route::get('/supervisor/proceso/{idProceso}', [SupervisorController::class, 'obtenerSupervisorPorProceso']);
+Route::post('/proceso-por-lider', [SupervisorController::class, 'procesoPorLider']);
+
+

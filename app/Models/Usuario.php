@@ -39,4 +39,10 @@ class Usuario extends Authenticatable
     {
         return $this->belongsTo(TipoUsuario::class, 'idTipoUsuario');
     }
-}  
+
+    public function procesosSupervisados()
+    {
+        return $this->hasMany(SupervisorProceso::class, 'idUsuario');
+    }
+
+}
