@@ -10,7 +10,7 @@ class AnalisisDatos extends Model
     use HasFactory;
 
     protected $table = 'analisisdatos'; // Ajusta el nombre según tu migración
-    protected $primaryKey = 'idAnalisisDatoa';
+    protected $primaryKey = 'idAnalisisDatos';
 
     public $timestamps = false;
     protected $fillable = [

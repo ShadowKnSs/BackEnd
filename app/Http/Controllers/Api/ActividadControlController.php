@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\DB;
 use App\Models\ActividadControl;
+use App\Models\Registros;
+use App\Models\AnalisisDatos;
 use App\Models\IndicadorConsolidado;
 
 class ActividadControlController extends Controller
@@ -17,43 +19,56 @@ class ActividadControlController extends Controller
         $actividades = ActividadControl::where('idProceso', $idProceso)->get();
         return response()->json($actividades, 200);
     }
-    
-    
+
+
     // Crear una nueva actividad
     public function store(Request $request)
     {
         DB::beginTransaction();
         try {
             // 1) Crear la ActividadControl
-            // Ajusta los campos que recibes desde el front.
-            // Ejemplo: name="nombreActividad", name="idProceso", etc.
             $actividad = ActividadControl::create([
-                'idProceso'              => $request->get('idProceso'),
-                'nombreActividad'        => $request->get('nombreActividad'),
-                'procedimiento'          => $request->get('procedimiento'),
-                'caracteriticasVerificar'=> $request->get('caracteriticasVerificar'),
-                'criterioAceptacion'     => $request->get('criterioAceptacion'),
-                'frecuencia'             => $request->get('frecuencia'),
-                'identificacionSalida'   => $request->get('identificacionSalida'),
-                'registroSalida'         => $request->get('registroSalida'),
-                'tratamiento'            => $request->get('tratamiento'),
-                'responsable'            => $request->get('responsable'),
+                'idProceso' => $request->get('idProceso'),
+                'nombreActividad' => $request->get('nombreActividad'),
+                'procedimiento' => $request->get('procedimiento'),
+                'caracteristicasVerificar' => $request->get('caracteristicasVerificar'),
+                'criterioAceptacion' => $request->get('criterioAceptacion'),
+                'frecuencia' => $request->get('frecuencia'),
+                'identificacionSalida' => $request->get('identificacionSalida'),
+                'registroSalida' => $request->get('registroSalida'),
+                'tratamiento' => $request->get('tratamiento'),
+                'responsable' => $request->get('responsable'),
             ]);
 
-            // 2) Crear el IndicadorConsolidado asociado
+            // 2) Obtener el REGISTRO correspondiente
+            $registro = Registros::where('idProceso', $request->idProceso)
+                ->where('año', $request->año)
+                ->where('Apartado', 'Análisis de Datos')
+                ->firstOrFail();
+
+            // 3) Buscar el ANALISISDATOS de sección 'Conformidad'
+            $analisis = AnalisisDatos::where('idRegistro', $registro->idRegistro)
+                ->where('seccion', 'Conformidad')
+                ->firstOrFail();
+
+            // 4) Crear el indicador usando el idAnalisisDatos correcto
             $indicador = IndicadorConsolidado::create([
-                'idRegistro'       => null, // o lo que tú necesites
-                'idProceso'        => $actividad->idProceso,
-                'nombreIndicador'  => $actividad->nombreActividad,  // clave
-                'origenIndicador'  => 'ActividadControl',
-                'periodicidad'     => 'Semestral',
-                'meta'             => 100,
+                'idRegistro' => $registro->idRegistro, // <-- 👈 ahora guardamos idRegistro (no idAnalisisDatos)
+                'idProceso' => $actividad->idProceso,
+                'nombreIndicador' => $actividad->nombreActividad,
+                'origenIndicador' => 'ActividadControl',
+                'periodicidad' => 'Semestral',
+                'meta' => 100,
             ]);
+
+            // 5) Guardar la FK en la actividad si es necesario
+            $actividad->idIndicador = $indicador->idIndicador;
+            $actividad->save();
 
             DB::commit();
 
             return response()->json([
-                'message'   => 'ActividadControl y su indicador creados exitosamente.',
+                'message' => 'ActividadControl y su indicador creados exitosamente.',
                 'actividad' => $actividad,
                 'indicador' => $indicador,
             ], 201);
@@ -63,10 +78,11 @@ class ActividadControlController extends Controller
             \Log::error('Error al crear ActividadControl e indicador: ' . $e->getMessage());
             return response()->json([
                 'message' => 'Error al crear la actividad y el indicador',
-                'error'   => $e->getMessage()
+                'error' => $e->getMessage()
             ], 500);
         }
     }
+
 
     // Mostrar una actividad específica
     public function show($id)

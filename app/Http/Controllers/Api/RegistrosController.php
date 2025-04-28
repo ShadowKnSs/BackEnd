@@ -6,25 +6,16 @@ use Illuminate\Http\Request;
 use App\Models\Registros;
 use App\Models\Proceso;
 use Carbon\Carbon;
+use App\Models\IndicadorConsolidado;
+use App\Models\AnalisisDatos;
+use App\Models\Encuesta;
+use App\Models\Retroalimentacion;
+use App\Models\EvaluaProveedores;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Log;
 
 class RegistrosController extends Controller
 {
-    /*// Función para obtener los registros de una determinado idProceso
-    public function index($idProceso)
-    {
-        // Obtener todos los registros con el idProceso específico
-        $registros = Registros::where('idProceso', $idProceso)->get();
-
-        return response()->json($registros); // Retorna los registros en formato JSON
-    }
-    // Mostrar todos los registros por idProceso
-    public function index(Request $request)
-    {
-        $registros = Registro::where('idProceso', $request->idProceso)->get();
-        return response()->json($registros);
-    }*/
 
     // Crear un nuevo registro
     public function store(Request $request)
@@ -45,10 +36,105 @@ class RegistrosController extends Controller
             return response()->json(['message' => 'La carpeta ya existe'], 409);
         }
 
+        // Crear el nuevo registro
         $registro = Registros::create($request->all());
+
+        //Solo para "Análisis de Datos"
+        if ($request->Apartado === "Análisis de Datos") {
+            try {
+                $idRegistro = $registro->idRegistro;
+
+                // 🔹 Crear indicador de Encuesta si no existe en este registro
+                $existeEncuesta = IndicadorConsolidado::where('idRegistro', $idRegistro)
+                    ->where('origenIndicador', 'Encuesta')
+                    ->exists();
+
+                if (!$existeEncuesta) {
+                    $indicadorEncuesta = IndicadorConsolidado::create([
+                        'idRegistro' => $idRegistro,
+                        'idProceso' => $request->idProceso,
+                        'nombreIndicador' => "Encuesta de Satisfacción",
+                        'origenIndicador' => "Encuesta",
+                        'periodicidad' => "Anual",
+                        'meta' => 100,
+                    ]);
+
+                    DB::table('encuesta')->insert([
+                        'idIndicador' => $indicadorEncuesta->idIndicador,
+                        'malo' => 0,
+                        'regular' => 0,
+                        'bueno' => 0,
+                        'excelente' => 0,
+                        'noEncuestas' => 0,
+                    ]);
+
+                    Log::info("✅ Indicador 'Encuesta de Satisfacción' creado automáticamente.", ['idRegistro' => $idRegistro]);
+                }
+
+                // 🔹 Crear indicadores de Retroalimentación (Encuesta, Buzon Virtual, Buzon Fisico)
+                $metodos = ['Encuesta', 'Buzon Virtual', 'Buzon Fisico'];
+
+                foreach ($metodos as $metodo) {
+                    $existeRetro = IndicadorConsolidado::where('idRegistro', $idRegistro)
+                        ->where('origenIndicador', 'Retroalimentacion')
+                        ->where('nombreIndicador', 'like', "%$metodo%")
+                        ->exists();
+
+                    if (!$existeRetro) {
+                        $indicadorRetro = IndicadorConsolidado::create([
+                            'idRegistro' => $idRegistro,
+                            'idProceso' => $request->idProceso,
+                            'nombreIndicador' => "Retroalimentacion $metodo",
+                            'origenIndicador' => "Retroalimentacion",
+                            'periodicidad' => "Anual",
+                            'meta' => 100,
+                        ]);
+
+                        DB::table('retroalimentacion')->insert([
+                            'idIndicador' => $indicadorRetro->idIndicador,
+                            'metodo' => $metodo,
+                            'cantidadFelicitacion' => 0,
+                            'cantidadSugerencia' => 0,
+                            'cantidadQueja' => 0,
+                            'total' => 0,
+                        ]);
+
+                    }
+                }
+
+                // 🔹 Crear indicador EvaluaProveedores
+                $indicadorEvalua = IndicadorConsolidado::create([
+                    'idRegistro' => $idRegistro,
+                    'idProceso' => $request->idProceso,
+                    'nombreIndicador' => "Evaluación de Proveedores",
+                    'origenIndicador' => "EvaluaProveedores",
+                    'periodicidad' => "Semestral",
+                    'meta' => 100,
+                ]);
+
+                // Inicializar evaluaProveedores
+                EvaluaProveedores::create([
+                    'idIndicador' => $indicadorEvalua->idIndicador,
+                    'metaConfiable' => 90,
+                    'metaCondicionado' => 70,
+                    'metaNoConfiable' => 50,
+                    'resultadoConfiableSem1' => 0,
+                    'resultadoConfiableSem2' => 0,
+                    'resultadoCondicionadoSem1' => 0,
+                    'resultadoCondicionadoSem2' => 0,
+                    'resultadoNoConfiableSem1' => 0,
+                    'resultadoNoConfiableSem2' => 0,
+                ]);
+
+                Log::info("✅ Indicadores automáticos creados correctamente en Análisis de Datos");
+
+            } catch (\Exception $e) {
+                Log::error("❌ Error al crear indicadores automáticos para Análisis de Datos", ['error' => $e->getMessage()]);
+            }
+        }
+
         return response()->json($registro, 201);
     }
-
 
     // Mostrar un solo registro
     public function show($id)
@@ -114,14 +200,13 @@ class RegistrosController extends Controller
         return response()->json($years);
     }
 
-
     public function obtenerIdRegistro(Request $request)
     {
         Log::info("🔍 Entrando a obtenerIdRegistro"); // ✅ este debería salir
 
-        $idProceso = $request->query('proceso');
+        $idProceso = $request->query('idProceso');
         $anio = $request->query('año');
-        $apartado = $request->query('apartado', 'Indicadores');
+        $apartado = $request->query('apartado', 'Análisis de Datos');
 
 
         $registro = Registros::where('idProceso', $idProceso)
@@ -138,5 +223,17 @@ class RegistrosController extends Controller
         return response()->json(['idRegistro' => $registro->idRegistro]);
     }
 
+    
+
+    public function buscarProceso($idRegistro)
+    {
+        $registro = Registros::select('idProceso')->find($idRegistro);
+
+        if (!$registro) {
+            return response()->json(['message' => 'Registro no encontrado'], 404);
+        }
+
+        return response()->json(['idProceso' => $registro->idProceso], 200);
+    }
 
 }

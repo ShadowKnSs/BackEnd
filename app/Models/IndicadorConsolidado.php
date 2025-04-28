@@ -45,4 +45,9 @@ class IndicadorConsolidado extends Model
     {
         return $this->hasOne(EvaluaProveedores::class, 'idIndicador', 'idIndicador');
     }
+
+    public function registro()
+    {
+        return $this->belongsTo(Registros::class, 'idRegistro', 'idRegistro');
+    }
 }

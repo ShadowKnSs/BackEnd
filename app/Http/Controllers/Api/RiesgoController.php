@@ -52,8 +52,7 @@ class RiesgoController extends Controller
 
         DB::beginTransaction();
         try {
-
-            // 2) Validar campos que vengan en $request
+            // 1) Validar los datos
             $data = $request->validate([
                 'fuente' => 'nullable|string',
                 'tipoRiesgo' => 'required|string',
@@ -74,42 +73,53 @@ class RiesgoController extends Controller
                 'analisisEfectividad' => 'nullable|string',
             ]);
 
-            // Asignar el idGesRies proveniente de la URL
-            $data['idGesRies'] = $idGesRies;
-            // LOG: Campos validados
-            Log::info("[RiesgoController@store] Campos validados para Riesgo:", $data);
-
-            // 3) Crear el registro en la tabla 'riesgos'
-
-            $riesgo = Riesgo::create($data);
-
-            // LOG: Riesgo creado
-            Log::info("[RiesgoController@store] Riesgo creado con idRiesgo=" . $riesgo->idRiesgo);
-
+            // 2) Verificar existencia de la Gestión de Riesgos
             $gestion = GestionRiesgos::find($idGesRies);
             if (!$gestion) {
+                Log::warning("[RiesgoController@store] Gestión de riesgos no encontrada, idGesRies=$idGesRies");
                 return response()->json(['message' => 'Gestión de riesgos no encontrada.'], 404);
             }
 
-            $registro = Registros::find($gestion->idregistro);
-            if (!$registro) {
-                return response()->json(['message' => 'Gestión de riesgos no encontrada.'], 404);
+            // 3) Obtener el registro de la gestión para extraer idProceso y año
+            $registroGestion = Registros::find($gestion->idregistro);
+            if (!$registroGestion) {
+                Log::warning("[RiesgoController@store] Registro de gestión de riesgos no encontrado, idRegistro=" . $gestion->idregistro);
+                return response()->json(['message' => 'Registro asociado a la gestión de riesgos no encontrado.'], 404);
             }
 
-            // 5) Crear el indicador en 'IndicadorConsolidado'
+            $idProceso = $registroGestion->idProceso;
+            $año = $registroGestion->año;
+
+            // 4) Buscar el registro correcto del apartado 'Indicadores'
+            $registroIndicadores = Registros::where('idProceso', $idProceso)
+                ->where('año', $año)
+                ->where('Apartado', 'Indicadores')
+                ->first();
+
+            if (!$registroIndicadores) {
+                Log::warning("[RiesgoController@store] No se encontró el registro de Indicadores para idProceso=$idProceso y año=$año");
+                return response()->json(['message' => 'No existe registro de Indicadores para este proceso y año.'], 404);
+            }
+
+            // 5) Crear el riesgo
+            $data['idGesRies'] = $idGesRies;
+            $riesgo = Riesgo::create($data);
+            Log::info("[RiesgoController@store] Riesgo creado con idRiesgo=" . $riesgo->idRiesgo);
+
+            // 6) Crear el indicador consolidado correctamente
             $indicador = IndicadorConsolidado::create([
-                'idRegistro' => $gestion->idregistro,
-                'idProceso' => $registro->idProceso,
+                'idRegistro' => $registroIndicadores->idRegistro,
+                'idProceso' => $idProceso,
                 'nombreIndicador' => $riesgo->descripcion,
                 'origenIndicador' => 'GestionRiesgo',
                 'periodicidad' => 'Anual',
                 'meta' => null,
             ]);
-            // LOG: Indicador creado
-            Log::info("[RiesgoController@store] Indicador creado con id=" . $indicador->idIndicadorConsolidado);
+            Log::info("[RiesgoController@store] Indicador creado con idIndicador=" . $indicador->idIndicador);
 
             DB::commit();
             Log::info("[RiesgoController@store] Riesgo e indicador creados exitosamente.");
+
             return response()->json([
                 'message' => 'Riesgo e indicador creados exitosamente.',
                 'riesgo' => $riesgo,
@@ -118,15 +128,16 @@ class RiesgoController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("[RiesgoController@store] Error al crear Riesgo e indicador: " . $e->getMessage(), [
+            Log::error("[RiesgoController@store] Error al crear riesgo e indicador: " . $e->getMessage(), [
                 'trace' => $e->getTraceAsString()
             ]);
             return response()->json([
-                'message' => 'Error al crear el Riesgo y el indicador.',
+                'message' => 'Error al crear el riesgo y el indicador.',
                 'error' => $e->getMessage()
             ], 500);
         }
     }
+
 
     /**
      * Muestra un riesgo específico asociado a una gestión.
@@ -202,6 +213,15 @@ class RiesgoController extends Controller
 
             Log::info("[RiesgoController@update] Datos validados para update:", $data);
 
+
+            if (isset($data['descripcion']) && $riesgo->idIndicador) {
+                $indicador = IndicadorConsolidado::find($riesgo->idIndicador);
+                if ($indicador) {
+                    $indicador->nombreIndicador = $data['descripcion'];
+                    $indicador->save();
+                }
+            }
+
             // Actualizar el riesgo
             $riesgo->update($data);
 
@@ -240,6 +260,13 @@ class RiesgoController extends Controller
             if (!$riesgo) {
                 Log::warning("[RiesgoController@destroy] Riesgo no encontrado con idRiesgo=$idRiesgo para gestion=$idGesRies");
                 return response()->json(['message' => 'Riesgo no encontrado para esta gestión'], 404);
+            }
+
+            if ($riesgo->idIndicador) {
+                $indicador = IndicadorConsolidado::find($riesgo->idIndicador);
+                if ($indicador) {
+                    $indicador->delete();
+                }
             }
 
             $riesgo->delete();

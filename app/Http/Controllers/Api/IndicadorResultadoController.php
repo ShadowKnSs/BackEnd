@@ -110,8 +110,6 @@ class IndicadorResultadoController extends Controller
         }
     }
 
-
-
     /**
      * Muestra los resultados de un indicador en su tabla correspondiente.
      */
@@ -173,14 +171,23 @@ class IndicadorResultadoController extends Controller
         }
     }
 
-    public function getResultadosPlanControl($idProceso) 
+    public function getResultadosPlanControl($idProceso)
 {
     try {
         $resultados = DB::table('IndicadoresConsolidados as ic')
             ->join('ResultadoIndi as ri', 'ic.idIndicador', '=', 'ri.idIndicador')
-            ->where('ic.origenIndicador', '=', 'ActividadControl')
-            ->where('ic.idProceso', '=', $idProceso)
-            ->select('ic.nombreIndicador', 'ri.resultadoSemestral1', 'ri.resultadoSemestral2')
+            ->join('Registros as r', 'ic.idRegistro', '=', 'r.idRegistro')
+            ->join('analisisdatos as ad', 'r.idRegistro', '=', 'ad.idRegistro')
+            ->where('ic.origenIndicador', 'ActividadControl')
+            ->where('ic.idProceso', $idProceso)
+            ->where('ad.seccion', 'DesempeñoProceso')
+            ->select([
+                'ic.nombreIndicador',
+                'ri.resultadoSemestral1',
+                'ri.resultadoSemestral2',
+                'ad.interpretacion',
+                'ad.necesidad'
+            ])
             ->get();
 
         return response()->json($resultados, 200);
@@ -191,49 +198,48 @@ class IndicadorResultadoController extends Controller
 }
 
 
-    public function getResultadosIndMapaProceso()
+    public function getResultadosIndMapaProceso(Request $request)
     {
-        try {
-            $resultados = DB::table('IndicadoresConsolidados as ic')
-                ->join('ResultadoIndi as ri', 'ic.idIndicador', '=', 'ri.idIndicador')
-                ->where('ic.origenIndicador', '=', 'MapaProceso')
-                ->select('ic.nombreIndicador', 'ri.resultadoSemestral1', 'ri.resultadoSemestral2')
-                ->get();
-
-            return response()->json([$resultados], 200);
-        } catch (\Exception $e) {
-            Log::error("Error al obtener los resultados de Mapa de Proceso", ['error' => $e->getMessage()]);
-            return response()->json(['message' => 'Error al obtener los resultados de Mapa de Proceso'], 500);
+        $idProceso = $request->query('idProceso');
+        if (!is_numeric($idProceso)) {
+            return response()->json(['message' => 'Parámetro idProceso inválido'], 400);
         }
+
+        $resultados = DB::table('IndicadoresConsolidados AS ic')
+            ->join('ResultadoIndi            AS ri', 'ic.idIndicador', '=', 'ri.idIndicador')
+            ->where('ic.origenIndicador', 'MapaProceso')
+            ->where('ic.idProceso', $idProceso)
+            ->select([
+                'ic.nombreIndicador',
+                'ri.resultadoSemestral1',
+                'ri.resultadoSemestral2',
+            ])
+            ->get();
+
+        return response()->json($resultados, 200);
     }
 
     public function getResultadosRiesgos($idRegistro)
     {
-        try {
-            // 1. Obtener el idProceso desde la tabla Registros
-            $registro = Registros::findOrFail($idRegistro);
-            $idProceso = $registro->idProceso;
-    
-            // 2. Buscar los indicadores de origen 'GestionRiesgo' del proceso
-            $indicadores = IndicadorConsolidado::where('idProceso', $idProceso)
-                ->where('origenIndicador', 'GestionRiesgo')
-                ->get();
-    
-            // 3. Mapear cada indicador con su resultadoAnual desde ResultadoIndi
-            $resultados = $indicadores->map(function ($indicador) {
-                $resultado = ResultadoIndi::where('idIndicador', $indicador->idIndicador)->first();
-    
-                return [
-                    'nombreIndicador' => $indicador->nombreIndicador,
-                    'resultadoAnual' => $resultado->resultadoAnual ?? null
-                ];
-            });
-    
-            return response()->json($resultados, 200);
-        } catch (\Exception $e) {
-            Log::error("Error al obtener los resultados de Gestión de Riesgos", ['error' => $e->getMessage()]);
-            return response()->json(['message' => 'Error al obtener los resultados de Gestión de Riesgos'], 500);
+        // 1️⃣ Obtener idProceso desde Registros
+        $registro = Registros::select('idProceso')->find($idRegistro);
+        if (!$registro) {
+            return response()->json(['message' => 'Registro no encontrado'], 404);
         }
+        $idProceso = $registro->idProceso;
+
+        // 2️⃣ Un único query: indicadores + resultados
+        $resultados = DB::table('IndicadoresConsolidados AS ic')
+            ->join('ResultadoIndi            AS ri', 'ic.idIndicador', '=', 'ri.idIndicador')
+            ->where('ic.origenIndicador', 'GestionRiesgo')
+            ->where('ic.idProceso', $idProceso)
+            ->select([
+                'ic.nombreIndicador',
+                'ri.resultadoAnual',
+            ])
+            ->get();
+
+        return response()->json($resultados, 200);
     }
-    
+
 }
