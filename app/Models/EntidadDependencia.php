@@ -9,8 +9,9 @@ class EntidadDependencia extends Model
     protected $table = 'entidaddependencia';
 
     protected $primaryKey = 'idEntidadDependencia';
+    public $timestamps = false; 
 
-    protected $fillable = ['ubicacion', 'nombreEntidad' ];
+    protected $fillable = ['ubicacion', 'nombreEntidad', 'tipo', 'icono'];
 
     public function procesos()
     {

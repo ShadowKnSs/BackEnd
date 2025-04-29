@@ -20,6 +20,7 @@ class ProcessController extends Controller
             Log::info('Proceso creado exitosamente', [
                 'id' => $proceso->id,
                 'nombre' => $proceso->nombre,
+                'icono' => $proceso->icono,
                 'usuario' => auth()->user()->name ?? 'Sistema'
             ]);
 

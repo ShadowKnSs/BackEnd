@@ -70,24 +70,33 @@ use App\Http\Controllers\Api\UsuarioController;
 use App\Http\Controllers\Api\TipoUsuarioController;
 use App\Http\Controllers\Api\CronogramaController;
 
+
 use App\Http\Controllers\Api\SupervisorController;
 
 //Login
 use App\Http\Controllers\Api\AuthController;
 
 //*********************************************************/
-//                  Login
+//                          Login
 //*********************************************************/
 Route::post('/login', [AuthController::class, 'login']);
 
-
-Route::get('macroprocesos', [MacroProcesoController::class, 'index']);
 //*********************************************************/
 //                  Entidades/Dependencias
 //*********************************************************/
 Route::post('/entidades-por-usuario', [EntidadDependenciaController::class, 'entidadesPorUsuario']); //Agregada por JRH 05/04/2025
-Route::get('entidades', [EntidadDependenciaController::class, 'index']);
-Route::get('/entidades/{id}', [EntidadDependenciaController::class, 'show']);
+Route::get('/entidades/{id}', [EntidadDependenciaController::class, 'show']); 
+Route::get('entidad-nombres', [EntidadDependenciaController::class, 'getNombres']);
+//crud Entidades/Dependencias
+Route::post('/entidades', [EntidadDependenciaController::class, 'store']);
+Route::get('/entidades', [EntidadDependenciaController::class, 'index']);
+Route::put('/entidades/{id}', [EntidadDependenciaController::class, 'update']);
+Route::delete('/entidades/{id}', [EntidadDependenciaController::class, 'destroy']);
+
+//*********************************************************/
+//                  Procesos y Relacionado
+//*********************************************************/
+Route::get('macroprocesos', [MacroProcesoController::class, 'index']);
 Route::get('lideres', [LiderController::class, 'index']); 
 Route::post('/procesos', [ProcessController::class, 'store']);
 
@@ -152,7 +161,6 @@ Route::apiResource('noticias', NoticiasController::class);
 Route::apiResource('eventos-avisos', EventosAvisosController::class);
 
 //Route::apiResource('cronogramas', CronogramaController::class);
-Route::get('entidad-nombres', [EntidadDependenciaController::class, 'getNombres']);
 Route::get('procesos-nombres', [ProcessController::class, 'getNombres']);
 
 Route::post('cronograma/filtrar', [CronogramaController::class, 'index']);
@@ -345,6 +353,10 @@ Route::get('/notificaciones/count/{idUsuario}', [NotificacionController::class, 
 
 
 //Route::get('/emitir-notificacion/{idUsuario}', [NotificacionTestController::class, 'enviarNotificacion']);
+
+
+
+
 
 
 //*********************************************************/
