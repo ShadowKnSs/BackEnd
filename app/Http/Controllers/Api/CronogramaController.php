@@ -114,8 +114,7 @@ class CronogramaController extends Controller
 
             foreach ($emails as $email) {
                 try {
-                    // Enviar correo
-               // Notification::route('mail', $email)->notify(new AuditoriaNotificacion($cronogramaData, $usersList, $emails));
+               // Enviar correo
                Notification::route('mail', $email)->notify(new AuditoriaNotificacion($cronogramaData, $usersList, $emails, 'creado'));
                     Log::info('Notificación enviada por correo', ['email' => $email]);
                 } catch (\Exception $e) {

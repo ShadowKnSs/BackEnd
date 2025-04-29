@@ -8,11 +8,10 @@ use App\Models\Usuario;
 
 class LiderController extends Controller
 {
-    public function index(){
-         $leaders = Usuario::whereHas('tipoUsuario', function ($query) {
-            $query->where('nombreRol', 'Líder');
-        })->get();
-
+    public function index() {
+        $leaders = Usuario::where('idTipoUsuario', 4)->get();
+    
         return response()->json(['leaders' => $leaders], 200);
     }
+    
 }

@@ -21,7 +21,8 @@ class Proceso extends Model
          'anioCertificado',
          'norma',
          'duracionCetificado',
-         'estado'
+         'estado',
+         'icono'
      ];
  
      // Relación con MacroProceso

@@ -8,12 +8,46 @@ use App\Models\EntidadDependencia;
 
 class EntidadDependenciaController extends Controller
 {
+    public function store(Request $request)
+    {
+        // Validar los datos
+        $request->validate([
+            'ubicacion' => 'required|string',
+            'nombreEntidad' => 'required|string',
+            'tipo' => 'required|string',
+            'icono' => 'required|string',
+        ]);
+
+        // Verificar si ya existe una entidad con ese nombre (insensible a mayúsculas)
+        $existeEntidad = EntidadDependencia::whereRaw('LOWER(nombreEntidad) = ?', [strtolower($request->nombreEntidad)])
+            ->exists();
+
+        if ($existeEntidad) {
+            return response()->json(['error' => 'Ya existe una entidad/dependencia con ese nombre'], 409);
+        }
+
+        // Crear un nuevo registro
+        $entidad = EntidadDependencia::create([
+            'nombreEntidad' => $request->nombreEntidad,
+            'ubicacion' => $request->ubicacion,
+            'tipo' => $request->tipo,
+            'icono' => $request->icono,
+        ]);
+
+        return response()->json([
+            'message' => 'Entidad/dependencia registrada con éxito',
+            'entidad' => $entidad
+        ], 201);
+    }
+
+    //obtener todas las entidades/dependecias 
     public function index()
     {
         $entidades = EntidadDependencia::all();
         return response()->json(['entidades' => $entidades], 200);
     }
 
+    //obtener todas las entidades/dependecias ordenadas por nombre 
     public function index1()
     {
         $entidades = EntidadDependencia::select('idEntidadDependencia', 'nombreEntidad')
@@ -51,7 +85,7 @@ class EntidadDependenciaController extends Controller
 
         // Si es Admin u otro con acceso total
         if ($rolActivo === 'Admin' || $rolActivo === 'Coordinador' || $rolActivo === 'Auditor') {
-            $entidades = EntidadDependencia::select('idEntidadDependencia', 'nombreEntidad')
+            $entidades = EntidadDependencia::select('idEntidadDependencia', 'nombreEntidad', 'icono')
                 ->orderBy('nombreEntidad')
                 ->get();
         }
@@ -69,6 +103,56 @@ class EntidadDependenciaController extends Controller
 
         return response()->json(['entidades' => $entidades]);
     }
+    //actualizar una entidad/dependecia
+    public function update(Request $request, $id)
+    {
+        // Validar los datos
+        $request->validate([
+            'ubicacion' => 'required|string',
+            'nombreEntidad' => 'required|string',
+            'tipo' => 'required|string',
+            'icono' => 'required|string',
+        ]);
+
+        $entidad = EntidadDependencia::find($id);
+
+        if (!$entidad) {
+            return response()->json(['error' => 'Entidad/dependencia no encontrada'], 404);
+        }
+
+        // Verificar si hay otra entidad con el mismo nombre (exceptuando a sí misma)
+        $existeOtra = EntidadDependencia::whereRaw('LOWER(nombreEntidad) = ?', [strtolower($request->nombreEntidad)])
+            ->where('idEntidadDependencia', '!=', $id)
+            ->exists();
+
+        if ($existeOtra) {
+            return response()->json(['error' => 'Ya existe otra entidad/dependencia con ese nombre'], 409);
+        }
+
+        // Actualizar los datos
+        $entidad->update([
+            'nombreEntidad' => $request->nombreEntidad,
+            'ubicacion' => $request->ubicacion,
+            'tipo' => $request->tipo,
+            'icono' => $request->icono,
+        ]);
+
+        return response()->json(['message' => 'Entidad/dependencia actualizada con éxito', 'entidad' => $entidad], 200);
+    }
+    //eliminar una entidad/dependecia
+    public function destroy($id)
+    {
+        $entidad = EntidadDependencia::find($id);
+
+        if (!$entidad) {
+            return response()->json(['error' => 'Entidad/dependencia no encontrada'], 404);
+        }
+
+        $entidad->delete();
+
+        return response()->json(['message' => 'Entidad/dependencia eliminada con éxito'], 200);
+    }
+
 
 
 

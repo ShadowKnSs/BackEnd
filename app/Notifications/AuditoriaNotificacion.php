@@ -3,13 +3,13 @@
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Contracts\Queue\ShouldQueue;
 
-class AuditoriaNotificacion extends Notification implements ShouldBroadcast
+class AuditoriaNotificacion extends Notification
 {
     public $cronograma;
     public $usersname;
@@ -17,7 +17,7 @@ class AuditoriaNotificacion extends Notification implements ShouldBroadcast
 
     public $accion;
 
-    public function __construct($cronograma, $usersname, $emails, $accion = 'creada')
+    public function __construct($cronograma, $usersname, $emails, $accion)
     {
         $this->cronograma = $cronograma;
         $this->usersname = $usersname;
