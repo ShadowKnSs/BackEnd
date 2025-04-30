@@ -4,71 +4,132 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\FormAnalisisDatos;
+use Illuminate\Support\Facades\Log;
+use App\Models\formAnalisisDatos;
 use App\Models\AnalisisDatos;
+use App\Models\IndicadorConsolidado;
 use App\Models\Encuesta;
 use App\Models\EvaluaProveedores;
 use App\Models\Retroalimentacion;
 use App\Models\NeceInter;
+use App\Models\Registros;
+use App\Models\Proceso;
+use App\Models\EntidadDependencia;
+use App\Models\MacroProceso;
+
 
 class FormAnalisisDatosController extends Controller
 {
-    // Obtener un registro de FormAnalisisDatos junto con sus análisis de datos
-    public function show($idformAnalisisDatos)
+    /**
+     * Obtener un registro de FormAnalisisDatos junto con sus datos asociados.
+     */
+    public function getIdRegistro(Request $request)
     {
-        // Buscar el registro en FormAnalisisDatos por su ID
-        $formAnalisisDatos = FormAnalisisDatos::find($idformAnalisisDatos);
+        Log::info("Consultando Id Registro");
+        $request->validate([
+            'idProceso' => 'required|integer',
+            'anio' => 'required|integer|digits:4'
+        ]);
+            $proceso = Proceso::find($request->idProceso);
+            // Buscar el registro con el apartado "Análisis de Datos"
+            $registro = Registros::where('idProceso', $request->idProceso)
+                ->where('año', $request->anio)
+                ->where('Apartado', 'Análisis de Datos')
+                ->first();
+           
+            Log::info("Consultando Id Registro: {$registro}");
+            if (!$registro) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No se encontró registro de Análisis de Datos para el proceso y año especificados'
+                ], 404);
+            }
+            $entidad = EntidadDependencia::where('idEntidadDependencia', $proceso->idEntidad)->first();
+            $macroproceso = Macroproceso::where('idMacroproceso', $proceso->idMacroproceso)->first();
+                
 
-        // Si no se encuentra el registro, devolver error
-        if (!$formAnalisisDatos) {
-            return response()->json(['message' => 'Registro de Análisis de Datos no encontrado'], 404);
-        }
+            return response()->json([
+                'success' => true,
+                'idRegistro' => $registro->idRegistro,
+                'proceso'=> $proceso,
+                'macro'=> $macroproceso->tipoMacroproceso,
+                'entidad'=> $entidad->nombreEntidad
+            ]);
+        
+    }
 
-        // Consultar los riesgos asociados al idformAnalisisDatos
-        $indicadores = AnalisisDatos::where('idformAnalisisDatos', $idformAnalisisDatos)->get();
-        $encuesta = Encuesta::where('idformAnalisisDatos', $idformAnalisisDatos)->get();
-        $evProv = EvaluaProveedores::where('idformAnalisisDatos', $idformAnalisisDatos)->get();
-        $retro = Retroalimentacion::where('idformAnalisisDatos', $idformAnalisisDatos)->get();
-        $neceInter = NeceInter::where('idformAnalisisDatos', $idformAnalisisDatos)->get();
+    public function show($registro)
+    {
+        
+        Log::info("Registro: {$registro}");
+        $formAnalisisDatos = formAnalisisDatos::where('idRegistro',$registro)->get();
+
+        $indicadores = AnalisisDatos::where('idRegistro', $registro)->get();
+        Log::info(": {$indicadores}");
+        $indicador= IndicadorConsolidado::where('idRegistro', $registro)->get();
+        Log::info(": {$indicador}");
+        
+        $idsIndicadoresConsolidados = $indicador->pluck('idIndicador')->toArray();
+        Log::info("IDs de Indicadores Consolidados: " . implode(',', $idsIndicadoresConsolidados));
+        
+        $encuesta = Encuesta::whereIn('idIndicador', $idsIndicadoresConsolidados)->get();
+        $evaluacion = EvaluaProveedores::whereIn('idIndicador', $idsIndicadoresConsolidados)->get();
+        $retroalimentacion = Retroalimentacion::whereIn('idIndicador', $idsIndicadoresConsolidados)->get();
+        Log::info(": {$encuesta}");
+        Log::info(": {$evaluacion}");
+        Log::info(": {$retroalimentacion}");
+
+
         
 
-        // Devolver los resultados
         return response()->json([
             'formAnalisisDatos' => $formAnalisisDatos,
-            'Indicadores' => $indicadores,
-            'Encuesta' => $encuesta,
-            'Evaluacion' => $evProv,
-            'Retroalimentacion' => $retro,
-            'NeceInter'=>$neceInter
+            'analisisDatos'=>$indicadores,
+            'indicador' => $indicador,
+            'encuesta' => $encuesta,
+            'evaluacion' => $evaluacion,
+            'retroalimentacion' => $retroalimentacion,
         ]);
     }
 
-    // Actualizar necesidad e interpretación en NeceInter
-    public function updateNecesidadInterpretacion(Request $request, $idformAnalisisDatos)
+    /**
+     * Actualizar.
+     */
+    public function updateNecesidadInterpretacion(Request $request, $idProceso)
     {
-        // Validar los datos de entrada
+        Log::info("Hola desde update");
+         // Loguear todos los datos entrantes
+        Log::info('Datos recibidos en actualizarCampo:', [
+            'idRegistro' => $idProceso,
+            'seccion' => $request->seccion,
+            'campo' => $request->campo,
+            'valor' => $request->valor,
+        ]);
+        $formAnalisisDatos = formAnalisisDatos::find($idProceso);
+
         $request->validate([
-            'pestana' => 'required|string',
-            'campo' => 'required|string|in:necesidad,interpretacion',
-            'valor' => 'required|string',
+            'seccion' => 'required|string',
+            'campo' => 'required|in:necesidad,interpretacion',
+            'valor' => 'nullable|string',
         ]);
 
-        // Buscar el registro en NeceInter por idformAnalisisDatos y pestaña
-        $neceInter = NeceInter::where('idformAnalisisDatos', $idformAnalisisDatos)
-            ->where('pestana', $request->pestana)
+        $analisis = AnalisisDatos::where('idRegistro', $idProceso)
+            ->where('seccion', $request->seccion)
             ->first();
 
-        // Si no se encuentra el registro, devolver error
-        if (!$neceInter) {
-            return response()->json(['message' => 'Registro de NeceInter no encontrado'], 404);
+        if (!$analisis) {
+            Log::warning("Registro no encontrado para idRegi y seccion={$request->seccion}");
+            return response()->json(['message' => 'Registro no encontrado'], 404);
         }
 
-        // Actualizar el campo correspondiente
-        $campo = $request->campo;
-        $neceInter->$campo = $request->valor;
-        $neceInter->save();
+        $analisis->{$request->campo} = $request->valor;
+        $analisis->save();
 
-        // Devolver respuesta exitosa
-        return response()->json(['message' => 'Campo actualizado correctamente', 'data' => $neceInter], 200);
-    }
+        Log::info('Campo actualizado correctamente.', ['registro' => $analisis]);
+
+        return response()->json([
+            'message' => 'Campo actualizado correctamente',
+            'data' => $analisis
+        ]);
+        }
 }
