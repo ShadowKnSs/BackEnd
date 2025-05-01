@@ -110,6 +110,7 @@ Route::put('/minutas/{id}', [MinutaController::class, 'update']); //actualizar u
 Route::delete('/minutasDelete/{id}', [MinutaController::class, 'destroy']);
 
 // ✅ Rutas con nombre explícito primero
+Route::get('/registro-info/{idRegistro}', [RegistrosController::class, 'getInfoProcesoEntidad']);
 Route::get('/registros/idRegistro', [RegistrosController::class, 'obtenerIdRegistro']);
 Route::get('/registros/years/{idProceso}', [RegistrosController::class, 'obtenerAnios']);
 Route::post('/registros/filtrar', [RegistrosController::class, 'obtenerRegistrosPorProcesoYApartado']);
@@ -224,6 +225,13 @@ Route::get('/plan-control/{idProceso}', [IndicadorResultadoController::class, 'g
 Route::get('/mapa-proceso', [IndicadorResultadoController::class, 'getResultadosIndMapaProceso']);
 Route::get('/gestion-riesgos', [IndicadorResultadoController::class, 'getResutadosRiesgos']);
 
+//**************************************************/
+//              Plan Correctivo
+//**************************************************/
+Route::get('/plan-correctivos/registro/{idRegistro}', [PlanCorrectivoController::class, 'getByIdRegistro']);
+
+
+
 //Ruta para los planes correctivos
 Route::get('/plan-correctivos', [PlanCorrectivoController::class, 'index']);
 //Ruta para obtener la informacion de un plan
@@ -250,8 +258,6 @@ Route::apiResource('indmapaproceso', IndMapaProcesoController::class);
 Route::apiResource('auditorias', AuditoriaInternaController::class);
 Route::apiResource('reportesauditoria', ReporteAuditoriaController::class)->only([ 'index', 'store', 'destroy' ]);
 Route::get('/reporte-pdf/{id}', [ReporteAuditoriaController::class, 'descargarPDF']);
-
-Route::get('/plan-correctivos/registro/{idRegistro}', [PlanCorrectivoController::class, 'getByRegistro']);
 
 Route::apiResource('plantrabajo', PlanTrabajoController::class);
 Route::apiResource('actividadmejora', ActividadMejoraController::class);
