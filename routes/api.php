@@ -109,6 +109,14 @@ Route::post('/procesos', [ProcessController::class, 'store']);
 Route::get('/procesos/entidad/{idEntidad}', [ProcessController::class, 'obtenerProcesosPorEntidad']);
 /*Route::post('/registros', [RegistrosController::class, 'store']); // Ruta para crear un nuevo registro
 Route::get('/registros/{idProceso}', [RegistrosController::class, 'index']); // Ruta para obtener registros por idProceso*/
+//*********************************************************/
+//                  Cronograma
+//*********************************************************/
+Route::post('cronograma/filtrar', [CronogramaController::class, 'index']);
+Route::post('cronograma', [CronogramaController::class, 'store']);
+Route::put('cronograma/{id}', [CronogramaController::class, 'update']);
+Route::delete('/cronograma/{id}', [CronogramaController::class, 'destroy']);
+
 
 Route::post('minutasAdd', [MinutaController::class, 'store']); // crear minuta
 Route::get('/minutas/registro/{idRegistro}', [MinutaController::class, 'getMinutasByRegistro']); //obtener todad las minutas de un proceso en un año 
@@ -165,12 +173,9 @@ Route::get('/indicadores/retroalimentacion', [IndicadorConsolidadoController::cl
 
 
 
-//Route::apiResource('cronogramas', CronogramaController::class);
 Route::get('procesos-nombres', [ProcessController::class, 'getNombres']);
 
-Route::post('cronograma/filtrar', [CronogramaController::class, 'index']);
-Route::post('cronograma', [CronogramaController::class, 'store']);
-Route::put('cronograma/{id}', [CronogramaController::class, 'update']);
+
 
 
 //*********************************************************/
@@ -354,8 +359,6 @@ Route::apiResource('usuarios', UsuarioController::class);
 Route::get('tiposusuario', [TipoUsuarioController::class, 'index']);
 Route::get('supervisores', [UsuarioController::class, 'getSupervisores']);
 
-// Eliminar una auditoría 
-Route::delete('/cronograma/{id}', [CronogramaController::class, 'destroy']);
 
 Route::get('/notificaciones/{idUsuario}', [NotificacionController::class, 'getNotificaciones']);
 Route::post('/notificaciones/marcar-leidas/{idUsuarios}/{notificationId}', [NotificacionController::class, 'marcarComoLeidas']);

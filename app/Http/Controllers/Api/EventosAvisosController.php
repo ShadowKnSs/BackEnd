@@ -13,6 +13,7 @@ use Carbon\Carbon;
 
 class EventosAvisosController extends Controller
 {
+        // GET /api/eventos-avisos?tipo=Evento|Aviso
     public function index(Request $request)
     {
         $tipo = $request->query('tipo');
@@ -20,7 +21,7 @@ class EventosAvisosController extends Controller
         $query = EventoAviso::select('idEventosAvisos', 'fechaPublicacion','rutaImg', 'tipo'); // puedes quitar 'tipo' si no lo usas
         
         if ($tipo) {
-            $query->where('tipo', $tipo);
+            $query->where('tipo', $tipo); // filtro dinámico
         }
 
         $result = $query->get();
@@ -30,6 +31,7 @@ class EventosAvisosController extends Controller
         ->header('Cache-Control', 'public, max-age=300');
     }
 
+    // POST /api/eventos-avisos
     public function store(Request $request)
     {
         $request->validate([
@@ -39,12 +41,14 @@ class EventosAvisosController extends Controller
         ]);
 
         $rutaImg = null;
+
+        // Si hay imagen, se redimensiona antes de guardar
         if ($request->hasFile('imagen')) {
             $file = $request->file('imagen');
             $fileName = time() . '_' . $file->getClientOriginalName();
             $filePath = storage_path('app/public/img/' . $fileName);
 
-            // ✅ Redimensionar y guardar la imagen
+            //  Redimensionar y guardar la imagen
             $manager = new ImageManager(new GdDriver());
             $image = $manager->read($file->getRealPath());
             $image->resize(800, 600, function ($constraint) {
@@ -54,6 +58,8 @@ class EventosAvisosController extends Controller
 
             $rutaImg = config('app.url') . Storage::url('img/' . $fileName);
         }
+
+        // Se crea el registro
 
         $item = EventoAviso::create([
             'idUsuario' => $request->idUsuario,
@@ -66,10 +72,13 @@ class EventosAvisosController extends Controller
     }
 
 
+    // GET /api/eventos-avisos/{id}
     public function show($id)
     {
         return response()->json(EventoAviso::findOrFail($id));
     }
+
+    //  PUT /api/eventos-avisos/{id}
 
     public function update(Request $request, $id)
     {
@@ -82,6 +91,7 @@ class EventosAvisosController extends Controller
 
         $rutaImg = $item->rutaImg;
 
+        //  Si hay nueva imagen, se reemplaza
         if ($request->hasFile('imagen')) {
             // Eliminar imagen anterior si existe
             if ($item->rutaImg) {
@@ -111,6 +121,9 @@ class EventosAvisosController extends Controller
 
         return response()->json($item);
     }
+
+
+    //  DELETE /api/eventos-avisos/{id}
 
     public function destroy($id)
     {
