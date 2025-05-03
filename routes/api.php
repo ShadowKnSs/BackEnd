@@ -82,6 +82,12 @@ use App\Http\Controllers\Api\AuthController;
 Route::post('/login', [AuthController::class, 'login']);
 
 //*********************************************************/
+//                  Para Las Notiicas
+//*********************************************************/
+Route::apiResource('noticias', NoticiasController::class);
+Route::apiResource('eventos-avisos', EventosAvisosController::class);
+
+//*********************************************************/
 //                  Entidades/Dependencias
 //*********************************************************/
 Route::post('/entidades-por-usuario', [EntidadDependenciaController::class, 'entidadesPorUsuario']); //Agregada por JRH 05/04/2025
@@ -158,8 +164,6 @@ Route::prefix('evalua-proveedores')->group(function () {
 Route::get('/indicadores/retroalimentacion', [IndicadorConsolidadoController::class, 'indexRetroalimentacion']);
 
 
-Route::apiResource('noticias', NoticiasController::class);
-Route::apiResource('eventos-avisos', EventosAvisosController::class);
 
 //Route::apiResource('cronogramas', CronogramaController::class);
 Route::get('procesos-nombres', [ProcessController::class, 'getNombres']);
