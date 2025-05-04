@@ -4,9 +4,13 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use App\Models\GestionRiesgos;
 use App\Models\Registros;
+use App\Models\Proceso;
+use App\Models\EntidadDependencia;
+use App\Models\MacroProceso;
 
 class GestionRiesgoController extends Controller
 {
@@ -17,6 +21,41 @@ class GestionRiesgoController extends Controller
      *
      *    GET /api/gestionriesgos/{idRegistro}/datos-generales
      */
+    public function getIdRegistro(Request $request)
+    {
+        Log::info("Consultando Id Registro");
+        $request->validate([
+            'idProceso' => 'required|integer',
+            'anio' => 'required|integer|digits:4'
+        ]);
+            $proceso = Proceso::find($request->idProceso);
+            // Buscar el registro con el apartado "Análisis de Datos"
+            $registro = Registros::where('idProceso', $request->idProceso)
+                ->where('año', $request->anio)
+                ->where('Apartado', 'Gestión Riesgo')
+                ->first();
+           
+            Log::info("Consultando Id Registro: {$registro}");
+            if (!$registro) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No se encontró registro de Análisis de Datos para el proceso y año especificados'
+                ], 404);
+            }
+            $entidad = EntidadDependencia::where('idEntidadDependencia', $proceso->idEntidad)->first();
+            $macroproceso = Macroproceso::where('idMacroproceso', $proceso->idMacroproceso)->first();
+                
+
+            return response()->json([
+                'success' => true,
+                'idRegistro' => $registro->idRegistro,
+                'proceso'=> $proceso,
+                'macro'=> $macroproceso->tipoMacroproceso,
+                'entidad'=> $entidad->nombreEntidad
+            ]);
+        
+    }
+
     public function getDatosGenerales($idRegistro)
     {
         // Ejemplo: si tu tabla 'registro' tiene columnas 'entidad', 'macroproceso', 'proceso', etc.

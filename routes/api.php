@@ -182,6 +182,7 @@ Route::get('/reporte-pdf/{id}', [ReporteAuditoriaController::class, 'descargarPD
 Route::post('/mapa-proceso/{idProceso}/subir-diagrama', [MapaProcesoController::class, 'subirDiagramaFlujo']);
 
 
+Route::get('/getIdRegistroGR', [GestionRiesgoController::class, 'getIdRegistro']);
 
 
 // 1) GET datos-generales
