@@ -4,7 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\Proceso; // Import the Process model
+use App\Models\Proceso;
+use App\Models\EntidadDependencia;
 use Illuminate\Support\Facades\Log;
 
 
@@ -75,18 +76,46 @@ class ProcessController extends Controller
         $nombres = Proceso::pluck('nombreProceso');
         return response()->json(['procesos' => $nombres], 200);
     }
+
+
+    public function obtenerProcesosPorEntidad($idEntidad)
+    {
+        // Obtener todos los procesos de la entidad específica
+        $procesos = Proceso::where('idEntidad', $idEntidad)->get();
+
+        if ($procesos->isEmpty()) {
+            return response()->json(['message' => 'No se encontraron procesos para esta entidad'], 404);
+        }
+
+        return response()->json($procesos);
+    }
+
+    public function obtenerProcesoPorUsuario($idUsuario)
+    {
+        $proceso = Proceso::where('idUsuario', $idUsuario)->first();
+        return response()->json($proceso);
+    }
+
     
-
-    public function obtenerProcesosPorEntidad($idEntidad){
-         // Obtener todos los procesos de la entidad específica
-    $procesos = Proceso::where('idEntidad', $idEntidad)->get();
-
-    if ($procesos->isEmpty()) {
-        return response()->json(['message' => 'No se encontraron procesos para esta entidad'], 404);
+    public function getInfoPorProceso($idProceso)
+    {
+        $proceso = Proceso::find($idProceso);
+    
+        if (!$proceso) {
+            return response()->json(['error' => 'Proceso no encontrado'], 404);
+        }
+    
+        $entidad = EntidadDependencia::find($proceso->idEntidad);
+    
+        if (!$entidad) {
+            return response()->json(['error' => 'Entidad no encontrada'], 404);
+        }
+    
+        return response()->json([
+            'proceso' => $proceso->nombreProceso,
+            'entidad' => $entidad->nombreEntidad,
+        ]);
     }
 
-    return response()->json($procesos);
-    }
-   
 }
 

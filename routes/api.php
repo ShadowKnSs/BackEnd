@@ -105,10 +105,12 @@ Route::delete('/entidades/{id}', [EntidadDependenciaController::class, 'destroy'
 Route::get('macroprocesos', [MacroProcesoController::class, 'index']);
 Route::get('lideres', [LiderController::class, 'index']); 
 Route::post('/procesos', [ProcessController::class, 'store']);
-
 Route::get('/procesos/entidad/{idEntidad}', [ProcessController::class, 'obtenerProcesosPorEntidad']);
-/*Route::post('/registros', [RegistrosController::class, 'store']); // Ruta para crear un nuevo registro
-Route::get('/registros/{idProceso}', [RegistrosController::class, 'index']); // Ruta para obtener registros por idProceso*/
+Route::get('/proceso-usuario/{idUsuario}', [ProcessController::class, 'obtenerProcesoPorUsuario']);
+Route::get('/proceso-entidad/{idProceso}', [ProcessController::class, 'getInfoPorProceso']);
+
+
+
 //*********************************************************/
 //                  Cronograma
 //*********************************************************/
@@ -124,7 +126,6 @@ Route::put('/minutas/{id}', [MinutaController::class, 'update']); //actualizar u
 Route::delete('/minutasDelete/{id}', [MinutaController::class, 'destroy']);
 
 // ✅ Rutas con nombre explícito primero
-Route::get('/registro-info/{idRegistro}', [RegistrosController::class, 'getInfoProcesoEntidad']);
 Route::get('/registros/idRegistro', [RegistrosController::class, 'obtenerIdRegistro']);
 Route::get('/registros/years/{idProceso}', [RegistrosController::class, 'obtenerAnios']);
 Route::post('/registros/filtrar', [RegistrosController::class, 'obtenerRegistrosPorProcesoYApartado']);
