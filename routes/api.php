@@ -82,6 +82,12 @@ use App\Http\Controllers\Api\AuthController;
 Route::post('/login', [AuthController::class, 'login']);
 
 //*********************************************************/
+//                  Para Las Notiicas
+//*********************************************************/
+Route::apiResource('noticias', NoticiasController::class);
+Route::apiResource('eventos-avisos', EventosAvisosController::class);
+
+//*********************************************************/
 //                  Entidades/Dependencias
 //*********************************************************/
 Route::post('/entidades-por-usuario', [EntidadDependenciaController::class, 'entidadesPorUsuario']); //Agregada por JRH 05/04/2025
@@ -99,10 +105,20 @@ Route::delete('/entidades/{id}', [EntidadDependenciaController::class, 'destroy'
 Route::get('macroprocesos', [MacroProcesoController::class, 'index']);
 Route::get('lideres', [LiderController::class, 'index']); 
 Route::post('/procesos', [ProcessController::class, 'store']);
-
 Route::get('/procesos/entidad/{idEntidad}', [ProcessController::class, 'obtenerProcesosPorEntidad']);
-/*Route::post('/registros', [RegistrosController::class, 'store']); // Ruta para crear un nuevo registro
-Route::get('/registros/{idProceso}', [RegistrosController::class, 'index']); // Ruta para obtener registros por idProceso*/
+Route::get('/proceso-usuario/{idUsuario}', [ProcessController::class, 'obtenerProcesoPorUsuario']);
+Route::get('/proceso-entidad/{idProceso}', [ProcessController::class, 'getInfoPorProceso']);
+
+
+
+//*********************************************************/
+//                  Cronograma
+//*********************************************************/
+Route::post('cronograma/filtrar', [CronogramaController::class, 'index']);
+Route::post('cronograma', [CronogramaController::class, 'store']);
+Route::put('cronograma/{id}', [CronogramaController::class, 'update']);
+Route::delete('/cronograma/{id}', [CronogramaController::class, 'destroy']);
+
 
 Route::post('minutasAdd', [MinutaController::class, 'store']); // crear minuta
 Route::get('/minutas/registro/{idRegistro}', [MinutaController::class, 'getMinutasByRegistro']); //obtener todad las minutas de un proceso en un año 
@@ -110,7 +126,6 @@ Route::put('/minutas/{id}', [MinutaController::class, 'update']); //actualizar u
 Route::delete('/minutasDelete/{id}', [MinutaController::class, 'destroy']);
 
 // ✅ Rutas con nombre explícito primero
-Route::get('/registro-info/{idRegistro}', [RegistrosController::class, 'getInfoProcesoEntidad']);
 Route::get('/registros/idRegistro', [RegistrosController::class, 'obtenerIdRegistro']);
 Route::get('/registros/years/{idProceso}', [RegistrosController::class, 'obtenerAnios']);
 Route::post('/registros/filtrar', [RegistrosController::class, 'obtenerRegistrosPorProcesoYApartado']);
@@ -158,15 +173,10 @@ Route::prefix('evalua-proveedores')->group(function () {
 Route::get('/indicadores/retroalimentacion', [IndicadorConsolidadoController::class, 'indexRetroalimentacion']);
 
 
-Route::apiResource('noticias', NoticiasController::class);
-Route::apiResource('eventos-avisos', EventosAvisosController::class);
 
-//Route::apiResource('cronogramas', CronogramaController::class);
 Route::get('procesos-nombres', [ProcessController::class, 'getNombres']);
 
-Route::post('cronograma/filtrar', [CronogramaController::class, 'index']);
-Route::post('cronograma', [CronogramaController::class, 'store']);
-Route::put('cronograma/{id}', [CronogramaController::class, 'update']);
+
 
 
 //*********************************************************/
@@ -354,8 +364,6 @@ Route::apiResource('usuarios', UsuarioController::class);
 Route::get('tiposusuario', [TipoUsuarioController::class, 'index']);
 Route::get('supervisores', [UsuarioController::class, 'getSupervisores']);
 
-// Eliminar una auditoría 
-Route::delete('/cronograma/{id}', [CronogramaController::class, 'destroy']);
 
 Route::get('/notificaciones/{idUsuario}', [NotificacionController::class, 'getNotificaciones']);
 Route::post('/notificaciones/marcar-leidas/{idUsuarios}/{notificationId}', [NotificacionController::class, 'marcarComoLeidas']);

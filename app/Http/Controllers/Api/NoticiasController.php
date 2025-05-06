@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Noticia;
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Gd\Driver as GdDriver;
 use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Log; // Importamos Log
@@ -16,11 +18,14 @@ class NoticiasController extends Controller
     {
         Log::info('[NoticiasController@index] Cargando todas las noticias.');
 
-        $noticias = Noticia::all();
+        // Solo obtenemos los campos necesarios
+        $noticias = Noticia::select('idNoticias', 'titulo', 'descripcion', 'fechaPublicacion', 'rutaImg')->get();
 
-        Log::info('[NoticiasController@index] Se cargaron ' . count($noticias) . 'Noticias.');
+        Log::info('[NoticiasController@index] Se cargaron ' . count($noticias) . ' noticias.');
 
-        return response()->json($noticias, 200);
+        return response()
+            ->json($noticias, 200)
+            ->header('Cache-Control', 'public, max-age=300');
     }
 
     // POST /api/noticias
@@ -35,34 +40,31 @@ class NoticiasController extends Controller
         ]);
 
         // 2. Crear el registro SIN la imagen
-        $fechaPublicacion = now();
         $noticia = Noticia::create([
             'idUsuario' => $request->idUsuario,
             'titulo' => $request->titulo,
             'descripcion' => $request->descripcion,
-            'fechaPublicacion' => $fechaPublicacion,
-            'rutaImg' => null // por ahora vacío
+            'fechaPublicacion' => now(),
+            'rutaImg' => null
         ]);
 
-        // 3. Subir la imagen con nombre usando $noticia->id
-        $rutaImg = null;
+        //  Imagen redimensionada si fue enviada
         if ($request->hasFile('imagen')) {
             $file = $request->file('imagen');
             $fileName = time() . '_' . $file->getClientOriginalName();
-            $filePath = 'img/' . $fileName;
-    
-            // Guardamos el archivo en /storage/app/public/img
-            Storage::disk('public')->putFileAs('img', $file, $fileName);
-    
-            // Ruta absoluta (opcional)
-            $rutaImg = config('app.url') . Storage::url($filePath);
-        }
-    
-        // 4. Actualizar la noticia con la ruta final
-        $noticia->rutaImg = $rutaImg;
-        $noticia->save();
+            $filePath = storage_path('app/public/img/' . $fileName);
 
-       
+            // ✅ Redimensionar sin facade
+            $manager = new ImageManager(new GdDriver());
+            $image = $manager->read($file->getRealPath());
+            $image->resize(800, 600, function ($constraint) {
+                $constraint->aspectRatio();
+                $constraint->upsize();
+            })->save($filePath, 80);
+
+            $rutaImg = config('app.url') . Storage::url('img/' . $fileName);
+            $noticia->update(['rutaImg' => $rutaImg]);
+        }
 
         return response()->json($noticia, 201);
     }
@@ -100,15 +102,21 @@ class NoticiasController extends Controller
                 $oldPath = str_replace('/storage', 'public', $noticia->rutaImg);
                 Storage::delete($oldPath);
             }
-            
+
             // Guardar nueva imagen
             $file = $request->file('imagen');
             $fileName = time() . '_' . $file->getClientOriginalName();
-            $filePath = 'img/' . $fileName;
-            Storage::disk('public')->putFileAs('img', $file, $fileName);
+            $filePath = storage_path('app/public/img/' . $fileName);
 
-            // Ruta absoluta (opcional)
-            $rutaImg = config('app.url') . Storage::url($filePath);
+            // Redimensionar con Intervention v3
+            $manager = new ImageManager(new GdDriver());
+            $image = $manager->read($file->getRealPath());
+            $image->resize(800, 600, function ($constraint) {
+                $constraint->aspectRatio();
+                $constraint->upsize();
+            })->save($filePath, 80);
+
+            $rutaImg = config('app.url') . Storage::url('img/' . $fileName);
         }
 
         // Actualizar

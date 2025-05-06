@@ -238,27 +238,5 @@ class RegistrosController extends Controller
     }
 
 
-    public function getInfoProcesoEntidad($idRegistro)
-    {
-        $registro = Registros::find($idRegistro);
-
-        if (!$registro) {
-            return response()->json(['error' => 'Registro no encontrado'], 404);
-        }
-
-        $proceso = Proceso::find($registro->idProceso);
-        if (!$proceso) {
-            return response()->json(['error' => 'Proceso no encontrado'], 404);
-        }
-
-        $entidad = EntidadDependencia::find($proceso->idEntidad);
-        if (!$entidad) {
-            return response()->json(['error' => 'Entidad no encontrada'], 404);
-        }
-
-        return response()->json([
-            'proceso' => $proceso->nombreProceso,
-            'entidad' => $entidad->nombreEntidad,
-        ]);
-    }
+    
 }
