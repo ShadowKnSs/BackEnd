@@ -197,6 +197,9 @@ Route::get('/reporte-pdf/{id}', [ReporteAuditoriaController::class, 'descargarPD
 Route::post('/mapa-proceso/{idProceso}/subir-diagrama', [MapaProcesoController::class, 'subirDiagramaFlujo']);
 
 
+Route::get('/getIdRegistroGR', [GestionRiesgoController::class, 'getIdRegistro']);
+
+
 // 1) GET datos-generales
 Route::get('gestionriesgos/{idRegistro}/datos-generales', [GestionRiesgoController::class, 'getDatosGenerales']);
 
@@ -227,7 +230,8 @@ Route::put('gestionriesgos/{idGesRies}/riesgos/{idRiesgo}', [RiesgoController::c
 Route::delete('gestionriesgos/{idGesRies}/riesgos/{idRiesgo}', [RiesgoController::class, 'destroy']);
 
 
-Route::get('analisisDatos/{idformAnalisisDatos}/analisis', [FormAnalisisDatosController::class, 'show']);
+Route::get('analisisDatos/{idformAnalisisDatos}', [FormAnalisisDatosController::class, 'show']);
+Route::get('/getIdRegistro', [FormAnalisisDatosController::class, 'getIdRegistro']);
 Route::put('analisisDatos/{idRegistro}/necesidad-interpretacion', [FormAnalisisDatosController::class, 'updateNecesidadInterpretacion']);
 
 //Ruta para obtener resultados de los resultados de plan de control
