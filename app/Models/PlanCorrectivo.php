@@ -31,5 +31,11 @@ class PlanCorrectivo extends Model
     {
         return $this->hasMany(ActividadPlan::class, 'idPlanCorrectivo', 'idPlanCorrectivo');
     }
+
+    public function actividadMejora()
+    {
+        return $this->belongsTo(ActividadMejora::class, 'idActividadMejora');
+    }
+
 }
 

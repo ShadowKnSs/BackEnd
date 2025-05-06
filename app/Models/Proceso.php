@@ -8,8 +8,8 @@ class Proceso extends Model
 {
     // Indicamos la tabla en la base de datos donde se almacenan los datos
     protected $table = 'proceso';
-     // Indicamos la clave primaria personalizada
-     protected $primaryKey = 'idProceso';
+    // Indicamos la clave primaria personalizada
+    protected $primaryKey = 'idProceso';
 
      protected $fillable = [
          'idMacroproceso',
@@ -21,7 +21,8 @@ class Proceso extends Model
          'anioCertificado',
          'norma',
          'duracionCetificado',
-         'estado'
+         'estado',
+         'icono'
      ];
  
      // Relación con MacroProceso

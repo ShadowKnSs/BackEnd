@@ -6,26 +6,28 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Models\IndMapaProceso;
+use App\Models\Registros;
+use App\Models\AnalisisDatos;
 use App\Models\IndicadorConsolidado;
 
 class IndMapaProcesoController extends Controller
 {
     // 1) Listar todos
     public function index(Request $request)
-{
-    // Verificamos si llega el query param ?proceso=XX
-    $idProceso = $request->query('proceso');
+    {
+        // Verificamos si llega el query param ?proceso=XX
+        $idProceso = $request->query('proceso');
 
-    if ($idProceso) {
-        // Filtramos por el idProceso
-        $lista = IndMapaProceso::where('idProceso', $idProceso)->get();
-    } else {
-        // Si no llega nada, devolvemos todo
-        $lista = IndMapaProceso::all();
+        if ($idProceso) {
+            // Filtramos por el idProceso
+            $lista = IndMapaProceso::where('idProceso', $idProceso)->get();
+        } else {
+            // Si no llega nada, devolvemos todo
+            $lista = IndMapaProceso::all();
+        }
+
+        return response()->json($lista, 200);
     }
-
-    return response()->json($lista, 200);
-}
 
 
     // 2) Crear un nuevo registro
@@ -33,66 +35,68 @@ class IndMapaProcesoController extends Controller
     {
         DB::beginTransaction();
         try {
-            // Validamos lo que venga
             $data = $request->validate([
-                'idProceso'   => 'required|integer',   // si es obligatorio
+                'idProceso' => 'required|integer',
                 'descripcion' => 'required|string',
-                'formula'     => 'required|string',
-                'periodoMed'  => 'required|string',
+                'formula' => 'required|string',
+                'periodoMed' => 'required|string',
                 'responsable' => 'nullable|string',
-                'meta'        => 'nullable|integer',
+                'meta' => 'nullable|integer',
             ]);
 
-            // 1) Crear el registro en IndMapaProceso
+            // 1️⃣ Crear registro en IndMapaProceso
             $indMapa = IndMapaProceso::create([
-                'idProceso'   => $data['idProceso'],
+                'idProceso' => $data['idProceso'],
                 'descripcion' => $data['descripcion'],
-                'formula'     => $data['formula'],
-                'periodoMed'  => $data['periodoMed'],
+                'formula' => $data['formula'],
+                'periodoMed' => $data['periodoMed'],
                 'responsable' => $data['responsable'] ?? null,
-                'meta'        => $data['meta'] ?? null,
+                'meta' => $data['meta'] ?? null,
             ]);
 
-            // 2) Crear IndicadorConsolidado asociado
-            $indicador = IndicadorConsolidado::create([
-                'idRegistro'       => null,                     // o lo que necesites
-                'idProceso'        => $data['idProceso'],       // si es la misma
-                'nombreIndicador'  => $data['descripcion'],     // ej: la desc del IndMapa
-                'origenIndicador'  => 'MapaProceso',            // fijo
-                'periodicidad'     => $data['periodoMed'],      // parseado
-                'meta'             => $data['meta'] ?? null,
-            ]);
+            // 2️⃣ Buscar todos los REGISTROS de tipo "Análisis de Datos" del proceso
+            $registros = Registros::where('idProceso', $data['idProceso'])
+                ->where('Apartado', 'Análisis de Datos')
+                ->get();
 
+            foreach ($registros as $registro) {
+                $idRegistro = $registro->idRegistro;
+
+                // ⚠️ Validar si ya existe el indicador en este registro
+                $existeIndicador = IndicadorConsolidado::where('idRegistro', $idRegistro)
+                    ->where('nombreIndicador', $data['descripcion'])
+                    ->where('origenIndicador', 'MapaProceso')
+                    ->exists();
+
+                if (!$existeIndicador) {
+                    IndicadorConsolidado::create([
+                        'idRegistro' => $idRegistro,
+                        'idProceso' => $data['idProceso'],
+                        'nombreIndicador' => $data['descripcion'],
+                        'origenIndicador' => 'MapaProceso',
+                        'periodicidad' => $data['periodoMed'],
+                        'meta' => $data['meta'] ?? 100, // Si meta viene nula, la ponemos en 100
+                    ]);
+                }
+            }
 
             DB::commit();
-
             return response()->json([
-                'message'         => 'IndMapaProceso y su indicador creados exitosamente.',
-                'indMapaProceso'  => $indMapa,
-                'indicador'       => $indicador,
+                'message' => 'IndMapaProceso y sus indicadores consolidados creados correctamente.',
+                'indMapaProceso' => $indMapa,
             ], 201);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('Error al crear IndMapaProceso e indicador: ' . $e->getMessage());
+            \Log::error('❌ Error al crear IndMapaProceso e indicadores:', ['error' => $e->getMessage()]);
             return response()->json([
-                'message' => 'Error al crear el IndMapaProceso y el indicador',
-                'error'   => $e->getMessage()
+                'message' => 'Error al crear el IndMapaProceso y los indicadores.',
+                'error' => $e->getMessage()
             ], 500);
         }
     }
 
-    // 3) Mostrar un registro
-    public function show($id)
-    {
-        $registro = IndMapaProceso::find($id);
 
-        if (!$registro) {
-            return response()->json(['message' => 'Registro no encontrado'], 404);
-        }
-
-        return response()->json($registro, 200);
-    }
 
     // 4) Actualizar un registro
     public function update(Request $request, $id)
@@ -106,12 +110,12 @@ class IndMapaProcesoController extends Controller
         try {
             // Validar
             $data = $request->validate([
-                'idProceso'   => 'nullable|integer',
+                'idProceso' => 'nullable|integer',
                 'descripcion' => 'nullable|string',
-                'formula'     => 'nullable|string',
-                'periodoMed'  => 'nullable|string',
+                'formula' => 'nullable|string',
+                'periodoMed' => 'nullable|string',
                 'responsable' => 'nullable|string',
-                'meta'        => 'nullable|integer',
+                'meta' => 'nullable|integer',
             ]);
 
             // Actualizamos IndMapaProceso
@@ -146,7 +150,7 @@ class IndMapaProcesoController extends Controller
             \Log::error('Error al actualizar IndMapaProceso e indicador: ' . $e->getMessage());
             return response()->json([
                 'message' => 'Error al actualizar el registro',
-                'error'   => $e->getMessage()
+                'error' => $e->getMessage()
             ], 500);
         }
     }
@@ -180,7 +184,7 @@ class IndMapaProcesoController extends Controller
             \Log::error('Error al eliminar IndMapaProceso e indicador: ' . $e->getMessage());
             return response()->json([
                 'message' => 'Error al eliminar el registro',
-                'error'   => $e->getMessage()
+                'error' => $e->getMessage()
             ], 500);
         }
     }
