@@ -25,15 +25,10 @@ class GestionRiesgoController extends Controller
     {
         Log::info("Consultando Id Registro");
         $request->validate([
-            'idProceso' => 'required|integer',
-            'anio' => 'required|integer|digits:4'
+            'idRegistro' => 'required|integer',
         ]);
-            $proceso = Proceso::find($request->idProceso);
-            // Buscar el registro con el apartado "Análisis de Datos"
-            $registro = Registros::where('idProceso', $request->idProceso)
-                ->where('año', $request->anio)
-                ->where('Apartado', 'Gestión Riesgo')
-                ->first();
+            $registro = Registros::find($request->idRegistro);
+            $proceso = Proceso::where('idProceso', $registro->idProceso)->first();
            
             Log::info("Consultando Id Registro: {$registro}");
             if (!$registro) {
