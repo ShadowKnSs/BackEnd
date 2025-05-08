@@ -65,11 +65,11 @@ class RiesgoController extends Controller
                 'accionMejora' => 'nullable|string',
                 'fechaImp' => 'nullable|date',
                 'fechaEva' => 'nullable|date',
-                'responsable' => 'required|string',
+                'responsable' => 'nullable|string',
                 'reevaluacionSeveridad' => 'nullable|integer|min:1|max:100',
                 'reevaluacionOcurrencia' => 'nullable|integer|min:1|max:100',
                 'reevaluacionNRP' => 'nullable|integer',
-                'reevaluacionEfectividad' => 'nullable|integer|min:1|max:100',
+                'reevaluacionEfectividad' => 'nullable|string',
                 'analisisEfectividad' => 'nullable|string',
             ]);
 
@@ -207,7 +207,7 @@ class RiesgoController extends Controller
                 'reevaluacionSeveridad' => 'nullable|integer|min:1|max:10',
                 'reevaluacionOcurrencia' => 'nullable|integer|min:1|max:10',
                 'reevaluacionNRP' => 'nullable|integer',
-                'reevaluacionEfectividad' => 'nullable|integer|min:1|max:10',
+                'reevaluacionEfectividad' => 'nullable|string',
                 'analisisEfectividad' => 'nullable|string',
             ]);
 
