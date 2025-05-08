@@ -93,7 +93,7 @@ class RiesgoController extends Controller
             // 4) Buscar el registro correcto del apartado 'Indicadores'
             $registroIndicadores = Registros::where('idProceso', $idProceso)
                 ->where('año', $año)
-                ->where('Apartado', 'Indicadores')
+                ->where('Apartado', 'Gestión de Riesgo')
                 ->first();
 
             if (!$registroIndicadores) {

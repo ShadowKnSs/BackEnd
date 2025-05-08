@@ -53,7 +53,7 @@ class ActividadControlController extends Controller
 
             // 4) Crear el indicador usando el idAnalisisDatos correcto
             $indicador = IndicadorConsolidado::create([
-                'idRegistro' => $registro->idRegistro, // <-- 👈 ahora guardamos idRegistro (no idAnalisisDatos)
+                'idRegistro' => $registro->idRegistro,
                 'idProceso' => $actividad->idProceso,
                 'nombreIndicador' => $actividad->nombreActividad,
                 'origenIndicador' => 'ActividadControl',
