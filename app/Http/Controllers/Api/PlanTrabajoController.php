@@ -9,84 +9,92 @@ use App\Models\ActividadMejora;
 use App\Models\FuentePt;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
+
 
 class PlanTrabajoController extends Controller
 {
     // Listado de planes de trabajo (con actividad de mejora y fuentes)
-    public function index()
+    public function index($id)
     {
-        Log::info("Obteniendo listado de planes de trabajo.");
-        $planTrabajos = PlanTrabajo::with('actividadMejora', 'fuentes')->get();
-        return response()->json($planTrabajos, 200);
+        $plan = PlanTrabajo::with(['actividadMejora', 'fuentes'])->findOrFail($id);
+        return response()->json($plan);
     }
+
 
     // Crear un plan de trabajo, junto con la actividad de mejora (si no se envía idActividadMejora) y las fuentes asociadas
     public function store(Request $request)
     {
-        Log::info("Iniciando creación de plan de trabajo.", $request->all());
+        Log::info("Iniciando creación de plan de trabajo", $request->all());
 
-        $validator = Validator::make($request->all(), [
-            'planTrabajo.fechaElaboracion' => 'required|date',
-            'planTrabajo.objetivo' => 'required|string|max:255',
-            'planTrabajo.revisadoPor' => 'required|string|max:100',
-            'planTrabajo.responsable' => 'required|string|max:100',
-            // Validamos el objeto actividadMejora, esperando que contenga idRegistro
-            'planTrabajo.actividadMejora.idRegistro' => 'required|integer',
-            'fuentes' => 'required|array|min:1',
-            'fuentes.*.responsable' => 'required|string|max:255',
-            'fuentes.*.fechaInicio' => 'required|date',
-            'fuentes.*.fechaTermino' => 'required|date',
-            'fuentes.*.estado' => 'required|in:En proceso,Cerrado',
-            'fuentes.*.nombreFuente' => 'required|string|max:255',
-            'fuentes.*.elementoEntrada' => 'required|string|max:255',
-            'fuentes.*.descripcion' => 'required|string|max:255',
-            'fuentes.*.entregable' => 'required|string|max:255'
+        $request->validate([
+            'idRegistro' => 'required|integer|exists:Registros,idRegistro',
+            'responsable' => 'required|string|max:255',
+            'fechaElaboracion' => 'required|date',
+            'objetivo' => 'required|string|max:255',
+            'revisadoPor' => 'nullable|string|max:100',
+            'fechaRevision' => 'nullable|date',
+            'elaboradoPor' => 'nullable|string|max:255',
+
+            'fuentes' => 'nullable|array',
+            'fuentes.*.responsable' => 'required_with:fuentes|string|max:255',
+            'fuentes.*.fechaInicio' => 'required_with:fuentes|date',
+            'fuentes.*.fechaTermino' => 'required_with:fuentes|date|after_or_equal:fuentes.*.fechaInicio',
+            'fuentes.*.estado' => 'required_with:fuentes|in:En proceso,Cerrado',
+            'fuentes.*.nombreFuente' => 'required_with:fuentes|string|max:255',
+            'fuentes.*.elementoEntrada' => 'required_with:fuentes|string',
+            'fuentes.*.descripcion' => 'required_with:fuentes|string|max:255',
+            'fuentes.*.entregable' => 'required_with:fuentes|string|max:255',
         ]);
 
-        if ($validator->fails()) {
-            Log::error("Error de validación en store:", $validator->errors()->toArray());
-            return response()->json($validator->errors(), 422);
-        }
-
-        $planData = $request->input('planTrabajo');
-        Log::info("Datos del plan recibidos", $planData);
-
-        // Si el objeto actividadMejora no contiene un idRegistro válido, creamos una nueva actividad
-        if (!isset($planData['actividadMejora']['idRegistro']) || empty($planData['actividadMejora']['idRegistro'])) {
-            Log::info("No se envió idRegistro en actividadMejora, se creará una nueva actividad de mejora.");
-            // En este caso, decidimos qué valor utilizar; sin embargo, dado que el flujo indica que se debe recibir el idRegistro desde la vista Carpetas,
-            // este error no debería ocurrir. Si ocurre, puedes lanzar un error o asignar un valor por defecto.
-            return response()->json(['message' => 'No se recibió el idRegistro en actividadMejora'], 422);
-        } else {
-            // Si se envía idRegistro, creamos la actividad de mejora y asignamos su id a planData.
-            $actividadData = $planData['actividadMejora']; // debe tener idRegistro
-            Log::info("Creando actividad de mejora con idRegistro:", $actividadData);
-            $actividad = ActividadMejora::create(['idRegistro' => $actividadData['idRegistro']]);
-            Log::info("Actividad de mejora creada", ['idActividadMejora' => $actividad->idActividadMejora]);
-            $planData['idActividadMejora'] = $actividad->idActividadMejora;
-        }
-
         try {
-            $planTrabajo = PlanTrabajo::create($planData);
-            Log::info("Plan de trabajo creado", ['idPlanTrabajo' => $planTrabajo->idPlanTrabajo]);
+            DB::beginTransaction();
 
-            $fuentesData = $request->input('fuentes');
-            foreach ($fuentesData as $fuente) {
-                $fuente['idPlanTrabajo'] = $planTrabajo->idPlanTrabajo;
-                $nuevaFuente = FuentePt::create($fuente);
-                Log::info("Fuente creada", ['idFuente' => $nuevaFuente->idFuente]);
+            // Buscar ActividadMejora existente
+            $actividad = ActividadMejora::where('idRegistro', $request->idRegistro)->first();
+            if (!$actividad) {
+                Log::warning("No se encontró ActividadMejora con idRegistro: " . $request->idRegistro);
+                return response()->json(['message' => 'No existe actividad de mejora para este registro'], 404);
+            }
+            Log::info("ActividadMejora encontrada: " . $actividad->idActividadMejora);
+
+            // Crear PlanTrabajo
+            $plan = PlanTrabajo::updateOrCreate(
+                ['idActividadMejora' => $actividad->idActividadMejora],
+                [
+                    'responsable' => $request->responsable,
+                    'fechaElaboracion' => $request->fechaElaboracion,
+                    'objetivo' => $request->objetivo,
+                    'revisadoPor' => $request->revisadoPor,
+                    'fechaRevision' => $request->fechaRevision,
+                    'elaboradoPor' => $request->elaboradoPor,
+                ]
+            );
+            Log::info("PlanTrabajo creado: " . $plan->idPlanTrabajo);
+
+            // Crear Fuentes si existen
+            if ($request->has('fuentes') && is_array($request->fuentes)) {
+                foreach ($request->fuentes as $fuenteData) {
+                    $plan->fuentes()->create($fuenteData);
+                }
+                Log::info("Fuentes asociadas al plan creadas: " . count($request->fuentes));
+            } else {
+                Log::info("No se enviaron fuentes, solo se creó el plan.");
             }
 
-            Log::info("Plan de trabajo creado exitosamente, enviando respuesta.");
+            DB::commit();
+
             return response()->json([
-                'message' => 'Plan de trabajo creado exitosamente',
-                'planTrabajo' => $planTrabajo->load('actividadMejora', 'fuentes')
+                'message' => 'Plan de trabajo y fuentes creados exitosamente.',
+                'planTrabajo' => $plan->load('actividadMejora', 'fuentes'),
             ], 201);
         } catch (\Exception $e) {
-            Log::error("Excepción al crear plan de trabajo: " . $e->getMessage());
-            return response()->json(['message' => 'Error al crear el plan de trabajo'], 500);
+            DB::rollBack();
+            Log::error("Error en PlanTrabajoController@store: " . $e->getMessage());
+            return response()->json(['message' => 'Error al crear plan y fuentes'], 500);
         }
     }
+
 
     // Mostrar un plan de trabajo específico
     public function show($id)
@@ -156,18 +164,18 @@ class PlanTrabajoController extends Controller
     }
 
     public function getByRegistro($idRegistro)
-{
-    Log::info("Obteniendo plan de trabajo por idRegistro: " . $idRegistro);
-    $plan = PlanTrabajo::with('actividadMejora', 'fuentes')
-        ->whereHas('actividadMejora', function($q) use ($idRegistro) {
-            $q->where('idRegistro', $idRegistro);
-        })->first();
+    {
+        Log::info("Obteniendo plan de trabajo por idRegistro: " . $idRegistro);
+        $plan = PlanTrabajo::with('actividadMejora', 'fuentes')
+            ->whereHas('actividadMejora', function ($q) use ($idRegistro) {
+                $q->where('idRegistro', $idRegistro);
+            })->first();
 
-    if (!$plan) {
-        Log::warning("Plan de trabajo no encontrado para idRegistro: " . $idRegistro);
-        return response()->json(['message' => 'Plan de trabajo no encontrado'], 404);
+        if (!$plan) {
+            Log::warning("Plan de trabajo no encontrado para idRegistro: " . $idRegistro);
+            return response()->json(['message' => 'Plan de trabajo no encontrado'], 404);
+        }
+        return response()->json($plan, 200);
     }
-    return response()->json($plan, 200);
-}
 
 }

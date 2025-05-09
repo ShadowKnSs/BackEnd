@@ -9,143 +9,144 @@ use App\Models\ResultadoIndi;
 use App\Models\EvaluaProveedores;
 use App\Models\AnalisisDatos;
 use App\Models\Registros;
+use App\Models\NeceInter;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class IndicadorConsolidadoController extends Controller
 {
     public function index(Request $request)
-{
-    try {
-        if (!$request->filled('idRegistro')) {
-            Log::error("❌ Parámetro idRegistro faltante o vacío.");
-            return response()->json(['message' => 'El parámetro idRegistro es requerido.'], 400);
-        }
-
-        $idRegistro = $request->query('idRegistro');
-
-        $registro = Registros::find($idRegistro);
-        if (!$registro) {
-            Log::error("❌ No se encontró Registro", ['idRegistro' => $idRegistro]);
-            return response()->json(['message' => 'No se encontró un Registro asociado.'], 404);
-        }
-
-        Log::info("🔍 Registro encontrado", ['idRegistro' => $idRegistro, 'idProceso' => $registro->idProceso]);
-
-        // Ahora filtramos indicadores SOLO por idRegistro
-        $indicadores = IndicadorConsolidado::where('idRegistro', $idRegistro)->get();
-
-        Log::info("✅ Indicadores filtrados", ['total' => $indicadores->count()]);
-
-        return response()->json(['indicadores' => $indicadores], 200);
-
-    } catch (\Exception $e) {
-        Log::error("❌ Error al obtener indicadores", ['error' => $e->getMessage()]);
-        return response()->json(['message' => 'Error al obtener los indicadores'], 500);
-    }
-}
-
-public function store(Request $request)
-{
-    DB::beginTransaction();
-    try {
-        // 1️⃣ Validaciones básicas
-        $data = $request->validate([
-            'idRegistro' => 'required|integer|exists:registros,idRegistro',
-            'origenIndicador' => 'required|string',
-            'meta' => 'nullable|integer',
-            'metodo' => 'nullable|string', // Solo se usa en retroalimentación
-            'metaConfiable' => 'nullable|integer', // Solo si es evalua proveedores
-            'metaCondicionado' => 'nullable|integer',
-            'metaNoConfiable' => 'nullable|integer',
-        ]);
-
-        Log::info("📩 Datos recibidos para crear indicador", $data);
-
-        // 2️⃣ Buscar el registro
-        $registro = Registros::find($data['idRegistro']);
-        if (!$registro) {
-            Log::error("❌ No se encontró Registro", ['idRegistro' => $data['idRegistro']]);
-            return response()->json(['message' => 'No se encontró el registro asociado.'], 404);
-        }
-
-        // 3️⃣ Obtener idProceso
-        $data['idProceso'] = $registro->idProceso;
-
-        // 4️⃣ Preparar datos según tipo de indicador
-        if ($data['origenIndicador'] === 'Encuesta') {
-            $data['nombreIndicador'] = "Encuesta de Satisfacción";
-            $data['periodicidad'] = "Anual";
-        } elseif ($data['origenIndicador'] === 'Retroalimentacion') {
-            if (empty($data['metodo'])) {
-                Log::error("❌ Método faltante para retroalimentación");
-                return response()->json(['message' => 'El campo método es obligatorio para retroalimentación'], 400);
+    {
+        try {
+            if (!$request->filled('idRegistro')) {
+                Log::error("❌ Parámetro idRegistro faltante o vacío.");
+                return response()->json(['message' => 'El parámetro idRegistro es requerido.'], 400);
             }
-            $data['nombreIndicador'] = "Retroalimentacion " . $data['metodo'];
-            $data['periodicidad'] = "Anual";
-        } elseif ($data['origenIndicador'] === 'EvaluaProveedores') {
-            $data['nombreIndicador'] = "Evaluación de proveedores";
-            $data['periodicidad'] = "Semestral";
-        } else {
-            Log::warning("⚠️ Tipo de indicador no reconocido", $data);
+
+            $idRegistro = $request->query('idRegistro');
+
+            $registro = Registros::find($idRegistro);
+            if (!$registro) {
+                Log::error("❌ No se encontró Registro", ['idRegistro' => $idRegistro]);
+                return response()->json(['message' => 'No se encontró un Registro asociado.'], 404);
+            }
+
+            Log::info("🔍 Registro encontrado", ['idRegistro' => $idRegistro, 'idProceso' => $registro->idProceso]);
+
+            // Ahora filtramos indicadores SOLO por idRegistro
+            $indicadores = IndicadorConsolidado::where('idRegistro', $idRegistro)->get();
+
+            Log::info("✅ Indicadores filtrados", ['total' => $indicadores->count()]);
+
+            return response()->json(['indicadores' => $indicadores], 200);
+
+        } catch (\Exception $e) {
+            Log::error("❌ Error al obtener indicadores", ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Error al obtener los indicadores'], 500);
         }
-
-        // 5️⃣ Crear el Indicador Consolidado
-        $indicador = IndicadorConsolidado::create($data);
-        Log::info("✅ Indicador Consolidado creado", ['idIndicador' => $indicador->idIndicador]);
-
-        // 6️⃣ Crear el registro asociado en la tabla hija
-        if ($data['origenIndicador'] === 'Encuesta') {
-            DB::table('encuesta')->insert([
-                'idIndicador' => $indicador->idIndicador,
-                'malo' => 0,
-                'regular' => 0,
-                'bueno' => 0,
-                'excelente' => 0,
-                'noEncuestas' => 0,
-            ]);
-            Log::info("✅ Registro inicial creado en Encuesta", ['idIndicador' => $indicador->idIndicador]);
-        } elseif ($data['origenIndicador'] === 'Retroalimentacion') {
-            DB::table('retroalimentacion')->insert([
-                'idIndicador' => $indicador->idIndicador,
-                'metodo' => $data['metodo'],
-                'cantidadFelicitacion' => 0,
-                'cantidadSugerencia' => 0,
-                'cantidadQueja' => 0,
-                'total' => 0,
-            ]);
-            Log::info("✅ Registro inicial creado en Retroalimentacion", ['idIndicador' => $indicador->idIndicador]);
-        } elseif ($data['origenIndicador'] === 'EvaluaProveedores') {
-            EvaluaProveedores::create([
-                'idIndicador' => $indicador->idIndicador,
-                'metaConfiable' => $data['metaConfiable'] ?? 0,
-                'metaCondicionado' => $data['metaCondicionado'] ?? 0,
-                'metaNoConfiable' => $data['metaNoConfiable'] ?? 0,
-                'resultadoConfiableSem1' => 0,
-                'resultadoConfiableSem2' => 0,
-                'resultadoCondicionadoSem1' => 0,
-                'resultadoCondicionadoSem2' => 0,
-                'resultadoNoConfiableSem1' => 0,
-                'resultadoNoConfiableSem2' => 0,
-            ]);
-            Log::info("✅ Registro inicial creado en EvaluaProveedores", ['idIndicador' => $indicador->idIndicador]);
-        }
-
-        DB::commit();
-        return response()->json([
-            'message' => 'Indicador creado exitosamente',
-            'indicador' => $indicador
-        ], 201);
-
-    } catch (\Exception $e) {
-        DB::rollBack();
-        Log::error("❌ Error al crear indicador", ['error' => $e->getMessage()]);
-        return response()->json([
-            'message' => 'Error al crear el indicador',
-            'error' => $e->getMessage()
-        ], 500);
     }
-}
+
+    public function store(Request $request)
+    {
+        DB::beginTransaction();
+        try {
+            // 1️⃣ Validaciones básicas
+            $data = $request->validate([
+                'idRegistro' => 'required|integer|exists:registros,idRegistro',
+                'origenIndicador' => 'required|string',
+                'meta' => 'nullable|integer',
+                'metodo' => 'nullable|string', // Solo se usa en retroalimentación
+                'metaConfiable' => 'nullable|integer', // Solo si es evalua proveedores
+                'metaCondicionado' => 'nullable|integer',
+                'metaNoConfiable' => 'nullable|integer',
+            ]);
+
+            Log::info("📩 Datos recibidos para crear indicador", $data);
+
+            // 2️⃣ Buscar el registro
+            $registro = Registros::find($data['idRegistro']);
+            if (!$registro) {
+                Log::error("❌ No se encontró Registro", ['idRegistro' => $data['idRegistro']]);
+                return response()->json(['message' => 'No se encontró el registro asociado.'], 404);
+            }
+
+            // 3️⃣ Obtener idProceso
+            $data['idProceso'] = $registro->idProceso;
+
+            // 4️⃣ Preparar datos según tipo de indicador
+            if ($data['origenIndicador'] === 'Encuesta') {
+                $data['nombreIndicador'] = "Encuesta de Satisfacción";
+                $data['periodicidad'] = "Anual";
+            } elseif ($data['origenIndicador'] === 'Retroalimentacion') {
+                if (empty($data['metodo'])) {
+                    Log::error("❌ Método faltante para retroalimentación");
+                    return response()->json(['message' => 'El campo método es obligatorio para retroalimentación'], 400);
+                }
+                $data['nombreIndicador'] = "Retroalimentacion " . $data['metodo'];
+                $data['periodicidad'] = "Anual";
+            } elseif ($data['origenIndicador'] === 'EvaluaProveedores') {
+                $data['nombreIndicador'] = "Evaluación de proveedores";
+                $data['periodicidad'] = "Semestral";
+            } else {
+                Log::warning("⚠️ Tipo de indicador no reconocido", $data);
+            }
+
+            // 5️⃣ Crear el Indicador Consolidado
+            $indicador = IndicadorConsolidado::create($data);
+            Log::info("✅ Indicador Consolidado creado", ['idIndicador' => $indicador->idIndicador]);
+
+            // 6️⃣ Crear el registro asociado en la tabla hija
+            if ($data['origenIndicador'] === 'Encuesta') {
+                DB::table('encuesta')->insert([
+                    'idIndicador' => $indicador->idIndicador,
+                    'malo' => 0,
+                    'regular' => 0,
+                    'bueno' => 0,
+                    'excelente' => 0,
+                    'noEncuestas' => 0,
+                ]);
+                Log::info("✅ Registro inicial creado en Encuesta", ['idIndicador' => $indicador->idIndicador]);
+            } elseif ($data['origenIndicador'] === 'Retroalimentacion') {
+                DB::table('retroalimentacion')->insert([
+                    'idIndicador' => $indicador->idIndicador,
+                    'metodo' => $data['metodo'],
+                    'cantidadFelicitacion' => 0,
+                    'cantidadSugerencia' => 0,
+                    'cantidadQueja' => 0,
+                    'total' => 0,
+                ]);
+                Log::info("✅ Registro inicial creado en Retroalimentacion", ['idIndicador' => $indicador->idIndicador]);
+            } elseif ($data['origenIndicador'] === 'EvaluaProveedores') {
+                EvaluaProveedores::create([
+                    'idIndicador' => $indicador->idIndicador,
+                    'metaConfiable' => $data['metaConfiable'] ?? 0,
+                    'metaCondicionado' => $data['metaCondicionado'] ?? 0,
+                    'metaNoConfiable' => $data['metaNoConfiable'] ?? 0,
+                    'resultadoConfiableSem1' => 0,
+                    'resultadoConfiableSem2' => 0,
+                    'resultadoCondicionadoSem1' => 0,
+                    'resultadoCondicionadoSem2' => 0,
+                    'resultadoNoConfiableSem1' => 0,
+                    'resultadoNoConfiableSem2' => 0,
+                ]);
+                Log::info("✅ Registro inicial creado en EvaluaProveedores", ['idIndicador' => $indicador->idIndicador]);
+            }
+
+            DB::commit();
+            return response()->json([
+                'message' => 'Indicador creado exitosamente',
+                'indicador' => $indicador
+            ], 201);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("❌ Error al crear indicador", ['error' => $e->getMessage()]);
+            return response()->json([
+                'message' => 'Error al crear el indicador',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 
     /**
      * Muestra un indicador consolidado específico por su ID.
@@ -270,36 +271,47 @@ public function store(Request $request)
 
     public function actividadControl($idProceso, $anio)
     {
-        // 1. busco el registro de Análisis de Datos
+        // 1. Buscar el registro del apartado Análisis de Datos
         $registro = Registros::where('idProceso', $idProceso)
             ->where('año', $anio)
             ->where('Apartado', 'Análisis de Datos')
             ->first();
-        if (!$registro)
-            return response()->json(['error' => 'No encontrado'], 404);
 
-        $analisis = AnalisisDatos::where('idRegistro', $registro->idRegistro)
-            ->where('seccion', 'Conformidad')
-            ->first();
+        if (!$registro) {
+            return response()->json(['error' => 'Registro no encontrado'], 404);
+        }
 
-        // 3. indicadores
+        // 2. Buscar análisis y su relación con NeceInter
+        $analisis = AnalisisDatos::where('idRegistro', $registro->idRegistro)->first();
+        $neceInter = null;
+
+        if ($analisis) {
+            $neceInter = NeceInter::where('idAnalisisDatos', $analisis->idAnalisisDatos)
+                ->where('seccion', 'Conformidad')
+                ->first();
+        }
+
+        $interpretacion = $neceInter->Interpretacion ?? 'No disponible';
+        $necesidad = $neceInter->Necesidad ?? 'No disponible';
+
+        // 3. Obtener indicadores ActividadControl
         $indicadores = IndicadorConsolidado::where('idProceso', $idProceso)
             ->where('origenIndicador', 'ActividadControl')
             ->get();
 
-        $resultado = $indicadores->map(function ($indicador) use ($analisis) {
-            // en vez de ResultadoIndi:
-            $act = DB::table('actividadcontrol')
-                ->where('idIndicador', $indicador->idIndicador)
-                ->first();
+        $resultado = $indicadores->map(function ($indicador) use ($interpretacion, $necesidad) {
+            $act = DB::table('actividadcontrol')->where('idIndicador', $indicador->idIndicador)->first();
+            $res = ResultadoIndi::where('idIndicador', $indicador->idIndicador)->first();
 
             return [
                 'idIndicador' => $indicador->idIndicador,
                 'nombreIndicador' => $indicador->nombreIndicador,
                 'meta' => $indicador->meta,
+                'resultadoSemestral1' => $res->resultadoSemestral1 ?? 0,
+                'resultadoSemestral2' => $res->resultadoSemestral2 ?? 0,
                 'procedimiento' => $act->procedimiento ?? null,
-                'interpretacion' => $analisis->interpretacion ?? null,
-                'necesidad' => $analisis->necesidad ?? null,
+                'interpretacion' => $interpretacion,
+                'necesidad' => $necesidad,
             ];
         });
 
@@ -307,5 +319,39 @@ public function store(Request $request)
     }
 
 
+
+    public function obtenerIndGesRiesgos(Request $request)
+    {
+        try {
+            $idProceso = $request->input('idProceso');
+            $anio = $request->input('año');
+
+            if (!$idProceso || !$anio) {
+                return response()->json(['message' => 'Parámetros idProceso y año son requeridos.'], 400);
+            }
+
+            // 1. Buscar el idRegistro del apartado "Gestion de Riesgo"
+            $registro = Registros::where('idProceso', $idProceso)
+                ->where('año', $anio)
+                ->where('Apartado', 'Gestion de Riesgo')
+                ->first();
+
+            if (!$registro) {
+                return response()->json(['message' => 'Registro no encontrado.'], 404);
+            }
+
+            // 2. Obtener indicadores vinculados a ese registro
+            $indicadores = IndicadorConsolidado::where('idRegistro', $registro->idRegistro)->get();
+
+            return response()->json([
+                'idRegistro' => $registro->idRegistro,
+                'indicadores' => $indicadores,
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error("Error en porProcesoYAnio()", ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Error al obtener indicadores.'], 500);
+        }
+    }
 }
 

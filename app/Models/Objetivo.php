@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Objetivo extends Model
 {
-    protected $table = 'objetivos';
+    protected $table = 'Objetivos';
     protected $primaryKey = 'idObjetivo';
 
     protected $fillable = [
@@ -15,4 +15,9 @@ class Objetivo extends Model
     ];
 
     public $timestamps = false;
+
+    public function proyecto()
+    {
+        return $this->belongsTo(ProyectoMejora::class, 'idProyectoMejora');
+    }
 }

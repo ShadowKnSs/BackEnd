@@ -5,39 +5,47 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\FuentePt;
+use App\Models\PlanTrabajo;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
 
 class FuentePtController extends Controller
 {
-    public function index()
+    public function index($id)
     {
-        $fuentes = FuentePt::all();
-        return response()->json($fuentes, 200);
+        $plan = PlanTrabajo::with('fuentes')->findOrFail($id);
+        return response()->json($plan->fuentes);
     }
 
-    public function store(Request $request)
+
+    public function store(Request $request, $id)
     {
-        $validator = Validator::make($request->all(), [
-            'idPlanTrabajo' => 'required|integer',
-            'responsable' => 'required|string|max:255',
-            'fechaInicio' => 'required|date',
-            'fechaTermino' => 'required|date',
-            'estado' => 'required|in:En proceso,Cerrado',
-            'nombreFuente' => 'required|string|max:255',
-            'elementoEntrada' => 'required|string|max:255',
-            'descripcion' => 'required|string|max:255',
-            'entregable' => 'required|string|max:255',
+        $request->validate([
+            'fuentes' => 'required|array|min:1',
+            'fuentes.*.responsable' => 'required|string|max:255',
+            'fuentes.*.fechaInicio' => 'required|date',
+            'fuentes.*.fechaTermino' => 'required|date|after_or_equal:fuentes.*.fechaInicio',
+            'fuentes.*.estado' => 'required|in:En proceso,Cerrado',
+            'fuentes.*.nombreFuente' => 'required|string|max:255',
+            'fuentes.*.elementoEntrada' => 'required|string',
+            'fuentes.*.descripcion' => 'required|string|max:255',
+            'fuentes.*.entregable' => 'required|string|max:255',
         ]);
 
-        if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
-        }
+        DB::transaction(function () use ($request, $id) {
+            $plan = PlanTrabajo::findOrFail($id);
+            FuentePt::where('idPlanTrabajo', $plan->idPlanTrabajo)->delete();
 
-        $fuente = FuentePt::create($request->all());
+            foreach ($request->fuentes as $fuente) {
+                $fuente['idPlanTrabajo'] = $plan->idPlanTrabajo;
+                FuentePt::create($fuente);
+            }
+        });
+
         return response()->json([
-            'message' => 'Fuente creada exitosamente',
-            'fuente' => $fuente
-        ], 201);
+            'message' => 'Fuentes guardadas correctamente',
+            'planTrabajo' => PlanTrabajo::with('fuentes')->find($id)
+        ]);
     }
 
     public function show($id)

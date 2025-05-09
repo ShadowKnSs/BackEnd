@@ -26,6 +26,7 @@ use App\Models\Recurso;
 use App\Models\ActividadesPM;
 use App\Models\PlanCorrectivo;
 use App\Models\ActividadPlan;
+use App\Models\NeceInter;
 use App\Models\ReporteProceso;
 
 use App\Models\EvaluaProveedores;
@@ -42,7 +43,7 @@ class ReporteProcesoController extends Controller
             'nombreReporte' => 'required|string|max:255',
             'anio' => 'required|string|max:4'
         ]);
-    
+
         try {
             $reporte = new ReporteProceso();
             $reporte->idProceso = $validated['idProceso'];
@@ -50,7 +51,7 @@ class ReporteProcesoController extends Controller
             $reporte->anio = $validated['anio'];
             $reporte->fechaElaboracion = now();
             $reporte->save();
-    
+
             return response()->json([
                 'message' => 'Reporte guardado correctamente',
                 'reporte' => $reporte,
@@ -60,7 +61,7 @@ class ReporteProcesoController extends Controller
             return response()->json(['error' => 'Error al guardar el reporte'], 500);
         }
     }
-    
+
 
     public function index()
     {
@@ -107,12 +108,17 @@ class ReporteProcesoController extends Controller
                     'resultadoSemestral2' => $resultados->resultadoSemestral2 ?? null,
                 ];
             }
-            $analisis = AnalisisDatos::where('idRegistro', $registroIndicadores->idRegistro)
-                ->where('seccion', 'Conformidad')->first();
+            $analisis = AnalisisDatos::where('idRegistro', $registroIndicadores->idRegistro)->first();
+
             if ($analisis) {
-                $interpretacion = $analisis->interpretacion ?? 'No disponible';
-                $necesidad = $analisis->necesidad ?? 'No disponible';
+                $neceInter = NeceInter::where('idAnalisisDatos', $analisis->idAnalisisDatos)
+                    ->where('seccion', 'Conformidad')
+                    ->first();
+
+                $interpretacion = $neceInter->Interpretacion ?? 'No disponible';
+                $necesidad = $neceInter->Necesidad ?? 'No disponible';
             }
+
         }
 
         $graficaPlanControl = $this->verificaGrafica("plan_control_{$idProceso}_{$anio}.png");
@@ -126,8 +132,8 @@ class ReporteProcesoController extends Controller
         $seguimientos = $registroSeg ? SeguimientoMinuta::where('idRegistro', $registroSeg->idRegistro)->get() : collect();
         $idSeguimientos = $seguimientos->pluck('idSeguimiento')->toArray();
         $asistentes = Asistente::whereIn('idSeguimiento', $idSeguimientos)->get();
-        $actividadesSeg= ActividadMinuta::whereIn('idSeguimiento', $idSeguimientos)->get();
-        $compromisosSeg= CompromisoMinuta::whereIn('idSeguimiento', $idSeguimientos)->get();
+        $actividadesSeg = ActividadMinuta::whereIn('idSeguimiento', $idSeguimientos)->get();
+        $compromisosSeg = CompromisoMinuta::whereIn('idSeguimiento', $idSeguimientos)->get();
 
         $registroAcMejora = Registros::where('idProceso', $idProceso)
             ->where('año', $anio)
@@ -349,12 +355,17 @@ class ReporteProcesoController extends Controller
             }
 
             // 🔎 Buscar interpretación y necesidad para la sección "Satisfacción"
-            $analisis = AnalisisDatos::where('idRegistro', $registro->idRegistro)
-                ->where('seccion', 'Satisfacción')
-                ->first();
+            $analisis = AnalisisDatos::where('idRegistro', $registro->idRegistro)->first();
 
-            $interpretacion = $analisis->interpretacion ?? null;
-            $necesidad = $analisis->necesidad ?? null;
+            $neceInter = null;
+            if ($analisis) {
+                $neceInter = NeceInter::where('idAnalisisDatos', $analisis->idAnalisisDatos)
+                    ->where('seccion', 'Satisfaccion')
+                    ->first();
+            }
+
+            $interpretacion = $neceInter->Interpretacion ?? null;
+            $necesidad = $neceInter->Necesidad ?? null;
 
             // 🔄 Buscar indicadores del tipo Encuesta y Retroalimentación
             $indicadores = IndicadorConsolidado::where('idProceso', $idProceso)
@@ -381,20 +392,20 @@ class ReporteProcesoController extends Controller
                         $excelenteBueno = ($encuesta->bueno + $encuesta->excelente);
                         $porcentaje = $total > 0 ? round(($excelenteBueno * 100) / $total, 2) : 0;
 
-                    $base += [
-                        'noEncuestas' => $total,
-                        'malo' => $encuesta->malo,
-                        'regular' => $encuesta->regular,
-                        'bueno' => $encuesta->bueno,
-                        'excelente' => $encuesta->excelente,
-                        'porcentajeEB' => $porcentaje,
-                    ];
-                }
-            } elseif ($indicador->origenIndicador === 'Retroalimentacion') {
-                $retro = \App\Models\Retroalimentacion::where('idIndicador', $indicador->idIndicador)->first();
+                        $base += [
+                            'noEncuestas' => $total,
+                            'malo' => $encuesta->malo,
+                            'regular' => $encuesta->regular,
+                            'bueno' => $encuesta->bueno,
+                            'excelente' => $encuesta->excelente,
+                            'porcentajeEB' => $porcentaje,
+                        ];
+                    }
+                } elseif ($indicador->origenIndicador === 'Retroalimentacion') {
+                    $retro = \App\Models\Retroalimentacion::where('idIndicador', $indicador->idIndicador)->first();
 
-                if ($retro) {
-                    $total = $retro->cantidadFelicitacion + $retro->cantidadSugerencia + $retro->cantidadQueja;
+                    if ($retro) {
+                        $total = $retro->cantidadFelicitacion + $retro->cantidadSugerencia + $retro->cantidadQueja;
 
                         $base += [
                             'felicitaciones' => $retro->cantidadFelicitacion,
@@ -408,14 +419,14 @@ class ReporteProcesoController extends Controller
                 $resultado[] = $base;
             }
 
-        return response()->json($resultado, 200);
-    } catch (\Exception $e) {
-        \Log::error("❌ Error en indicadoresSatisfaccionCliente:", ['error' => $e->getMessage()]);
-        return response()->json(['error' => 'Error interno'], 500);
+            return response()->json($resultado, 200);
+        } catch (\Exception $e) {
+            \Log::error("❌ Error en indicadoresSatisfaccionCliente:", ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Error interno'], 500);
+        }
     }
-}
 
-    
+
     public function obtenerSeguimiento($idProceso, $anio)
     {
         try {
@@ -509,4 +520,164 @@ class ReporteProcesoController extends Controller
             return response()->json(['error' => 'Error al obtener', 'detalle' => $e->getMessage()], 500);
         }
     }
+
+    public function indicadoresMapaProceso($idProceso, $anio)
+    {
+        try {
+            // Buscar el registro de Análisis de Datos para obtener idAnalisisDatos
+            $registro = Registros::where('idProceso', $idProceso)
+                ->where('año', $anio)
+                ->where('apartado', 'Análisis de Datos')
+                ->first();
+
+            if (!$registro) {
+                return response()->json(['error' => 'Registro no encontrado'], 404);
+            }
+
+            $analisis = AnalisisDatos::where('idRegistro', $registro->idRegistro)->first();
+
+            $neceInter = null;
+            if ($analisis) {
+                $neceInter = NeceInter::where('idAnalisisDatos', $analisis->idAnalisisDatos)
+                    ->where('seccion', 'Desempeño')
+                    ->first();
+            }
+
+            $interpretacion = $neceInter->Interpretacion ?? 'No disponible';
+            $necesidad = $neceInter->Necesidad ?? 'No disponible';
+
+            // Obtener indicadores del tipo MapaProceso
+            $indicadores = IndicadorConsolidado::where('idProceso', $idProceso)
+                ->where('origenIndicador', 'MapaProceso')
+                ->get();
+
+            $resultado = $indicadores->map(function ($indicador) use ($interpretacion, $necesidad) {
+                $res = ResultadoIndi::where('idIndicador', $indicador->idIndicador)->first();
+
+                return [
+                    'idIndicador' => $indicador->idIndicador,
+                    'nombreIndicador' => $indicador->nombreIndicador,
+                    'meta' => $indicador->meta,
+                    'resultadoSemestral1' => $res->resultadoSemestral1 ?? 0,
+                    'resultadoSemestral2' => $res->resultadoSemestral2 ?? 0,
+                    'interpretacion' => $interpretacion,
+                    'necesidad' => $necesidad,
+                ];
+            });
+
+            return response()->json($resultado, 200);
+        } catch (\Exception $e) {
+            \Log::error('Error en indicadoresMapaProceso()', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Error interno'], 500);
+        }
+    }
+
+    public function eficaciaRiesgos($idProceso, $anio)
+    {
+        try {
+            // 1. Buscar el registro correspondiente al apartado Gestión de Riesgos
+            $registro = Registros::where('idProceso', $idProceso)
+                ->where('año', $anio)
+                ->where('apartado', 'Gestión de Riesgo')
+                ->first();
+
+            if (!$registro) {
+                return response()->json(['error' => 'Registro no encontrado'], 404);
+            }
+
+            // 2. Buscar análisis y su relación con NeceInter para la sección Eficacia
+            $analisis = AnalisisDatos::where('idRegistro', $registro->idRegistro)->first();
+            $neceInter = null;
+
+            if ($analisis) {
+                $neceInter = NeceInter::where('idAnalisisDatos', $analisis->idAnalisisDatos)
+                    ->where('seccion', 'Eficacia')
+                    ->first();
+            }
+
+            $interpretacion = $neceInter->Interpretacion ?? 'No disponible';
+            $necesidad = $neceInter->Necesidad ?? 'No disponible';
+
+            // 3. Obtener indicadores asociados a este registro
+            $indicadores = IndicadorConsolidado::where('idRegistro', $registro->idRegistro)->get();
+
+            $resultado = $indicadores->map(function ($indicador) use ($interpretacion, $necesidad) {
+                $res = ResultadoIndi::where('idIndicador', $indicador->idIndicador)->first();
+
+                return [
+                    'idIndicador' => $indicador->idIndicador,
+                    'nombreIndicador' => $indicador->nombreIndicador,
+                    'meta' => $indicador->meta,
+                    'resultadoAnual' => $res->resultadoAnual ?? 0,
+                    'interpretacion' => $interpretacion,
+                    'necesidad' => $necesidad,
+                ];
+            });
+
+            return response()->json($resultado, 200);
+        } catch (\Exception $e) {
+            \Log::error("❌ Error en eficaciaRiesgos()", ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Error interno al obtener los indicadores de eficacia'], 500);
+        }
+    }
+
+    public function evaluacionProveedores($idProceso, $anio)
+    {
+        try {
+            // 1. Buscar el registro del apartado Análisis de Datos
+            $registro = Registros::where('idProceso', $idProceso)
+                ->where('año', $anio)
+                ->where('apartado', 'Análisis de Datos')
+                ->first();
+
+            if (!$registro) {
+                return response()->json(['error' => 'Registro no encontrado'], 404);
+            }
+
+            // 2. Obtener el análisis y NeceInter para "Desempeño Proveedores"
+            $analisis = AnalisisDatos::where('idRegistro', $registro->idRegistro)->first();
+            $neceInter = null;
+
+            if ($analisis) {
+                $neceInter = NeceInter::where('idAnalisisDatos', $analisis->idAnalisisDatos)
+                    ->where('seccion', 'Desempeño Proveedores')
+                    ->first();
+            }
+
+            $interpretacion = $neceInter->Interpretacion ?? 'No disponible';
+            $necesidad = $neceInter->Necesidad ?? 'No disponible';
+
+            // 3. Obtener indicadores del tipo EvaluaProveedores
+            $indicadores = IndicadorConsolidado::where('idRegistro', $registro->idRegistro)
+                ->where('origenIndicador', 'EvaluaProveedores')
+                ->get();
+
+            $resultado = $indicadores->map(function ($indicador) use ($interpretacion, $necesidad) {
+                $eval = EvaluaProveedores::where('idIndicador', $indicador->idIndicador)->first();
+
+                return [
+                    'idIndicador' => $indicador->idIndicador,
+                    'nombreIndicador' => $indicador->nombreIndicador,
+                    'meta' => $indicador->meta,
+                    'metaConfiable' => $eval->metaConfiable ?? 0,
+                    'metaCondicionado' => $eval->metaCondicionado ?? 0,
+                    'metaNoConfiable' => $eval->metaNoConfiable ?? 0,
+                    'resultadoConfiableSem1' => $eval->resultadoConfiableSem1 ?? 0,
+                    'resultadoConfiableSem2' => $eval->resultadoConfiableSem2 ?? 0,
+                    'resultadoCondicionadoSem1' => $eval->resultadoCondicionadoSem1 ?? 0,
+                    'resultadoCondicionadoSem2' => $eval->resultadoCondicionadoSem2 ?? 0,
+                    'resultadoNoConfiableSem1' => $eval->resultadoNoConfiableSem1 ?? 0,
+                    'resultadoNoConfiableSem2' => $eval->resultadoNoConfiableSem2 ?? 0,
+                    'interpretacion' => $interpretacion,
+                    'necesidad' => $necesidad,
+                ];
+            });
+
+            return response()->json($resultado, 200);
+        } catch (\Exception $e) {
+            \Log::error("❌ Error en evaluacionProveedores()", ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Error interno al obtener evaluación de proveedores'], 500);
+        }
+    }
+
 }

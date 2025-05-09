@@ -110,7 +110,6 @@ Route::get('/proceso-usuario/{idUsuario}', [ProcessController::class, 'obtenerPr
 Route::get('/proceso-entidad/{idProceso}', [ProcessController::class, 'getInfoPorProceso']);
 
 
-
 //*********************************************************/
 //                  Cronograma
 //*********************************************************/
@@ -143,7 +142,7 @@ Route::apiResource('procesos', controller: ProcessController::class);
 //              Indicadores
 //***********************************************************/
 
-Route::apiResource('indicadoresconsolidados', IndicadorConsolidadoController::class);
+Route::apiResource('indicadoresconsolidados', controller: IndicadorConsolidadoController::class);
 
 // Registrar y obtener resultados por tipo de indicador
 Route::prefix('indicadoresconsolidados')->group(function () {
@@ -171,6 +170,8 @@ Route::prefix('evalua-proveedores')->group(function () {
 
 // Ruta para obtener solo indicadores de tipo retroalimentación
 Route::get('/indicadores/retroalimentacion', [IndicadorConsolidadoController::class, 'indexRetroalimentacion']);
+Route::get('/indicadores-riesgo', [IndicadorConsolidadoController::class, 'obtenerIndGesRiesgos']);
+
 
 
 
@@ -229,33 +230,33 @@ Route::put('gestionriesgos/{idGesRies}/riesgos/{idRiesgo}', [RiesgoController::c
 // Eliminar un riesgo
 Route::delete('gestionriesgos/{idGesRies}/riesgos/{idRiesgo}', [RiesgoController::class, 'destroy']);
 
-
+//**************************************************/
+//              Análisis Datos
+//**************************************************/
 Route::get('analisisDatos/{idformAnalisisDatos}', [FormAnalisisDatosController::class, 'show']);
+Route::put('/analisisDatos/{idRegistro}/guardar-completo', [FormAnalisisDatosController::class, 'guardarAnalisisDatosCompleto']);
 Route::get('/getIdRegistro', [FormAnalisisDatosController::class, 'getIdRegistro']);
 Route::put('analisisDatos/{idRegistro}/necesidad-interpretacion', [FormAnalisisDatosController::class, 'updateNecesidadInterpretacion']);
 
 //Ruta para obtener resultados de los resultados de plan de control
 Route::get('/plan-control/{idProceso}', [IndicadorResultadoController::class, 'getResultadosPlanControl']);
 Route::get('/mapa-proceso', [IndicadorResultadoController::class, 'getResultadosIndMapaProceso']);
-Route::get('/gestion-riesgos', [IndicadorResultadoController::class, 'getResutadosRiesgos']);
+Route::get('/gestion-riesgos/{idRegistro}', [IndicadorResultadoController::class, 'getResultadosRiesgos']);
 
 //**************************************************/
 //              Plan Correctivo
 //**************************************************/
 Route::get('/plan-correctivos/registro/{idRegistro}', [PlanCorrectivoController::class, 'getByIdRegistro']);
-
-
-
 //Ruta para los planes correctivos
 Route::get('/plan-correctivos', [PlanCorrectivoController::class, 'index']);
 //Ruta para obtener la informacion de un plan
-Route::get('/plan-correctivo/{id}', [PlanCorrectivoController::class,'show']);
+Route::get('/plan-correctivos/{id}', [PlanCorrectivoController::class,'show']);
 //Ruta para crear un nuevo plan
-Route::post('/plan-correctivo', [PlanCorrectivoController::class,'store']);
+Route::post('/plan-correctivos', [PlanCorrectivoController::class,'store']);
 //Ruta para actualizar un plan
-Route::put('/plan-correctivo/{id}', [PlanCorrectivoController::class,'update']);
+Route::put('/plan-correctivos/{id}', [PlanCorrectivoController::class,'update']);
 //Ruta para eliminar un plan
-Route::delete('/plan-correctivo/{id}', [PlanCorrectivoController::class,'destroy']);
+Route::delete('/plan-correctivos/{id}', [PlanCorrectivoController::class,'destroy']);
 
 //Rutas para el manejo de las actividades
 Route::post('/actividades', [PlanCorrectivoController::class,'createActividad']);
@@ -275,7 +276,15 @@ Route::get('/reporte-pdf/{id}', [ReporteAuditoriaController::class, 'descargarPD
 
 Route::apiResource('plantrabajo', PlanTrabajoController::class);
 Route::apiResource('actividadmejora', ActividadMejoraController::class);
-Route::apiResource('fuentept', FuentePtController::class);
+//**************************************************/
+//             Fuentes de Trabajo
+//**************************************************/
+Route::get('/plantrabajo/{id}/fuentes', [FuentePTController::class, 'index']);
+Route::post('/plantrabajo/{id}/fuentes', [FuentePtController::class, 'store']);
+Route::delete('/fuente/{id}', [FuentePtController::class, 'destroy']);
+Route::put('/fuente/{id}', [FuentePtController::class, 'update']);
+
+
 Route::get('/plantrabajo/registro/{idRegistro}', [PlanTrabajoController::class, 'getByRegistro']);
 Route::post('/proyecto-mejora', [ProyectoMejoraController::class, 'store']);
 

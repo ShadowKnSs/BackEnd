@@ -16,9 +16,9 @@ class NeceInter extends Model
 
     protected $fillable = [
         'idformAnalisisDatos',
-        'Necesidad',
-        'Interpretacion',
-        'pestana'
+        'necesidad',
+        'interpretacion',
+        'seccion'
     ];
 
     // Relación: cada necesidad e interpretación pertenece a un formAnalisisDatos

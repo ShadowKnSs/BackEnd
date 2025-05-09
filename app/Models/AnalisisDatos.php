@@ -15,9 +15,7 @@ class AnalisisDatos extends Model
     public $timestamps = false;
     protected $fillable = [
         'idRegistro',
-        'interpretacion',
-        'necesidad',
-        'seccion'
+        'periodoEvaluacion'
     ];
 
     public function registro()

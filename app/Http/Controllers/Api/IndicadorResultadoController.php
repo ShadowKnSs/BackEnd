@@ -45,11 +45,11 @@ class IndicadorResultadoController extends Controller
                     $resultado = Encuesta::updateOrCreate(
                         ['idIndicador' => $idIndicador],
                         [
-                            'malo' => intval($data['malo'] ?? 0),
-                            'regular' => intval($data['regular'] ?? 0),
-                            'bueno' => intval($data['bueno'] ?? 0),
-                            'excelente' => intval($data['excelente'] ?? 0),
-                            'noEncuestas' => intval($data['noEncuestas'] ?? 0),
+                            'malo' => intval($data['malo'] ?? null),
+                            'regular' => intval($data['regular'] ?? null),
+                            'bueno' => intval($data['bueno'] ?? null),
+                            'excelente' => intval($data['excelente'] ?? null),
+                            'noEncuestas' => intval($data['noEncuestas'] ?? null),
                         ]
                     );
                     break;
@@ -58,9 +58,9 @@ class IndicadorResultadoController extends Controller
                     $resultado = Retroalimentacion::updateOrCreate(
                         ['idIndicador' => $idIndicador],
                         [
-                            'cantidadFelicitacion' => intval($data['cantidadFelicitacion'] ?? 0),
-                            'cantidadSugerencia' => intval($data['cantidadSugerencia'] ?? 0),
-                            'cantidadQueja' => intval($data['cantidadQueja'] ?? 0),
+                            'cantidadFelicitacion' => intval($data['cantidadFelicitacion'] ?? null),
+                            'cantidadSugerencia' => intval($data['cantidadSugerencia'] ?? null),
+                            'cantidadQueja' => intval($data['cantidadQueja'] ?? null),
                         ]
                     );
                     break;
@@ -69,12 +69,12 @@ class IndicadorResultadoController extends Controller
                     $resultado = EvaluaProveedores::updateOrCreate(
                         ['idIndicador' => $idIndicador],
                         [
-                            'resultadoConfiableSem1' => intval($data['confiableSem1'] ?? 0),
-                            'resultadoConfiableSem2' => intval($data['confiableSem2'] ?? 0),
-                            'resultadoCondicionadoSem1' => intval($data['condicionadoSem1'] ?? 0),
-                            'resultadoCondicionadoSem2' => intval($data['condicionadoSem2'] ?? 0),
-                            'resultadoNoConfiableSem1' => intval($data['noConfiableSem1'] ?? 0),
-                            'resultadoNoConfiableSem2' => intval($data['noConfiableSem2'] ?? 0),
+                            'resultadoConfiableSem1' => intval($data['confiableSem1'] ?? null),
+                            'resultadoConfiableSem2' => intval($data['confiableSem2'] ?? null),
+                            'resultadoCondicionadoSem1' => intval($data['condicionadoSem1'] ?? null),
+                            'resultadoCondicionadoSem2' => intval($data['condicionadoSem2'] ?? null),
+                            'resultadoNoConfiableSem1' => intval($data['noConfiableSem1'] ?? null),
+                            'resultadoNoConfiableSem2' => intval($data['noConfiableSem2'] ?? null),
                         ]
                     );
                     break;
@@ -173,6 +173,7 @@ class IndicadorResultadoController extends Controller
 
     public function getResultadosPlanControl($idProceso)
 {
+    //ReVISAR POR QUE SE TENÍA LO DE INTERPRETACIÓN
     try {
         $resultados = DB::table('IndicadoresConsolidados as ic')
             ->join('ResultadoIndi as ri', 'ic.idIndicador', '=', 'ri.idIndicador')
@@ -180,13 +181,13 @@ class IndicadorResultadoController extends Controller
             ->join('analisisdatos as ad', 'r.idRegistro', '=', 'ad.idRegistro')
             ->where('ic.origenIndicador', 'ActividadControl')
             ->where('ic.idProceso', $idProceso)
-            ->where('ad.seccion', 'DesempeñoProceso')
+            // ->where('ad.seccion', 'DesempeñoProceso')
             ->select([
                 'ic.nombreIndicador',
                 'ri.resultadoSemestral1',
                 'ri.resultadoSemestral2',
-                'ad.interpretacion',
-                'ad.necesidad'
+                // 'ad.interpretacion',
+                // 'ad.necesidad'
             ])
             ->get();
 

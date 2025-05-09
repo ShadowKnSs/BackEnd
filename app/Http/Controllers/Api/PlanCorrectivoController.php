@@ -5,6 +5,7 @@ namespace App\Http\Controllers\ApI;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\PlanCorrectivo;
+use App\Models\ActividadMejora;
 use App\Models\ActividadPlan;
 
 class PlanCorrectivoController extends Controller
@@ -19,15 +20,28 @@ class PlanCorrectivoController extends Controller
     {
         $request->validate([
             'fechaInicio' => 'required|date',
-            'origenConformidad' => 'required|string|max:510',
-            'equipoMejora' => 'required|string|max:255',
-            'requisito' => 'required|string|max:510',
-            'incumplimiento' => 'required|string|max:510',
-            'evidencia' => 'required|string|max:510',
-            'coordinadorPlan' => 'required|string|max:255'
+            'origenConformidad' => 'required|string|',
+            'equipoMejora' => 'required|string|',
+            'requisito' => 'required|string|',
+            'incumplimiento' => 'required|string|',
+            'evidencia' => 'required|string|',
+            'coordinadorPlan' => 'required|string'
         ]);
 
-        $plan = PlanCorrectivo::create($request->all());
+
+        // 🔍 Buscar idActividadMejora relacionado al idRegistro
+        $actividad = ActividadMejora::where('idRegistro', $request->idRegistro)->first();
+
+        if (!$actividad) {
+            return response()->json(['error' => 'No se encontró ActividadMejora asociada'], 422);
+        }
+
+        // ✅ Agregar manualmente el campo
+        $data = $request->all();
+        $data['idActividadMejora'] = $actividad->idActividadMejora;
+
+        $plan = PlanCorrectivo::create($data);
+        
 
         // Si se envían actividades de reacción, guardarlas
         if ($request->has('reaccion')) {

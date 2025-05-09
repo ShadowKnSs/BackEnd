@@ -4,17 +4,16 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class ActividadesPM extends Model
+class IndicadoresExito extends Model
 {
-    protected $table = 'actividadespm';
-    protected $primaryKey = 'idActividadPM';
+    protected $table = 'IndicadoresExito';
+    protected $primaryKey = 'idIndicadorExito';
     public $timestamps = false;
 
     protected $fillable = [
         'idProyectoMejora',
-        'descripcionAct',
-        'responsable',
-        'fecha',
+        'nombreInd',
+        'meta',
     ];
 
     public function proyecto()
@@ -22,4 +21,3 @@ class ActividadesPM extends Model
         return $this->belongsTo(ProyectoMejora::class, 'idProyectoMejora');
     }
 }
-

@@ -12,6 +12,7 @@ use App\Models\Encuesta;
 use App\Models\Retroalimentacion;
 use App\Models\EntidadDependencia;
 use App\Models\EvaluaProveedores;
+use App\Models\ActividadMejora;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Log;
 
@@ -39,6 +40,27 @@ class RegistrosController extends Controller
 
         // Crear el nuevo registro
         $registro = Registros::create($request->all());
+
+
+        // Solo para "Acciones de Mejora"
+        if ($request->Apartado === "Acciones de Mejora") {
+            try {
+                $idRegistro = $registro->idRegistro;
+
+                // Verifica si ya existe la actividad de mejora (por si acaso)
+                $existeActividad = ActividadMejora::where('idRegistro', $idRegistro)->exists();
+
+                if (!$existeActividad) {
+                    ActividadMejora::create([
+                        'idRegistro' => $idRegistro
+                    ]);
+
+                    Log::info("✅ ActividadMejora creada automáticamente para el registro", ['idRegistro' => $idRegistro]);
+                }
+            } catch (\Exception $e) {
+                Log::error("❌ Error al crear ActividadMejora automática", ['error' => $e->getMessage()]);
+            }
+        }
 
         //Solo para "Análisis de Datos"
         if ($request->Apartado === "Análisis de Datos") {
@@ -224,7 +246,7 @@ class RegistrosController extends Controller
         return response()->json(['idRegistro' => $registro->idRegistro]);
     }
 
-    
+
 
     public function buscarProceso($idRegistro)
     {
@@ -238,5 +260,5 @@ class RegistrosController extends Controller
     }
 
 
-    
+
 }
