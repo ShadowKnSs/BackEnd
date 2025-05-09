@@ -27,6 +27,9 @@ use App\Models\ActividadesPM;
 use App\Models\PlanCorrectivo;
 use App\Models\ActividadPlan;
 use App\Models\NeceInter;
+use App\Models\Objetivo;
+use App\Models\IndicadoresExito;
+use App\Models\ResponsableInv;
 use App\Models\ReporteProceso;
 
 use App\Models\EvaluaProveedores;
@@ -143,11 +146,27 @@ class ReporteProcesoController extends Controller
         if (!$registroAcMejora) {
             return response()->json(['error' => 'No se encontró el registro.'], 404);
         }
+
+
+
+
         $acMejora = ActividadMejora::where('idRegistro', $registroAcMejora->idRegistro)->get();
         $idAccMejora = $acMejora->pluck('idActividadMejora')->toArray();
         $proyectoMejora = ProyectoMejora::whereIn('idActividadMejora', $idAccMejora)->first();
         $recursos = optional($proyectoMejora)->idProyectoMejora ? Recurso::where('idProyectoMejora', $proyectoMejora->idProyectoMejora)->get() : collect();
         $actividadesPM = optional($proyectoMejora)->idProyectoMejora ? ActividadesPM::where('idProyectoMejora', $proyectoMejora->idProyectoMejora)->get() : collect();
+        $objetivos = optional($proyectoMejora)->idProyectoMejora
+            ? Objetivo::where('idProyectoMejora', $proyectoMejora->idProyectoMejora)->get()
+            : collect();
+
+        $responsablesInv = optional($proyectoMejora)->idProyectoMejora
+            ? ResponsableInv::where('idProyectoMejora', $proyectoMejora->idProyectoMejora)->get()
+            : collect();
+
+        $indicadoresExito = optional($proyectoMejora)->idProyectoMejora
+            ? IndicadoresExito::where('idProyectoMejora', $proyectoMejora->idProyectoMejora)->get()
+            : collect();
+
         $planCorrectivo = PlanCorrectivo::whereIn('idActividadMejora', $idAccMejora)->first();
         $actividadesPlan = optional($planCorrectivo)->idPlanCorrectivo ? ActividadPlan::where('idPlanCorrectivo', $planCorrectivo->idPlanCorrectivo)->get() : collect();
 
@@ -209,6 +228,9 @@ class ReporteProcesoController extends Controller
             'proyectoMejora' => $proyectoMejora,
             'recursos' => $recursos,
             'actividadesPM' => $actividadesPM,
+            'proyectoObjetivos' => $objetivos,
+            'proyectoResponsables' => $responsablesInv,
+            'proyectoIndicadoresExito' => $indicadoresExito,
             'planCorrectivo' => $planCorrectivo,
             'actividadesPlan' => $actividadesPlan,
             'indicadoresSatisfaccion' => $indicadoresSatisfaccion,
@@ -466,7 +488,6 @@ class ReporteProcesoController extends Controller
     public function obtenerPM($idProceso, $anio)
     {
         try {
-
             $registroAcMejora = Registros::where('idProceso', $idProceso)
                 ->where('año', $anio)
                 ->where('apartado', 'Acciones de Mejora')
@@ -475,23 +496,35 @@ class ReporteProcesoController extends Controller
             if (!$registroAcMejora) {
                 return response()->json(['error' => 'No se encontró el registro.'], 404);
             }
-            // Obtener los seguimientos relacionados
-            $acMejora = ActividadMejora::where('idRegistro', $registroAcMejora->idRegistro)->get();
 
+            $acMejora = ActividadMejora::where('idRegistro', $registroAcMejora->idRegistro)->get();
             $idAccMejora = $acMejora->pluck('idActividadMejora')->toArray();
             $proyectoMejora = ProyectoMejora::whereIn('idActividadMejora', $idAccMejora)->first();
+
+            if (!$proyectoMejora) {
+                return response()->json(['error' => 'No hay proyecto de mejora asociado.'], 404);
+            }
+
             $recursos = Recurso::where('idProyectoMejora', $proyectoMejora->idProyectoMejora)->get();
             $actividadesPM = ActividadesPM::where('idProyectoMejora', $proyectoMejora->idProyectoMejora)->get();
+            $objetivos = Objetivo::where('idProyectoMejora', $proyectoMejora->idProyectoMejora)->get();
+            $responsables = ResponsableInv::where('idProyectoMejora', $proyectoMejora->idProyectoMejora)->get();
+            $indicadoresExito = IndicadoresExito::where('idProyectoMejora', $proyectoMejora->idProyectoMejora)->get();
+
             return response()->json([
                 'acMejora' => $acMejora,
                 'proyectoMejora' => $proyectoMejora,
                 'recursos' => $recursos,
                 'actividadesPM' => $actividadesPM,
+                'objetivos' => $objetivos,
+                'responsables' => $responsables,
+                'indicadoresExito' => $indicadoresExito,
             ]);
         } catch (\Exception $e) {
             return response()->json(['error' => 'Error al obtener', 'detalle' => $e->getMessage()], 500);
         }
     }
+
 
     public function obtenerPlanCorrectivo($idProceso, $anio)
     {

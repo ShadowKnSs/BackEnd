@@ -141,59 +141,59 @@
     </div>
 
     @if(
-        ($documentos && $documentos !== 'No disponible') ||
-        ($puestosInvolucrados && $puestosInvolucrados !== 'No disponible') ||
-        ($fuente && $fuente !== 'No disponible') ||
-        ($material && $material !== 'No disponible') ||
-        ($requisitos && $requisitos !== 'No disponible') ||
-        ($salidas && $salidas !== 'No disponible') ||
-        ($receptores && $receptores !== 'No disponible')
-    )
-            <!-- Mapa de Proceso -->
-            <div style="margin-bottom: 30px;">
-                <h2 class="title">Mapa de Proceso</h2>
+            ($documentos && $documentos !== 'No disponible') ||
+            ($puestosInvolucrados && $puestosInvolucrados !== 'No disponible') ||
+            ($fuente && $fuente !== 'No disponible') ||
+            ($material && $material !== 'No disponible') ||
+            ($requisitos && $requisitos !== 'No disponible') ||
+            ($salidas && $salidas !== 'No disponible') ||
+            ($receptores && $receptores !== 'No disponible')
+        )
+        <!-- Mapa de Proceso -->
+        <div style="margin-bottom: 30px;">
+            <h2 class="title">Mapa de Proceso</h2>
 
-                <p><strong>Documentos Relacionados:</strong> {{ $documentos ?? 'No disponible' }}</p>
-                <p><strong>Puestos Involucrados:</strong> {{ $puestosInvolucrados ?? 'No disponible' }}</p>
+            <p><strong>Documentos Relacionados:</strong> {{ $documentos ?? 'No disponible' }}</p>
+            <p><strong>Puestos Involucrados:</strong> {{ $puestosInvolucrados ?? 'No disponible' }}</p>
 
-                <!-- Tabla 1: Fuente de Entrada y Entradas -->
-                <table border="1" cellspacing="0" cellpadding="8" style="margin-top: 20px;">
-                    <thead>
-                        <tr class="encabezado">
-                            <th>Fuente de Entrada</th>
-                            <th colspan="2">Entradas</th>
-                        </tr>
-                        <tr class="encabezado">
-                            <th></th>
-                            <th>Material y/o Información</th>
-                            <th>Requisito de Entrada</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>{{ $fuente ?? 'No disponible' }}</td>
-                            <td>{{ $material ?? 'No disponible' }}</td>
-                            <td>{{ $requisitos ?? 'No disponible' }}</td>
-                        </tr>
-                    </tbody>
-                </table>
+            <!-- Tabla 1: Fuente de Entrada y Entradas -->
+            <table border="1" cellspacing="0" cellpadding="8" style="margin-top: 20px;">
+                <thead>
+                    <tr class="encabezado">
+                        <th>Fuente de Entrada</th>
+                        <th colspan="2">Entradas</th>
+                    </tr>
+                    <tr class="encabezado">
+                        <th></th>
+                        <th>Material y/o Información</th>
+                        <th>Requisito de Entrada</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>{{ $fuente ?? 'No disponible' }}</td>
+                        <td>{{ $material ?? 'No disponible' }}</td>
+                        <td>{{ $requisitos ?? 'No disponible' }}</td>
+                    </tr>
+                </tbody>
+            </table>
 
-                <!-- Tabla 2: Salidas y Receptores -->
-                <table border="1" cellspacing="0" cellpadding="8" style="margin-top: 20px;">
-                    <thead>
-                        <tr class="encabezado">
-                            <th>Salidas</th>
-                            <th>Receptores de Salidas / Cliente</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>{{ $salidas ?? 'No disponible' }}</td>
-                            <td>{{ $receptores ?? 'No disponible' }}</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+            <!-- Tabla 2: Salidas y Receptores -->
+            <table border="1" cellspacing="0" cellpadding="8" style="margin-top: 20px;">
+                <thead>
+                    <tr class="encabezado">
+                        <th>Salidas</th>
+                        <th>Receptores de Salidas / Cliente</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>{{ $salidas ?? 'No disponible' }}</td>
+                        <td>{{ $receptores ?? 'No disponible' }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
     @endif
     <!-- Diagrama de flujo -->
     @php
@@ -364,21 +364,38 @@
             </tr>
             <tr>
                 <th>Descripción de la mejora:</th>
-                <td colspan="5">{{ $proyectoMejora->descripcionMejora }}</td>
+                <td colspan="3">{{ $proyectoMejora->descripcionMejora }}</td>
             </tr>
         </table>
 
         <!-- Objetivos/Beneficios de la mejora -->
-        <h4>Objetivos/Beneficio de la mejora:</h4>
-        <p>{{ $proyectoMejora->objetivo }}</p>
+        <h4>Objetivos/Beneficios de la mejora:</h4>
+        @if(isset($proyectoObjetivos) && count($proyectoObjetivos) > 0)
+            <ul>
+                @foreach($proyectoObjetivos as $obj)
+                    <li>{{ $obj->descripcionObj }}</li>
+                @endforeach
+            </ul>
+        @else
+            <p>No se registraron objetivos.</p>
+        @endif
 
         <!-- Áreas de impacto/Personal beneficiado -->
         <h4>Áreas de impacto/Personal beneficiado:</h4>
         <p>{{ $proyectoMejora->areaImpacto }}</p>
+        <p><strong>Personal beneficiado:</strong> {{ $proyectoMejora->personalBeneficiado }}</p>
 
         <!-- Responsables involucrados -->
         <h4>Responsables involucrados:</h4>
-        <p>{{ $proyectoMejora->responsable }}</p>
+        @if(isset($proyectoResponsables) && count($proyectoResponsables) > 0)
+            <ul>
+                @foreach($proyectoResponsables as $resp)
+                    <li>{{ $resp->nombre }}</li>
+                @endforeach
+            </ul>
+        @else
+            <p>No se registraron responsables.</p>
+        @endif
 
         <!-- Situación actual -->
         <h4>Situación actual:</h4>
@@ -386,7 +403,26 @@
 
         <!-- Indicadores de Éxito -->
         <h4>Indicadores de Éxito:</h4>
-        <p>{{ $proyectoMejora->indicadorExito }}</p>
+        @if(isset($proyectoIndicadoresExito) && count($proyectoIndicadoresExito) > 0)
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Nombre del Indicador</th>
+                        <th>Meta</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($proyectoIndicadoresExito as $indicador)
+                        <tr>
+                            <td>{{ $indicador->nombreInd }}</td>
+                            <td>{{ $indicador->meta }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        @else
+            <p>No se registraron indicadores de éxito.</p>
+        @endif
     @endif
 
 
@@ -515,7 +551,7 @@
                     @endforeach
                 </tbody>
             </table>
-           
+
             <!-- Evaluación de la Efectividad -->
             <h3 style="margin-top: 20px;">4. Evaluación de la Efectividad</h3>
             <table width="100%" border="1" cellspacing="0" cellpadding="6"
@@ -531,18 +567,18 @@
                 </thead>
                 <tbody>
                     @foreach ($riesgos as $r)
-                                @php
-                                    $efectivo = $r->valorNRP >= $r->reevaluacionNRP;
-                                    $color = $efectivo ? '#28a745' : '#dc3545';
-                                @endphp
-                                <tr>
-                                    <td>{{ $r->reevaluacionSeveridad }}</td>
-                                    <td>{{ $r->reevaluacionOcurrencia }}</td>
-                                    <td>{{ $r->reevaluacionNRP }}</td>
-                                    <td style="background-color: {{ $color }}; color: #fff; text-align: center; font-weight: bold;">
-                                    </td>
-                                    <td>{{ $r->analisisEfectividad }}</td>
-                                </tr>
+                        @php
+                            $efectivo = $r->valorNRP >= $r->reevaluacionNRP;
+                            $color = $efectivo ? '#28a745' : '#dc3545';
+                        @endphp
+                        <tr>
+                            <td>{{ $r->reevaluacionSeveridad }}</td>
+                            <td>{{ $r->reevaluacionOcurrencia }}</td>
+                            <td>{{ $r->reevaluacionNRP }}</td>
+                            <td style="background-color: {{ $color }}; color: #fff; text-align: center; font-weight: bold;">
+                            </td>
+                            <td>{{ $r->analisisEfectividad }}</td>
+                        </tr>
                     @endforeach
                 </tbody>
             </table>
@@ -574,18 +610,18 @@
                     @endphp
 
                     @foreach ($planControlIndicadores as $i => $indicador)
-                                @php
-                                    $totalMeta += $indicador->meta ?? 0;
-                                    $totalSem1 += $indicador->resultadoSemestral1 ?? 0;
-                                    $totalSem2 += $indicador->resultadoSemestral2 ?? 0;
-                                @endphp
-                                <tr>
-                                    <td>{{ $i + 1 }}</td>
-                                    <td>{{ $indicador->nombreIndicador }}</td>
-                                    <td align="center">{{ $indicador->meta }}</td>
-                                    <td align="center">{{ $indicador->resultadoSemestral1 }}</td>
-                                    <td align="center">{{ $indicador->resultadoSemestral2 }}</td>
-                                </tr>
+                        @php
+                            $totalMeta += $indicador->meta ?? 0;
+                            $totalSem1 += $indicador->resultadoSemestral1 ?? 0;
+                            $totalSem2 += $indicador->resultadoSemestral2 ?? 0;
+                        @endphp
+                        <tr>
+                            <td>{{ $i + 1 }}</td>
+                            <td>{{ $indicador->nombreIndicador }}</td>
+                            <td align="center">{{ $indicador->meta }}</td>
+                            <td align="center">{{ $indicador->resultadoSemestral1 }}</td>
+                            <td align="center">{{ $indicador->resultadoSemestral2 }}</td>
+                        </tr>
                     @endforeach
 
                     {{-- Fila de Promedios --}}
@@ -755,18 +791,18 @@
                     @endphp
 
                     @foreach ($mapaProcesoIndicadores as $index => $item)
-                                @php
-                                    $totalMeta += $item->meta ?? 0;
-                                    $totalSem1 += $item->resultadoSemestral1 ?? 0;
-                                    $totalSem2 += $item->resultadoSemestral2 ?? 0;
-                                @endphp
-                                <tr>
-                                    <td>{{ $index + 1 }}</td>
-                                    <td>{{ $item->nombreIndicador }}</td>
-                                    <td align="center">{{ $item->meta }}</td>
-                                    <td align="center">{{ $item->resultadoSemestral1 }}</td>
-                                    <td align="center">{{ $item->resultadoSemestral2 }}</td>
-                                </tr>
+                        @php
+                            $totalMeta += $item->meta ?? 0;
+                            $totalSem1 += $item->resultadoSemestral1 ?? 0;
+                            $totalSem2 += $item->resultadoSemestral2 ?? 0;
+                        @endphp
+                        <tr>
+                            <td>{{ $index + 1 }}</td>
+                            <td>{{ $item->nombreIndicador }}</td>
+                            <td align="center">{{ $item->meta }}</td>
+                            <td align="center">{{ $item->resultadoSemestral1 }}</td>
+                            <td align="center">{{ $item->resultadoSemestral2 }}</td>
+                        </tr>
                     @endforeach
 
                     {{-- Fila de Promedios --}}
@@ -821,19 +857,19 @@
                     @endphp
 
                     @foreach ($eficaciaRiesgos as $index => $indi)
-                                @php
-                                    $totalMeta += $indi->meta ?? 0;
-                                    $totalSem1 += $indi->resultadoSemestral1 ?? 0;
-                                    $totalSem2 += $indi->resultadoAnual ?? 0;
-                                @endphp
-                                <tr>
-                                    <td>{{ $index + 1 }}</td>
-                                    <td>{{ $indi->nombreIndicador }}</td>
-                                    <td @if (is_null($indi->meta)) style="background-color: #ffe0e0; color: #b00020;" @endif>
-                                        {{ $indi->meta ?? 'No asignada' }}
-                                    </td>
-                                    <td style="text-align: center;">{{ $indi->resultadoAnual ?? '-' }}</td>
-                                </tr>
+                        @php
+                            $totalMeta += $indi->meta ?? 0;
+                            $totalSem1 += $indi->resultadoSemestral1 ?? 0;
+                            $totalSem2 += $indi->resultadoAnual ?? 0;
+                        @endphp
+                        <tr>
+                            <td>{{ $index + 1 }}</td>
+                            <td>{{ $indi->nombreIndicador }}</td>
+                            <td @if (is_null($indi->meta)) style="background-color: #ffe0e0; color: #b00020;" @endif>
+                                {{ $indi->meta ?? 'No asignada' }}
+                            </td>
+                            <td style="text-align: center;">{{ $indi->resultadoAnual ?? '-' }}</td>
+                        </tr>
                     @endforeach
 
                     {{-- Fila interpretación --}}
