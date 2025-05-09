@@ -153,4 +153,74 @@ class UsuarioController extends Controller
         $usuario->delete();
         return response()->json(null, 204);
     }
+
+    public function getAuditores()
+    {
+        try {
+            $rolAuditor = TipoUsuario::where('nombreRol', 'Auditor')->first();
+
+            if (!$rolAuditor) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Rol de Auditor no encontrado'
+                ], 404);
+            }
+
+            $auditores = Usuario::where('idTipoUsuario', $rolAuditor->idTipoUsuario)
+                ->get(['idUsuario', 'nombre', 'apellidoPat', 'apellidoMat', 'correo', 'telefono', 'gradoAcademico']);
+
+            return response()->json([
+                'success' => true,
+                'data' => $auditores
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener auditores',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getAuditoresBasico()
+    {
+        try {
+            $auditores = Usuario::where('idTipoUsuario', 2)
+                ->get(['idUsuario', 'nombre', 'apellidoPat', 'apellidoMat', 'correo', 'telefono', 'gradoAcademico']);
+
+            return response()->json([
+                'success' => true,
+                'data' => $auditores
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener auditores',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getProcesosPorAuditor($idUsuario)
+    {
+        try {
+            $procesos = DB::table('proceso')
+                ->where('idUsuario', $idUsuario)
+                ->select('idProceso', 'nombreProceso', 'idEntidad', 'estado')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $procesos
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener procesos',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
 }

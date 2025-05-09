@@ -56,7 +56,8 @@ use App\Http\Controllers\Api\BuscadorProcController;
 use App\Http\Controllers\Api\FormatosController;
 use App\Http\Controllers\Api\GraficaController;
 
-
+use App\Http\Controllers\Api\CaratulaController;
+use App\Http\Controllers\Api\DocumentoController;
 
 use App\Http\Controllers\Api\TokenTemporalController;
 
@@ -189,9 +190,15 @@ Route::get('procesos-nombres', [ProcessController::class, 'getNombres']);
 Route::get('actividadcontrol/{idProceso}', [ActividadControlController::class, 'index']);
 Route::get('mapaproceso/{idProceso}', [MapaProcesoController::class, 'index']);
 Route::apiResource('controlcambios', ControlCambioController::class);
+Route::get('/controlcambios/proceso/{idProceso}', [ControlCambioController::class, 'porProceso']);
 Route::apiResource('mapaproceso', MapaProcesoController::class);
 Route::apiResource('indmapaproceso', IndMapaProcesoController::class);
 Route::apiResource('actividadcontrol', ActividadControlController::class);
+Route::get('/caratula/{idProceso}', [CaratulaController::class, 'show']);
+Route::post('/caratula', [CaratulaController::class, 'store']);
+Route::get('caratulas/proceso/{idProceso}', [CaratulaController::class, 'show']);
+Route::put('caratulas/{id}', [CaratulaController::class, 'update']);
+Route::apiResource('caratulas', CaratulaController::class);
 
 //Para Auditoria Interna
 Route::apiResource('auditorias', AuditoriaInternaController::class);
@@ -271,6 +278,13 @@ Route::delete('/actividades/{idActividadPlan}', [PlanCorrectivoController::class
 Route::apiResource('controlcambios', ControlCambioController::class);
 Route::apiResource('mapaproceso', MapaProcesoController::class);
 Route::apiResource('indmapaproceso', IndMapaProcesoController::class);
+Route::prefix('documentos')->group(function () {
+    Route::get('/', [DocumentoController::class, 'index']);
+    Route::get('/{id}', [DocumentoController::class, 'show']);
+    Route::post('/', [DocumentoController::class, 'store']);
+    Route::put('/{id}', [DocumentoController::class, 'update']);
+    Route::delete('/{id}', [DocumentoController::class, 'destroy']);
+});
 
 //Para Auditoria Interna
 Route::apiResource('auditorias', AuditoriaInternaController::class);
@@ -325,6 +339,7 @@ Route::get('/generar-reporte/{idProceso}/{anio}', [ReporteProcesoController::cla
 Route::get('/datos-reporte/{idProceso}/{anio}', [ReporteProcesoController::class, 'obtenerDatosReporte']);
 Route::get('/mapa-proceso/{idProceso}', [ReporteProcesoController::class, 'obtenerMapaProceso']);
 Route::get('/auditoria/{idProceso}', [ReporteProcesoController::class, 'obtenerAuditoria']);
+Route::get('/auditorias/proceso/{idProceso}', [AuditoriaInternaController::class, 'getByProceso']);
 Route::get('/seguimiento/{idProceso}/{anio}', [ReporteProcesoController::class, 'obtenerSeguimiento']);
 Route::get('/proyecto-mejora/{idProceso}/{anio}', [ReporteProcesoController::class, 'obtenerPM']);
 Route::get('/plan-correctivo/{idProceso}/{anio}', [ReporteProcesoController::class, 'obtenerPlanCorrectivo']);
@@ -375,7 +390,9 @@ Route::get('/supervisores', [UsuarioController::class, 'getSupervisores']);*/
 Route::apiResource('usuarios', UsuarioController::class);
 Route::get('tiposusuario', [TipoUsuarioController::class, 'index']);
 Route::get('supervisores', [UsuarioController::class, 'getSupervisores']);
-
+Route::get('/auditores', [UsuarioController::class, 'getAuditores']);
+Route::get('/auditores/basico', [UsuarioController::class, 'getAuditoresBasico']);
+Route::get('/auditores/{idUsuario}/procesos', [UsuarioController::class, 'getProcesosPorAuditor']);
 
 Route::get('/notificaciones/{idUsuario}', [NotificacionController::class, 'getNotificaciones']);
 Route::post('/notificaciones/marcar-leidas/{idUsuarios}/{notificationId}', [NotificacionController::class, 'marcarComoLeidas']);
