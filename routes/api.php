@@ -125,6 +125,9 @@ Route::get('/minutas/registro/{idRegistro}', [MinutaController::class, 'getMinut
 Route::put('/minutas/{id}', [MinutaController::class, 'update']); //actualizar una minuta
 Route::delete('/minutasDelete/{id}', [MinutaController::class, 'destroy']);
 
+Route::put('/registros/{id}', [RegistrosController::class, 'updateCarpeta']);
+
+
 // ✅ Rutas con nombre explícito primero
 Route::get('/registros/idRegistro', [RegistrosController::class, 'obtenerIdRegistro']);
 Route::get('/registros/years/{idProceso}', [RegistrosController::class, 'obtenerAnios']);
