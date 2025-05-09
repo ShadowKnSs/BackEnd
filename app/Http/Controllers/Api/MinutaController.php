@@ -90,48 +90,80 @@ class MinutaController extends Controller
     }
 
     public function update(Request $request, $id)
-    {
-        try {
-            Log::info("Intentando actualizar minuta con ID: " . $id, ['request' => $request->all()]);
+{
+    try {
+        Log::info("Intentando actualizar minuta con ID: " . $id, ['request' => $request->all()]);
 
-            $seguimiento = SeguimientoMinuta::findOrFail($id);
-            $seguimiento->update($request->only(['idRegistro', 'lugar', 'fecha', 'duracion']));
+        $seguimiento = SeguimientoMinuta::findOrFail($id);
+        $seguimiento->update($request->only(['idRegistro', 'lugar', 'fecha', 'duracion']));
 
-            foreach ($request->actividades as $actividad) {
-                Log::info("Actualizando actividad: ", $actividad);
-                ActividadMinuta::updateOrCreate(
-                    ['idActividadMin' => $actividad['idActividadMin']],
-                    ['descripcion' => $actividad['descripcion']]
-                );
-            }
+        // ========== ACTIVIDADES ==========
+        $idsActividadesBD = ActividadMinuta::where('idSeguimiento', $id)->pluck('idActividadMin')->toArray();
+        $idsActividadesRequest = collect($request->actividades)
+            ->pluck('idActividadMin')
+            ->filter() // elimina nulls
+            ->toArray();
+        $idsActividadesEliminar = array_diff($idsActividadesBD, $idsActividadesRequest);
+        ActividadMinuta::whereIn('idActividadMin', $idsActividadesEliminar)->delete();
 
-            foreach ($request->asistentes as $asistente) {
-                Log::info("Actualizando asistente: ", $asistente);
-                Asistente::updateOrCreate(
-                    ['idAsistente' => $asistente['idAsistente']],
-                    ['nombre' => $asistente['nombre']]
-                );
-            }
-
-            foreach ($request->compromisos as $compromiso) {
-                Log::info("Actualizando compromiso: ", $compromiso);
-                CompromisoMinuta::updateOrCreate(
-                    ['idCompromiso' => $compromiso['idCompromiso']],
-                    [
-                        'descripcion' => $compromiso['descripcion'],
-                        'responsables' => $compromiso['responsables'],
-                        'fecha' => $compromiso['fecha']
-                    ]
-                );
-            }
-
-            Log::info("Minuta actualizada correctamente.");
-            return response()->json($seguimiento);
-        } catch (\Exception $e) {
-            Log::error("Error al actualizar la minuta: " . $e->getMessage());
-            return response()->json(['error' => 'Error al actualizar la minuta'], 500);
+        foreach ($request->actividades as $actividad) {
+            ActividadMinuta::updateOrCreate(
+                ['idActividadMin' => $actividad['idActividadMin'] ?? 0],
+                [
+                    'idSeguimiento' => $id,
+                    'descripcion' => $actividad['descripcion']
+                ]
+            );
         }
+
+        // ========== ASISTENTES ==========
+        $idsAsistentesBD = Asistente::where('idSeguimiento', $id)->pluck('idAsistente')->toArray();
+        $idsAsistentesRequest = collect($request->asistentes)
+            ->pluck('idAsistente')
+            ->filter()
+            ->toArray();
+        $idsAsistentesEliminar = array_diff($idsAsistentesBD, $idsAsistentesRequest);
+        Asistente::whereIn('idAsistente', $idsAsistentesEliminar)->delete();
+
+        foreach ($request->asistentes as $asistente) {
+            Asistente::updateOrCreate(
+                ['idAsistente' => $asistente['idAsistente'] ?? 0],
+                [
+                    'idSeguimiento' => $id,
+                    'nombre' => $asistente['nombre']
+                ]
+            );
+        }
+
+        // ========== COMPROMISOS ==========
+        $idsCompromisosBD = CompromisoMinuta::where('idSeguimiento', $id)->pluck('idCompromiso')->toArray();
+        $idsCompromisosRequest = collect($request->compromisos)
+            ->pluck('idCompromiso')
+            ->filter()
+            ->toArray();
+        $idsCompromisosEliminar = array_diff($idsCompromisosBD, $idsCompromisosRequest);
+        CompromisoMinuta::whereIn('idCompromiso', $idsCompromisosEliminar)->delete();
+
+        foreach ($request->compromisos as $compromiso) {
+            CompromisoMinuta::updateOrCreate(
+                ['idCompromiso' => $compromiso['idCompromiso'] ?? 0],
+                [
+                    'idSeguimiento' => $id,
+                    'descripcion' => $compromiso['descripcion'],
+                    'responsables' => $compromiso['responsables'],
+                    'fecha' => $compromiso['fecha']
+                ]
+            );
+        }
+
+        Log::info("Minuta actualizada correctamente.");
+        return response()->json($seguimiento);
+
+    } catch (\Exception $e) {
+        Log::error("Error al actualizar la minuta: " . $e->getMessage());
+        return response()->json(['error' => 'Error al actualizar la minuta'], 500);
     }
+}
 
     public function destroy($id)
     {

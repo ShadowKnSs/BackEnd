@@ -15,6 +15,8 @@ use App\Models\EvaluaProveedores;
 use App\Models\ActividadMejora;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
+
 
 class RegistrosController extends Controller
 {
@@ -259,6 +261,26 @@ class RegistrosController extends Controller
         return response()->json(['idProceso' => $registro->idProceso], 200);
     }
 
+    public function updateCarpeta(Request $request, $id)
+{
+    $registro = Registros::findOrFail($id);
 
+    $validated = $request->validate([
+        'año' => [
+            'required',
+            'integer',
+            Rule::unique('Registros')->where(function ($query) use ($registro) {
+                return $query
+                    ->where('idProceso', $registro->idProceso)
+                    ->where('Apartado', $registro->Apartado);
+            })->ignore($registro->idRegistro, 'idRegistro')
+        ]
+    ]);
 
+    $registro->año = $validated['año'];
+    $registro->save();
+
+    return response()->json($registro);
+}
+   
 }
