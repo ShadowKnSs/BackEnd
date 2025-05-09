@@ -377,7 +377,9 @@ Route::get('/supervisores', [UsuarioController::class, 'getSupervisores']);*/
 Route::apiResource('usuarios', UsuarioController::class);
 Route::get('tiposusuario', [TipoUsuarioController::class, 'index']);
 Route::get('supervisores', [UsuarioController::class, 'getSupervisores']);
-
+Route::get('/auditores', [UsuarioController::class, 'getAuditores']);
+Route::get('/auditores/basico', [UsuarioController::class, 'getAuditoresBasico']);
+Route::get('/auditores/{idUsuario}/procesos', [UsuarioController::class, 'getProcesosPorAuditor']);
 
 Route::get('/notificaciones/{idUsuario}', [NotificacionController::class, 'getNotificaciones']);
 Route::post('/notificaciones/marcar-leidas/{idUsuarios}/{notificationId}', [NotificacionController::class, 'marcarComoLeidas']);
