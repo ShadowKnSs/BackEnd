@@ -77,4 +77,10 @@ class ControlCambioController extends Controller
 
         return response()->json(['message' => 'Registro eliminado correctamente']);
     }
+
+    public function porProceso($idProceso)
+    {
+        $cambios = ControlCambio::where('idProceso', $idProceso)->get();
+        return response()->json($cambios);
+    }
 }

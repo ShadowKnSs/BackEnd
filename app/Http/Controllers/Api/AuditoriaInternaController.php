@@ -173,4 +173,15 @@ class AuditoriaInternaController extends Controller
             return response()->json(['error' => 'Error al eliminar auditoría', 'details' => $e->getMessage()], 500);
         }
     }
+
+    public function getByProceso(Request $request, $idProceso)
+    {
+        $auditorias = AuditoriaInterna::where('idRegistro', $idProceso)
+            ->select('idAuditorialInterna', 'fecha', 'objetivoAud', 'alcanceAud', 'estadoAceptacion', 'auditorLider')
+            ->orderBy('fecha', 'desc')
+            ->get();
+    
+        return response()->json($auditorias);
+    }      
+
 }
