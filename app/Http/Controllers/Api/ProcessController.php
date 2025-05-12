@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Proceso;
 use App\Models\EntidadDependencia;
+use App\Models\Registros;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 
@@ -14,34 +16,62 @@ class ProcessController extends Controller
 {
     public function store(Request $request)
     {
+        DB::beginTransaction();
+
         try {
+            // Crear proceso
             $proceso = Proceso::create($request->all());
 
-            // Log de creación exitosa
-            Log::info('Proceso creado exitosamente', [
-                'id' => $proceso->id,
-                'nombre' => $proceso->nombre,
-                'icono' => $proceso->icono,
+            // Año actual
+            $año = now()->year;
+
+            // Apartados de la estructura
+            $apartados = [
+                "Auditoría",
+                "Seguimiento",
+                "Acciones de Mejora",
+                "Gestión de Riesgo",
+                "Análisis de Datos"
+            ];
+
+            // Crear registros por cada apartado
+            foreach ($apartados as $apartado) {
+                Registros::create([
+                    'idProceso' => $proceso->idProceso,
+                    'año' => $año,
+                    'Apartado' => $apartado
+                ]);
+            }
+
+            DB::commit();
+
+            // Log de éxito
+            Log::info('Proceso creado exitosamente con registros asociados', [
+                'idProceso' => $proceso->idProceso,
                 'usuario' => auth()->user()->name ?? 'Sistema'
             ]);
 
             return response()->json([
-                'message' => 'Proceso creado exitosamente',
+                'message' => 'Proceso y registros creados exitosamente',
                 'proceso' => $proceso
             ], 201);
+
         } catch (\Exception $e) {
-            // Log de error en la creación
-            Log::error('Error al crear proceso', [
+            DB::rollBack();
+
+            // Log de error
+            Log::error('Error al crear proceso o registros', [
                 'error' => $e->getMessage(),
                 'datos' => $request->all()
             ]);
 
             return response()->json([
-                'message' => 'Error al crear el proceso',
+                'message' => 'Error al crear el proceso y registros',
                 'error' => $e->getMessage()
             ], 500);
         }
     }
+
 
     public function index()
     {
@@ -96,21 +126,21 @@ class ProcessController extends Controller
         return response()->json($proceso);
     }
 
-    
+
     public function getInfoPorProceso($idProceso)
     {
         $proceso = Proceso::find($idProceso);
-    
+
         if (!$proceso) {
             return response()->json(['error' => 'Proceso no encontrado'], 404);
         }
-    
+
         $entidad = EntidadDependencia::find($proceso->idEntidad);
-    
+
         if (!$entidad) {
             return response()->json(['error' => 'Entidad no encontrada'], 404);
         }
-    
+
         return response()->json([
             'proceso' => $proceso->nombreProceso,
             'entidad' => $entidad->nombreEntidad,
