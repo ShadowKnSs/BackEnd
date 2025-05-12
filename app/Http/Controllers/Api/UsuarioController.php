@@ -153,4 +153,34 @@ class UsuarioController extends Controller
         $usuario->delete();
         return response()->json(null, 204);
     }
+
+    public function getAuditores()
+    {
+        try {
+            $rolAuditor = TipoUsuario::where('nombreRol', 'Auditor')->first();
+
+            if (!$rolAuditor) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Rol de Auditor no encontrado en la base de datos'
+                ], 404);
+            }
+
+            $auditores = Usuario::where('idTipoUsuario', $rolAuditor->idTipoUsuario)
+                ->get(['idUsuario', 'nombre', 'apellidoPat', 'apellidoMat']);
+
+            return response()->json([
+                'success' => true,
+                'data' => $auditores
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener la lista de auditores',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
 }
