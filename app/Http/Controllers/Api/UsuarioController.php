@@ -58,7 +58,7 @@ class UsuarioController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('Error al crear usuario: '.$e->getMessage());
+            \Log::error('Error al crear usuario: ' . $e->getMessage());
             return response()->json([
                 'message' => 'Error al crear usuario',
                 'error' => $e->getMessage(),
@@ -71,7 +71,7 @@ class UsuarioController extends Controller
     {
         try {
             $rolSupervisor = TipoUsuario::where('nombreRol', 'Supervisor')->first();
-            
+
             if (!$rolSupervisor) {
                 return response()->json([
                     'success' => false,
@@ -105,15 +105,15 @@ class UsuarioController extends Controller
     public function update(Request $request, $id)
     {
         $usuario = Usuario::findOrFail($id);
-        
+
         $validated = $request->validate([
             'nombre' => 'sometimes|string',
             'apellidoPat' => 'sometimes|string',
             'apellidoMat' => 'nullable|string',
-            'correo' => 'sometimes|email|unique:usuario,correo,'.$id.',idUsuario',
+            'correo' => 'sometimes|email|unique:usuario,correo,' . $id . ',idUsuario',
             'telefono' => 'sometimes|string',
             'gradoAcademico' => 'nullable|string',
-            'RPE' => 'sometimes|string|unique:usuario,RPE,'.$id.',idUsuario',
+            'RPE' => 'sometimes|string|unique:usuario,RPE,' . $id . ',idUsuario',
             'pass' => 'sometimes|string|min:8',
             'roles' => 'sometimes|array',
             'roles.*' => 'integer|exists:tipousuario,idTipoUsuario',
@@ -222,5 +222,19 @@ class UsuarioController extends Controller
             ], 500);
         }
     }
+
+    public function obtenerNombreCompleto($id)
+    {
+        $usuario = Usuario::find($id);
+
+        if (!$usuario) {
+            return response()->json(['error' => 'Usuario no encontrado'], 404);
+        }
+
+        $nombreCompleto = trim($usuario->nombre . ' ' . $usuario->apellidoPat . ' ' . $usuario->apellidoMat);
+
+        return response()->json(['nombreCompleto' => $nombreCompleto]);
+    }
+
 
 }
