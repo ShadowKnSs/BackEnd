@@ -417,6 +417,5 @@ Route::post('/proceso-por-lider', [SupervisorController::class, 'procesoPorLider
 Route::get('/registros/buscar-proceso/{idRegistro}', [RegistrosController::class, 'buscarProceso']);
 
 
-
 Route::get('auditores', [UsuarioController::class, 'getAuditores']);
 
