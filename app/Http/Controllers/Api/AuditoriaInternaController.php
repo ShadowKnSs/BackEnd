@@ -12,6 +12,7 @@ use App\Models\PuntosMejora;
 use App\Models\CriteriosAuditoria;
 use App\Models\Plazo;
 use Illuminate\Support\Facades\DB;
+use App\Models\Registros;
 
 class AuditoriaInternaController extends Controller
 {
@@ -183,5 +184,23 @@ class AuditoriaInternaController extends Controller
     
         return response()->json($auditorias);
     }      
+
+    public function auditoriasDeRegistroYAnio($idRegistro)
+    {
+        $registro = Registros::find($idRegistro);
+        if (!$registro) {
+            return response()->json(['error' => 'Registro no encontrado'], 404);
+        }
+
+        $anio = $registro->año;
+
+        // Filtra por el registro específico y por el año en la fecha
+        $auditorias = AuditoriaInterna::with(['registro.proceso.entidad'])
+            ->where('idRegistro', $idRegistro)
+            ->whereYear('fecha', $anio)
+            ->get();
+
+        return response()->json($auditorias);
+    }
 
 }
