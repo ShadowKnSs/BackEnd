@@ -359,11 +359,15 @@ Route::get('/vista-reporte', function () {
     return view('proceso');
 });
 
+//*********************************************************/
+//              Para Usuarios genereado por token
+//*********************************************************/
 Route::post('/generar-token', [TokenTemporalController::class, 'generar']);
 Route::post('/validar-token', [TokenTemporalController::class, 'validar']);
 Route::get('/usuarios-temporales', [TokenTemporalController::class, 'index']);
-Route::delete('/usuarios-temporales/{id}', [TokenTemporalController::class, 'destroy']);
-
+// Route::delete('/usuarios-temporales/{id}', [TokenTemporalController::class, 'destroy']);
+Route::delete('/usuarios-temporales/expirados', [TokenTemporalController::class, 'eliminarExpirados']);
+//*************************************************************** */
 Route::get('/buscar-por-anio', [BuscadorSemController::class, 'buscarPorAnio']);
 
 Route::get('/buscar-auditorias', [BuscadorAudiController::class, 'buscarPorAnio']);

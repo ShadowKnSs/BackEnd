@@ -95,5 +95,18 @@ class TokenTemporalController extends Controller
         $token->delete();
         return response()->json(['message' => 'Token eliminado']);
     }
+    
+    public function eliminarExpirados()
+    {
+        $total = TokenTemporal::where('expiracion', '<', Carbon::now())->count();
+
+        if ($total > 0) {
+            TokenTemporal::where('expiracion', '<', Carbon::now())->delete();
+            return response()->json(['message' => "Se eliminaron $total tokens expirados."], 200);
+        }
+
+        return response()->json(['message' => "No hay tokens expirados para eliminar."], 200);
+    }
+
 
 }
