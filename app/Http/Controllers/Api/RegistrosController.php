@@ -236,7 +236,5 @@ class RegistrosController extends Controller
 
         return response()->json(['idProceso' => $registro->idProceso], 200);
     }
-
-
     
 }

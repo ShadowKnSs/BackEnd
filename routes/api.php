@@ -292,6 +292,9 @@ Route::apiResource('actividadmejora', ActividadMejoraController::class);
 Route::apiResource('fuentept', FuentePtController::class);
 Route::get('/plantrabajo/registro/{idRegistro}', [PlanTrabajoController::class, 'getByRegistro']);
 Route::post('/proyecto-mejora', [ProyectoMejoraController::class, 'store']);
+Route::get('/auditorias/por-registro-anio/{idRegistro}', [AuditoriaInternaController::class, 'auditoriasPorAnioDeRegistro']);
+Route::get('/auditorias/registro-anio/{id}', [AuditoriaInternaController::class, 'auditoriasDeRegistroYAnio']);
+Route::delete('/auditorias/{id}', [AuditoriaInternaController::class, 'destroy']);
 
 
 Route::post('/generar-pdf', function (Request $request) {

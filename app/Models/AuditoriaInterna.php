@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Models\Registros;
 
 class AuditoriaInterna extends Model
 {
@@ -54,6 +55,11 @@ class AuditoriaInterna extends Model
     public function plazos()
     {
         return $this->hasMany(Plazo::class, 'idAuditorialInterna');
+    }
+
+    public function registro()
+    {
+        return $this->belongsTo(Registros::class, 'idRegistro');
     }
 
 }
