@@ -62,8 +62,8 @@ class SeguimientoSemController extends Controller
 
         // 4️⃣ Obtener entidades de los procesos
         $idEntidades = $procesos->pluck('idEntidad')->toArray();
-        $entidades = EntidadDependencia::whereIn('idEntidadDependecia', $idEntidades)
-            ->get(['idEntidadDependecia', 'nombreEntidad']);
+        $entidades = EntidadDependencia::whereIn('idEntidadDependencia', $idEntidades)
+            ->get(['idEntidadDependencia', 'nombreEntidad']);
 
         \Log::info("Entidades obtenidas:", $entidades->toArray());
 
@@ -73,7 +73,7 @@ class SeguimientoSemController extends Controller
         foreach ($seguimientos as $seguimiento) {
             $registro = $registros->firstWhere('idRegistro', $seguimiento->idRegistro);
             $proceso = $procesos->firstWhere('idProceso', $registro->idProceso ?? null);
-            $entidad = $entidades->firstWhere('idEntidadDependecia', $proceso->idEntidad ?? null);
+            $entidad = $entidades->firstWhere('idEntidadDependencia', $proceso->idEntidad ?? null);
 
             $resultado[] = [
                 "NombreProceso" => $proceso->nombreProceso ?? null,
