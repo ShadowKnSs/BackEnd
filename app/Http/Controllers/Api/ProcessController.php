@@ -7,6 +7,9 @@ use Illuminate\Http\Request;
 use App\Models\Proceso;
 use App\Models\EntidadDependencia;
 use App\Models\Registros;
+use App\Models\ActividadMejora;
+use App\Models\IndicadorConsolidado;
+use App\Models\EvaluaProveedores;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -22,10 +25,7 @@ class ProcessController extends Controller
             // Crear proceso
             $proceso = Proceso::create($request->all());
 
-            // Año actual
             $año = now()->year;
-
-            // Apartados de la estructura
             $apartados = [
                 "Auditoría",
                 "Seguimiento",
@@ -34,22 +34,103 @@ class ProcessController extends Controller
                 "Análisis de Datos"
             ];
 
-            // Crear registros por cada apartado
             foreach ($apartados as $apartado) {
-                Registros::create([
+                $registro = Registros::create([
                     'idProceso' => $proceso->idProceso,
                     'año' => $año,
                     'Apartado' => $apartado
                 ]);
+
+                if ($apartado === "Acciones de Mejora") {
+                    ActividadMejora::firstOrCreate([
+                        'idRegistro' => $registro->idRegistro
+                    ]);
+                    Log::info("✅ ActividadMejora creada automáticamente al crear proceso", [
+                        'idRegistro' => $registro->idRegistro
+                    ]);
+                }
+
+                if ($apartado === "Análisis de Datos") {
+                    // Indicador Encuesta
+                    $indicadorEncuesta = IndicadorConsolidado::create([
+                        'idRegistro' => $registro->idRegistro,
+                        'idProceso' => $proceso->idProceso,
+                        'nombreIndicador' => "Encuesta de Satisfacción",
+                        'origenIndicador' => "Encuesta",
+                        'periodicidad' => "Anual",
+                        'meta' => 100,
+                    ]);
+
+                    DB::table('encuesta')->insert([
+                        'idIndicador' => $indicadorEncuesta->idIndicador,
+                        'malo' => 0,
+                        'regular' => 0,
+                        'bueno' => 0,
+                        'excelente' => 0,
+                        'noEncuestas' => 0,
+                    ]);
+
+                    // Retroalimentación
+                    $metodos = ['Encuesta', 'Buzon Virtual', 'Buzon Fisico'];
+                    foreach ($metodos as $metodo) {
+                        $indicadorRetro = IndicadorConsolidado::create([
+                            'idRegistro' => $registro->idRegistro,
+                            'idProceso' => $proceso->idProceso,
+                            'nombreIndicador' => "Retroalimentacion $metodo",
+                            'origenIndicador' => "Retroalimentacion",
+                            'periodicidad' => "Anual",
+                            'meta' => 100,
+                        ]);
+
+                        DB::table('retroalimentacion')->insert([
+                            'idIndicador' => $indicadorRetro->idIndicador,
+                            'metodo' => $metodo,
+                            'cantidadFelicitacion' => 0,
+                            'cantidadSugerencia' => 0,
+                            'cantidadQueja' => 0,
+                            'total' => 0,
+                        ]);
+                    }
+
+                    // Evaluación de Proveedores
+                    $indicadorEvalua = IndicadorConsolidado::create([
+                        'idRegistro' => $registro->idRegistro,
+                        'idProceso' => $proceso->idProceso,
+                        'nombreIndicador' => "Evaluación de Proveedores",
+                        'origenIndicador' => "EvaluaProveedores",
+                        'periodicidad' => "Semestral",
+                        'meta' => 100,
+                    ]);
+
+                    EvaluaProveedores::create([
+                        'idIndicador' => $indicadorEvalua->idIndicador,
+                        'metaConfiable' => 90,
+                        'metaCondicionado' => 70,
+                        'metaNoConfiable' => 50,
+                        'resultadoConfiableSem1' => 0,
+                        'resultadoConfiableSem2' => 0,
+                        'resultadoCondicionadoSem1' => 0,
+                        'resultadoCondicionadoSem2' => 0,
+                        'resultadoNoConfiableSem1' => 0,
+                        'resultadoNoConfiableSem2' => 0,
+                    ]);
+
+                    Log::info("✅ Indicadores automáticos creados correctamente en Análisis de Datos", [
+                        'idRegistro' => $registro->idRegistro
+                    ]);
+
+                    DB::table('analisisdatos')->insert([
+                        'idRegistro' => $registro->idRegistro,
+                        'periodoEvaluacion' => null, 
+                    ]);
+
+                    Log::info("✅ Registro de análisis de datos creado automáticamente", [
+                        'idRegistro' => $registro->idRegistro
+                    ]);
+                }
             }
 
-            DB::commit();
-
-            // Log de éxito
-            Log::info('Proceso creado exitosamente con registros asociados', [
-                'idProceso' => $proceso->idProceso,
-                'usuario' => auth()->user()->name ?? 'Sistema'
-            ]);
+            DB::commit(); // ✅ AHORA SÍ, AL FINAL DE TODO
 
             return response()->json([
                 'message' => 'Proceso y registros creados exitosamente',
@@ -59,7 +140,6 @@ class ProcessController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
 
-            // Log de error
             Log::error('Error al crear proceso o registros', [
                 'error' => $e->getMessage(),
                 'datos' => $request->all()
@@ -71,6 +151,7 @@ class ProcessController extends Controller
             ], 500);
         }
     }
+
 
 
     public function index()

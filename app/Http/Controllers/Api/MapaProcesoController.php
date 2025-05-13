@@ -40,7 +40,7 @@ class MapaProcesoController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'idProceso' => 'required|exists:procesos,idProceso',
+            'idProceso' => 'required|exists:proceso,idProceso',
             'documentos' => 'nullable|string',
             'fuente' => 'nullable|string',
             'material' => 'nullable|string',
