@@ -31,4 +31,9 @@ class Cronograma extends Model
     {
         return $this->belongsTo(Proceso::class, 'idProceso', 'idProceso');
     }
+
+    public function auditoresAsignados()
+    {
+        return $this->hasMany(AuditoresAsignados::class, 'idAuditoria');
+    }
 }

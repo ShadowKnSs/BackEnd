@@ -77,6 +77,8 @@ use App\Http\Controllers\Api\SupervisorController;
 //Login
 use App\Http\Controllers\Api\AuthController;
 
+use App\Http\Controllers\Api\AuditoresAsignadosController;
+
 //*********************************************************/
 //                          Login
 //*********************************************************/
@@ -304,6 +306,9 @@ Route::put('/fuente/{id}', [FuentePtController::class, 'update']);
 
 Route::get('/plantrabajo/registro/{idRegistro}', [PlanTrabajoController::class, 'getByRegistro']);
 Route::post('/proyecto-mejora', [ProyectoMejoraController::class, 'store']);
+Route::get('/auditorias/por-registro-anio/{idRegistro}', [AuditoriaInternaController::class, 'auditoriasPorAnioDeRegistro']);
+Route::get('/auditorias/registro-anio/{id}', [AuditoriaInternaController::class, 'auditoriasDeRegistroYAnio']);
+Route::delete('/auditorias/{id}', [AuditoriaInternaController::class, 'destroy']);
 
 
 Route::post('/generar-pdf', function (Request $request) {
@@ -359,11 +364,15 @@ Route::get('/vista-reporte', function () {
     return view('proceso');
 });
 
+//*********************************************************/
+//              Para Usuarios genereado por token
+//*********************************************************/
 Route::post('/generar-token', [TokenTemporalController::class, 'generar']);
 Route::post('/validar-token', [TokenTemporalController::class, 'validar']);
 Route::get('/usuarios-temporales', [TokenTemporalController::class, 'index']);
-Route::delete('/usuarios-temporales/{id}', [TokenTemporalController::class, 'destroy']);
-
+// Route::delete('/usuarios-temporales/{id}', [TokenTemporalController::class, 'destroy']);
+Route::delete('/usuarios-temporales/expirados', [TokenTemporalController::class, 'eliminarExpirados']);
+//*************************************************************** */
 Route::get('/buscar-por-anio', [BuscadorSemController::class, 'buscarPorAnio']);
 
 Route::get('/buscar-auditorias', [BuscadorAudiController::class, 'buscarPorAnio']);
@@ -417,6 +426,13 @@ Route::post('/proceso-por-lider', [SupervisorController::class, 'procesoPorLider
 Route::get('/registros/buscar-proceso/{idRegistro}', [RegistrosController::class, 'buscarProceso']);
 
 
-
 Route::get('auditores', [UsuarioController::class, 'getAuditores']);
+
+Route::prefix('auditores-asignados')->group(function () {
+    Route::post('/', [AuditoresAsignadosController::class, 'store']);
+    Route::get('/{idAuditoria}', [AuditoresAsignadosController::class, 'show']);
+    Route::delete('/{idAsignacion}', [AuditoresAsignadosController::class, 'destroy']);
+});
+
+Route::post('/asignar-auditores', [AuditoresAsignadosController::class, 'store']);
 
