@@ -27,28 +27,28 @@ class GestionRiesgoController extends Controller
         $request->validate([
             'idRegistro' => 'required|integer',
         ]);
-            $registro = Registros::find($request->idRegistro);
-            $proceso = Proceso::where('idProceso', $registro->idProceso)->first();
-           
-            Log::info("Consultando Id Registro: {$registro}");
-            if (!$registro) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'No se encontró registro de Análisis de Datos para el proceso y año especificados'
-                ], 404);
-            }
-            $entidad = EntidadDependencia::where('idEntidadDependencia', $proceso->idEntidad)->first();
-            $macroproceso = Macroproceso::where('idMacroproceso', $proceso->idMacroproceso)->first();
-                
+        $registro = Registros::find($request->idRegistro);
+        $proceso = Proceso::where('idProceso', $registro->idProceso)->first();
 
+        Log::info("Consultando Id Registro: {$registro}");
+        if (!$registro) {
             return response()->json([
-                'success' => true,
-                'idRegistro' => $registro->idRegistro,
-                'proceso'=> $proceso,
-                'macro'=> $macroproceso->tipoMacroproceso,
-                'entidad'=> $entidad->nombreEntidad
-            ]);
-        
+                'success' => false,
+                'message' => 'No se encontró registro de Análisis de Datos para el proceso y año especificados'
+            ], 404);
+        }
+        $entidad = EntidadDependencia::where('idEntidadDependencia', $proceso->idEntidad)->first();
+        $macroproceso = Macroproceso::where('idMacroproceso', $proceso->idMacroproceso)->first();
+
+
+        return response()->json([
+            'success' => true,
+            'idRegistro' => $registro->idRegistro,
+            'proceso' => $proceso,
+            'macro' => $macroproceso->tipoMacroproceso,
+            'entidad' => $entidad->nombreEntidad
+        ]);
+
     }
 
     public function getDatosGenerales($idRegistro)
@@ -61,9 +61,9 @@ class GestionRiesgoController extends Controller
 
         // Ajusta el shape del JSON según tu conveniencia
         $datos = [
-            'entidad'       => $registro->entidad ?? '', 
-            'macroproceso'  => $registro->macroproceso ?? '',
-            'proceso'       => $registro->proceso ?? '',
+            'entidad' => $registro->entidad ?? '',
+            'macroproceso' => $registro->macroproceso ?? '',
+            'proceso' => $registro->proceso ?? '',
             // ... cualquier otro campo que quieras exponer
         ];
 
@@ -84,6 +84,9 @@ class GestionRiesgoController extends Controller
             return response()->json(['message' => 'No existe un registro en gestionriesgos para este idRegistro'], 404);
         }
 
+        $gestion->fechaelaboracion = optional($gestion->fechaelaboracion)->format('Y-m-d');
+
+
         return response()->json($gestion, 200);
     }
 
@@ -98,8 +101,8 @@ class GestionRiesgoController extends Controller
         try {
             // Validar los campos mínimos
             $data = $request->validate([
-                'idRegistro'       => 'required|integer',
-                'elaboro'          => 'nullable|string',
+                'idRegistro' => 'required|integer',
+                'elaboro' => 'nullable|string',
                 'fechaelaboracion' => 'nullable|date',
             ]);
 
@@ -113,7 +116,7 @@ class GestionRiesgoController extends Controller
             \Log::error("Error al crear gestionriesgos: " . $e->getMessage());
             return response()->json([
                 'message' => 'Error al crear el registro en gestionriesgos',
-                'error'   => $e->getMessage(),
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -134,7 +137,7 @@ class GestionRiesgoController extends Controller
 
             // Validar datos que se pueden actualizar
             $data = $request->validate([
-                'elaboro'          => 'nullable|string',
+                'elaboro' => 'nullable|string',
                 'fechaelaboracion' => 'nullable|date',
             ]);
             // También podrías permitir cambiar el idRegistro si lo requieres
@@ -148,7 +151,7 @@ class GestionRiesgoController extends Controller
             \Log::error("Error al actualizar gestionriesgos: " . $e->getMessage());
             return response()->json([
                 'message' => 'Error al actualizar el registro en gestionriesgos',
-                'error'   => $e->getMessage(),
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
