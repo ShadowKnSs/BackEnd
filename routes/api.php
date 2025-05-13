@@ -77,6 +77,8 @@ use App\Http\Controllers\Api\SupervisorController;
 //Login
 use App\Http\Controllers\Api\AuthController;
 
+use App\Http\Controllers\Api\AuditoresAsignadosController;
+
 //*********************************************************/
 //                          Login
 //*********************************************************/
@@ -425,4 +427,12 @@ Route::get('/registros/buscar-proceso/{idRegistro}', [RegistrosController::class
 
 
 Route::get('auditores', [UsuarioController::class, 'getAuditores']);
+
+Route::prefix('auditores-asignados')->group(function () {
+    Route::post('/', [AuditoresAsignadosController::class, 'store']);
+    Route::get('/{idAuditoria}', [AuditoresAsignadosController::class, 'show']);
+    Route::delete('/{idAsignacion}', [AuditoresAsignadosController::class, 'destroy']);
+});
+
+Route::post('/asignar-auditores', [AuditoresAsignadosController::class, 'store']);
 
