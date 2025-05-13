@@ -95,8 +95,25 @@ class FormAnalisisDatosController extends Controller
         }
 
         // 7. Obtener necesidad e interpretación si ya existen
-        $idsAnalisis = $analisis->pluck('idAnalisisDatos');
-        $necesidadInterpretacion = NeceInter::whereIn('idAnalisisDatos', $idsAnalisis)->get();
+        // 7. Obtener necesidad e interpretación si ya existen (1 idAnalisisDatos → muchas secciones)
+        $idAnalisisDatos = optional($analisis->first())->idAnalisisDatos;
+
+        $necesidadInterpretacionFormateada = collect();
+        if ($idAnalisisDatos) {
+            $necesidades = NeceInter::where('idAnalisisDatos', $idAnalisisDatos)->get();
+
+            Log::info("📌 Necesidades encontradas para idAnalisisDatos {$idAnalisisDatos}", $necesidades->toArray());
+
+            $necesidadInterpretacionFormateada = $necesidades->map(function ($nece) {
+                return [
+                    'seccion' => $nece->seccion,
+                    'Necesidad' => $nece->Necesidad,
+                    'Interpretacion' => $nece->Interpretacion,
+                ];
+            });
+        } else {
+            Log::warning("⚠️ No se encontró idAnalisisDatos para idRegistro {$registro}");
+        }
 
         // 8. Retornar todo al frontend
         return response()->json([
@@ -107,8 +124,9 @@ class FormAnalisisDatosController extends Controller
             'evaluacion' => $evaluacion,
             'retroalimentacion' => $retroalimentacion,
             'gestionRiesgo' => $indicadoresGestion,
-            'necesidadInterpretacion' => $necesidadInterpretacion,
+            'necesidadInterpretacion' => $necesidadInterpretacionFormateada,
         ]);
+
     }
 
 
@@ -126,9 +144,8 @@ class FormAnalisisDatosController extends Controller
         ]);
 
         // Obtener idAnalisisDatos relacionado a este idRegistro y sección
-        $analisis = AnalisisDatos::where('idRegistro', $idRegistro)
-            ->where('seccion', $request->seccion)
-            ->first();
+        $analisis = AnalisisDatos::where('idRegistro', $idRegistro)->first();
+
 
         if (!$analisis) {
             return response()->json(['message' => 'No se encontró análisis de datos para esa sección'], 404);
@@ -159,50 +176,52 @@ class FormAnalisisDatosController extends Controller
             'secciones.*.necesidad' => 'nullable|string',
             'secciones.*.interpretacion' => 'nullable|string',
         ]);
-    
 
-        // 1. Obtener idAnalisisDatos asociado al idRegistro
-        $secciones = $request->input('secciones');
-
-        if (!is_array($secciones)) {
-            return response()->json(['message' => 'El campo secciones es obligatorio y debe ser un arreglo'], 422);
-        }
-        
-        // Obtener el idAnalisisDatos asociado al idRegistro (solo uno por registro)
+        // ✅ 1. Buscaren analisisdatos para el idRegistro
         $analisis = AnalisisDatos::where('idRegistro', $idRegistro)->first();
-        
+
         if (!$analisis) {
+            Log::warning("⚠️ No se encontró registro en AnalisisDatos para idRegistro: {$idRegistro}");
             return response()->json(['message' => 'No se encontró análisis de datos para este registro'], 404);
         }
-        
-        foreach ($secciones as $seccionData) {
-            // Validación adicional por si algún campo viene incompleto
-            if (!isset($seccionData['seccion'])) continue;
-        
-            $neceInter = NeceInter::firstOrNew([
-                'idAnalisisDatos' => $analisis->idAnalisisDatos,
-                'seccion' => $seccionData['seccion']
-            ]);
-        
-            $neceInter->necesidad = $seccionData['necesidad'] ?? null;
-            $neceInter->interpretacion = $seccionData['interpretacion'] ?? null;
-        
-            $neceInter->save();
-        }
-        
 
-        // 3. Actualizar el periodo de evaluación en AnalisisDatos
-        $formulario = AnalisisDatos::where('idRegistro', $idRegistro)->first();
+        Log::info("✅ Registro de AnalisisDatos encontrado: ID = {$analisis->idAnalisisDatos}, Periodo = {$analisis->periodoEvaluacion}");
 
-        if ($formulario) {
-            $formulario->periodoEvaluacion = $request->periodoEvaluacion;
-            $formulario->save();
+
+        // ✅ 2. Aseguramos que se actualiza el periodo de evaluación
+        $analisis->periodoEvaluacion = $request->periodoEvaluacion;
+        $analisis->save();
+
+        // ✅ 3. Obtener el idAnalisisDatos
+        $idAnalisisDatos = $analisis->idAnalisisDatos;
+
+        Log::info("💾 Guardando en NeceInter con idAnalisisDatos: {$idAnalisisDatos}");
+        Log::info("📌 Secciones recibidas: " . json_encode($request->input('secciones')));
+
+        // ✅ 4. Crear o actualizar registros en NeceInter
+        foreach ($request->input('secciones') as $seccionData) {
+            if (!isset($seccionData['seccion']))
+                continue;
+
+            NeceInter::updateOrCreate(
+                [
+                    'idAnalisisDatos' => $idAnalisisDatos,
+                    'seccion' => $seccionData['seccion']
+                ],
+                [
+                    'Necesidad' => $seccionData['necesidad'] ?? null,
+                    'Interpretacion' => $seccionData['interpretacion'] ?? null
+                ]
+            );
         }
 
         return response()->json([
             'message' => 'Datos de análisis actualizados correctamente'
         ]);
     }
+
+
+
 
 
 }

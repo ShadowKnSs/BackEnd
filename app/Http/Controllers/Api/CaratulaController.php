@@ -32,12 +32,12 @@ class CaratulaController extends Controller
     {
         $request->validate([
             'idProceso' => 'required|integer',
-            'responsable_nombre' => 'required|string',
-            'responsable_cargo' => 'required|string',
-            'reviso_nombre' => 'required|string',
-            'reviso_cargo' => 'required|string',
-            'aprobo_nombre' => 'required|string',
-            'aprobo_cargo' => 'required|string',
+            'responsable_nombre' => 'nullable|string',
+            'responsable_cargo' => 'nullable|string',
+            'reviso_nombre' => 'nullable|string',
+            'reviso_cargo' => 'nullable|string',
+            'aprobo_nombre' => 'nullable|string',
+            'aprobo_cargo' => 'nullable|string',
         ]);
 
         $caratula = Caratula::updateOrCreate(

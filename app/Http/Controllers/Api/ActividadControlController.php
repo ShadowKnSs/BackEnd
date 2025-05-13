@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\ActividadControl;
 use App\Models\Registros;
 use App\Models\AnalisisDatos;
+use App\Models\NeceInter;
 use App\Models\IndicadorConsolidado;
 
 class ActividadControlController extends Controller
@@ -46,12 +47,15 @@ class ActividadControlController extends Controller
                 ->where('Apartado', 'Análisis de Datos')
                 ->firstOrFail();
 
-            // 3) Buscar el ANALISISDATOS de sección 'Conformidad'
-            $analisis = AnalisisDatos::where('idRegistro', $registro->idRegistro)
+            // 3) Obtener el idAnalisisDatos correspondiente a ese registro
+            $analisis = AnalisisDatos::where('idRegistro', $registro->idRegistro)->firstOrFail();
+
+            // 4) Verificar que exista un NeceInter con seccion 'Conformidad'
+            $nece = NeceInter::where('idAnalisisDatos', $analisis->idAnalisisDatos)
                 ->where('seccion', 'Conformidad')
                 ->firstOrFail();
 
-            // 4) Crear el indicador usando el idAnalisisDatos correcto
+            // 5) Crear el indicador usando ese análisis
             $indicador = IndicadorConsolidado::create([
                 'idRegistro' => $registro->idRegistro,
                 'idProceso' => $actividad->idProceso,
@@ -61,7 +65,7 @@ class ActividadControlController extends Controller
                 'meta' => 100,
             ]);
 
-            // 5) Guardar la FK en la actividad si es necesario
+            // 6) Guardar la FK en la actividad
             $actividad->idIndicador = $indicador->idIndicador;
             $actividad->save();
 
@@ -82,6 +86,7 @@ class ActividadControlController extends Controller
             ], 500);
         }
     }
+
 
 
     // Mostrar una actividad específica

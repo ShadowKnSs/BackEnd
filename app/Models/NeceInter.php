@@ -15,15 +15,15 @@ class NeceInter extends Model
     public $timestamps = false; // Desactiva timestamps si la tabla no tiene created_at y updated_at
 
     protected $fillable = [
-        'idformAnalisisDatos',
-        'necesidad',
-        'interpretacion',
+        'idAnalisisDatos',
+        'Necesidad',
+        'Interpretacion',
         'seccion'
     ];
 
     // Relación: cada necesidad e interpretación pertenece a un formAnalisisDatos
     public function formAnalisisDatos()
     {
-        return $this->belongsTo(FormAnalisisDatos::class, 'idformAnalisisDatos', 'idformAnalisisDatos');
+        return $this->belongsTo(FormAnalisisDatos::class, 'idAnalisisDatos', 'idAnalisisDatos');
     }
 }
