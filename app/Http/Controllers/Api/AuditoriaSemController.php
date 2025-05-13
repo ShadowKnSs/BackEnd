@@ -25,7 +25,7 @@ class AuditoriaSemController extends Controller
 
         // 1️⃣ Obtener registros del año y con Apartado = "Generar informe de auditoría"
         $registros = Registros::where('año', $anio)
-            ->where('Apartado', 'Generar informe de auditoría')
+            ->where('Apartado', 'Auditoria')
             ->get(['idRegistro', 'idProceso']);
 
         \Log::info("Registros obtenidos:", $registros->toArray());
@@ -42,6 +42,7 @@ class AuditoriaSemController extends Controller
         $auditorias = AuditoriaInterna::whereIn('idRegistro', $idRegistros)
             ->whereMonth('fecha', '>=', $mesInicio)
             ->whereMonth('fecha', '<=', $mesFin)
+           // ->get(['idRegistro', 'fecha', 'auditorLider']);
             ->get(['idRegistro', 'fecha', 'auditorLider']);
 
         \Log::info("Auditorías obtenidas:", $auditorias->toArray());
@@ -62,8 +63,8 @@ class AuditoriaSemController extends Controller
 
         // 4️⃣ Obtener entidades de los procesos
         $idEntidades = $procesos->pluck('idEntidad')->toArray();
-        $entidades = EntidadDependencia::whereIn('idEntidadDependecia', $idEntidades)
-            ->get(['idEntidadDependecia', 'nombreEntidad']);
+        $entidades = EntidadDependencia::whereIn('idEntidadDependencia', $idEntidades)
+            ->get(['idEntidadDependencia', 'nombreEntidad']);
 
         \Log::info("Entidades obtenidas:", $entidades->toArray());
 
@@ -73,7 +74,7 @@ class AuditoriaSemController extends Controller
         foreach ($auditorias as $auditoria) {
             $registro = $registros->firstWhere('idRegistro', $auditoria->idRegistro);
             $proceso = $procesos->firstWhere('idProceso', $registro->idProceso ?? null);
-            $entidad = $entidades->firstWhere('idEntidadDependecia', $proceso->idEntidad ?? null);
+            $entidad = $entidades->firstWhere('idEntidadDependencia', $proceso->idEntidad ?? null);
 
             $resultado[] = [
                 "NombreProceso" => $proceso->nombreProceso ?? null,
