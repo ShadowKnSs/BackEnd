@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html>
 
 <head>
     <meta charset="UTF-8">
@@ -74,9 +74,22 @@
     </style>
 </head>
 
+<!--<htmlpageheader name="page-header">
+    <table width="100%">
+        <tr>
+            <td><img src="{{ public_path('images/logo1.png') }}" style="height: 50px;"></td>
+            <td style="text-align: right;"><img src="{{ public_path('images/logo2.jpg') }}" style="height: 40px;"></td>
+        </tr>
+    </table>
+</htmlpageheader>-->
+
 <body>
 
-    <!-- Título -->
+    <!--<div style="display: flex; justify-content: space-between; align-items: center;">
+    <img src="{{ public_path('images/logo1.png') }}" style="height: 70px;">
+    <img src="{{ public_path('images/logo2.jpg') }}" style="height: 70px;">
+</div>-->
+
     <h1>Reporte Semestral {{ $periodo }} {{ $anio }}</h1>
 
     <!-- Gestión de Riesgos -->
@@ -139,13 +152,14 @@
                     @foreach($datosIndicadores as $index => $item)
                         <tr>
                             <td>Indicador {{ $index + 1 }}</td>
-                            <td>{{ $item['NombreProceso'] }}</td>
-                            <td>{{ $item['Entidad'] }}</td>
-                            <td>{{ $item['nombreIndicador'] }}</td>
-                            <td>{{ $item['origenIndicador'] }}</td>
+                            <td>{{ $item['NombreProceso'] ?? '—' }}</td>
+                            <td>{{ $item['Entidad'] ?? '—' }}</td>
+                            <td>{{ $item['nombreIndicador'] ?? '—' }}</td>
+                            <td>{{ $item['origenIndicador'] ?? '—' }}</td>
                         </tr>
                     @endforeach
                 </tbody>
+
             </table>
 
             <h3>Cumplimiento e Incumplimiento Semestral</h3>
@@ -237,7 +251,6 @@
             @endif
         </div>
     @endif
-
 
     <!-- Seguimiento -->
     @if(!empty($datosSeguimiento))

@@ -24,7 +24,7 @@ class IndicadorSemController extends Controller
 
         // 1. Obtener los registros del apartado "Indicadores"
         $registros = Registros::where('año', $anio)
-            ->where('Apartado', 'Indicadores')
+            ->where('Apartado', 'Análisis de Datos')
             ->get(['idRegistro', 'idProceso']);
 
         if ($registros->isEmpty()) {
@@ -71,7 +71,7 @@ class IndicadorSemController extends Controller
             $proceso = Proceso::where('idProceso', $registros->where('idRegistro', $indicador->idRegistro)->first()->idProceso)
                 ->first(['idEntidad', 'nombreProceso']);
 
-            $entidad = EntidadDependencia::where('idEntidadDependecia', $proceso->idEntidad)
+            $entidad = EntidadDependencia::where('idEntidadDependencia', $proceso->idEntidad)
                 ->first(['nombreEntidad']);
 
             $resultados[] = [
