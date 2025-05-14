@@ -8,6 +8,8 @@ use App\Models\Usuario;
 use App\Models\TipoUsuario;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+
 
 class UsuarioController extends Controller
 {
@@ -24,6 +26,8 @@ class UsuarioController extends Controller
             'pass' => 'required|string|min:8',
             'roles' => 'required|array|min:1',
             'roles.*' => 'integer|exists:tipousuario,idTipoUsuario',
+            'procesosSupervisor' => 'array',
+            'procesosSupervisor.*' => 'integer|exists:proceso,idProceso',
         ]);
 
         DB::beginTransaction();
@@ -47,8 +51,22 @@ class UsuarioController extends Controller
 
             if (!empty($validated['roles'])) {
                 $usuario->update(['idTipoUsuario' => $validated['roles'][0]]);
+
             }
 
+
+            // Insertar en supervisor_proceso si tiene el rol de Supervisor
+            $rolSupervisor = TipoUsuario::where('nombreRol', 'Supervisor')->first();
+            if ($rolSupervisor && in_array($rolSupervisor->idTipoUsuario, $validated['roles'])) {
+                if (!empty($validated['procesosSupervisor'])) {
+                    foreach ($validated['procesosSupervisor'] as $idProceso) {
+                        DB::table('supervisor_proceso')->insert([
+                            'idUsuario' => $usuario->idUsuario,
+                            'idProceso' => $idProceso
+                        ]);
+                    }
+                }
+            }
             DB::commit();
 
             return response()->json([
@@ -102,6 +120,8 @@ class UsuarioController extends Controller
         return response()->json(['data' => $usuarios]);
     }
 
+
+
     public function update(Request $request, $id)
     {
         $usuario = Usuario::findOrFail($id);
@@ -117,15 +137,23 @@ class UsuarioController extends Controller
             'pass' => 'sometimes|string|min:8',
             'roles' => 'sometimes|array',
             'roles.*' => 'integer|exists:tipousuario,idTipoUsuario',
+            'procesosAsignados' => 'nullable|array',
+            'procesosAsignados.*' => 'integer|exists:proceso,idProceso',
         ]);
 
         DB::beginTransaction();
 
         try {
+            // Si se incluye 'pass', encriptarla
+            if (isset($validated['pass'])) {
+                $validated['pass'] = Hash::make($validated['pass']);
+            }
+
             $usuario->update($validated);
 
             if (isset($validated['roles'])) {
                 $usuario->roles()->sync($validated['roles']);
+
                 if (count($validated['roles'])) {
                     $usuario->update(['idTipoUsuario' => $validated['roles'][0]]);
                 }
@@ -146,6 +174,7 @@ class UsuarioController extends Controller
             ], 500);
         }
     }
+
 
     public function destroy($id)
     {

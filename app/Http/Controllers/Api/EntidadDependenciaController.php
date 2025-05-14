@@ -84,7 +84,7 @@ class EntidadDependenciaController extends Controller
         $rolActivo = $request->input('rolActivo');
 
         // Si es Admin u otro con acceso total
-        if ($rolActivo === 'Admin' || $rolActivo === 'Coordinador' || $rolActivo === 'Auditor') {
+        if ($rolActivo === 'Admin' || $rolActivo === 'Coordinador' || $rolActivo === 'Auditor' || $rolActivo === 'Supervisor') {
             $entidades = EntidadDependencia::select('idEntidadDependencia', 'nombreEntidad', 'icono')
                 ->orderBy('nombreEntidad')
                 ->get();
