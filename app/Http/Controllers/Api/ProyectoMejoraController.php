@@ -26,7 +26,7 @@ class ProyectoMejoraController extends Controller
 
         // Validación de datos recibidos
         $data = $request->validate([
-            'idRegistro'                  => 'required|integer',
+            'idRegistro' => 'required|integer',
             'division' => 'required|string',
             'departamento' => 'required|string',
             'fecha' => 'nullable|date',
@@ -59,12 +59,12 @@ class ProyectoMejoraController extends Controller
 
             // Buscar la actividad de mejora vinculada a ese registro
             $actividad = ActividadMejora::where('idRegistro', $data['idRegistro'])->first();
-        if (!$actividad) {
-            Log::warning('No se encontró ActividadMejora para idRegistro', ['idRegistro' => $data['idRegistro']]);
-            return response()->json([
-                'message' => 'No se encontró una ActividadMejora para el idRegistro proporcionado.'
-            ], 400);
-        }
+            if (!$actividad) {
+                Log::warning('No se encontró ActividadMejora para idRegistro', ['idRegistro' => $data['idRegistro']]);
+                return response()->json([
+                    'message' => 'No se encontró una ActividadMejora para el idRegistro proporcionado.'
+                ], 400);
+            }
             // Crear el registro principal en la tabla proyectomejora
             Log::info('Creando ProyectoMejora para actividad', ['idActividadMejora' => $actividad->idActividadMejora]);
             $proyecto = ProyectoMejora::create([
@@ -320,6 +320,19 @@ class ProyectoMejoraController extends Controller
             DB::rollBack();
             return response()->json(['message' => 'Error al eliminar el proyecto', 'error' => $e->getMessage()], 500);
         }
+    }
+
+    public function getByRegistro($idRegistro)
+    {
+        $actividades = ActividadMejora::where('idRegistro', $idRegistro)->pluck('idActividadMejora');
+
+        if ($actividades->isEmpty()) {
+            return response()->json([]); // No hay proyectos asociados a ese idRegistro
+        }
+
+        $proyectos = ProyectoMejora::whereIn('idActividadMejora', $actividades)->get();
+
+        return response()->json($proyectos);
     }
 
 }

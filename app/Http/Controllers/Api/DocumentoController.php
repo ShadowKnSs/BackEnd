@@ -36,7 +36,6 @@ class DocumentoController extends Controller
         $data = $request->validate([
             'idProceso' => 'required|integer',
             'nombreDocumento' => 'required|string',
-            'codigoDocumento' => 'required|string',
             'tipoDocumento' => 'required|in:interno,externo',
             'fechaRevision' => 'nullable|date',
             'fechaVersion' => 'nullable|date',
@@ -48,6 +47,16 @@ class DocumentoController extends Controller
             'disposicion' => 'nullable|string',
             'responsable' => 'nullable|string',
         ]);
+
+        // Generar código automáticamente
+        $ultimo = Documento::orderByDesc('idDocumento')->first();
+        if ($ultimo && preg_match('/(\d+)$/', $ultimo->codigoDocumento, $matches)) {
+            $siguienteNumero = (int)$matches[1] + 1;
+        } else {
+            $siguienteNumero = 12;
+        }
+
+        $data['codigoDocumento'] = "PSI-CES-PRC-" . str_pad($siguienteNumero, 3, '0', STR_PAD_LEFT);
 
         $documento = Documento::create($data);
 

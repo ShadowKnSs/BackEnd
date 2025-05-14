@@ -52,7 +52,10 @@ class CaratulaController extends Controller
             ])
         );
 
-        return response()->json($caratula);
+        return response()->json([
+            'idCaratula' => $caratula->idCaratula,
+            'message' => 'Carátula guardada correctamente',
+        ]);
     }
 
     public function update(Request $request, $id)

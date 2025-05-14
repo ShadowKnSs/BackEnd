@@ -119,14 +119,28 @@ class ProcessController extends Controller
                         'idRegistro' => $registro->idRegistro
                     ]);
 
-                    DB::table('analisisdatos')->insert([
+                    // Crear el registro de análisis de datos
+                    $analisisDatosId = DB::table('analisisdatos')->insertGetId([
                         'idRegistro' => $registro->idRegistro,
-                        'periodoEvaluacion' => null, 
+                        'periodoEvaluacion' => null,
                     ]);
 
                     Log::info("✅ Registro de análisis de datos creado automáticamente", [
                         'idRegistro' => $registro->idRegistro
                     ]);
+
+                    // Crear también la sección 'Conformidad' en NeceInter
+                    DB::table('neceinter')->insert([
+                        'idAnalisisDatos' => $analisisDatosId,
+                        'seccion' => 'Conformidad',
+                        'interpretacion' => '',
+                        'necesidad' => '',
+                    ]);
+
+                    Log::info("✅ NeceInter con sección Conformidad creado automáticamente", [
+                        'idAnalisisDatos' => $analisisDatosId
+                    ]);
+
                 }
             }
 
@@ -227,6 +241,21 @@ class ProcessController extends Controller
             'entidad' => $entidad->nombreEntidad,
         ]);
     }
+
+    public function procesosConEntidad()
+    {
+        $procesos = DB::table('proceso')
+            ->join('entidaddependencia', 'proceso.idEntidad', '=', 'entidaddependencia.idEntidadDependencia')
+            ->select(
+                'proceso.idProceso',
+                DB::raw("CONCAT(entidaddependencia.nombreEntidad, ' - ', proceso.nombreProceso) AS nombreCompleto")
+            )
+            ->where('proceso.estado', 'Activo')
+            ->get();
+
+        return response()->json(['procesos' => $procesos]);
+    }
+
 
 }
 

@@ -6,7 +6,7 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\Usuario;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash; 
+use Illuminate\Support\Facades\Hash;
 
 class AuthController extends Controller
 {
@@ -18,8 +18,8 @@ class AuthController extends Controller
         ]);
 
         $usuario = Usuario::where('RPE', $request->rpe)->first();
- if (!$usuario || !Hash::check($request->password, $usuario->pass)) {
-        // if (!$usuario || hash('sha256', $request->password) !== $usuario->pass) {
+        if (!$usuario || !Hash::check($request->password, $usuario->pass)) {
+            // if (!$usuario || hash('sha256', $request->password) !== $usuario->pass) {
             return response()->json(['message' => 'Credenciales inválidas'], 401);
         }
 

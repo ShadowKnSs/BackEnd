@@ -55,6 +55,12 @@ class ActividadControlController extends Controller
                 ->where('seccion', 'Conformidad')
                 ->firstOrFail();
 
+            if (!$nece) {
+                return response()->json([
+                    'message' => 'No se encontró información en NeceInter con sección Conformidad para el análisis de datos indicado.',
+                    'idAnalisisDatos' => $analisis->idAnalisisDatos
+                ], 404);
+            }
             // 5) Crear el indicador usando ese análisis
             $indicador = IndicadorConsolidado::create([
                 'idRegistro' => $registro->idRegistro,
