@@ -324,13 +324,15 @@ class ProyectoMejoraController extends Controller
 
     public function getByRegistro($idRegistro)
     {
-        $actividades = ActividadMejora::where('idRegistro', $idRegistro)->pluck('idActividadMejora');
+        $actividad = ActividadMejora::where('idRegistro', $idRegistro)->first();
 
-        if ($actividades->isEmpty()) {
-            return response()->json([]); // No hay proyectos asociados a ese idRegistro
+        if (!$actividad) {
+            return response()->json(['message' => 'No se encontró actividad'], 404);
         }
 
-        $proyectos = ProyectoMejora::whereIn('idActividadMejora', $actividades)->get();
+        $proyectos = ProyectoMejora::where('idActividadMejora', $actividad->idActividadMejora)
+            ->with(['objetivos', 'responsablesInv', 'indicadoresExito', 'recursos', 'actividades'])
+            ->get();
 
         return response()->json($proyectos);
     }
