@@ -111,6 +111,8 @@ Route::post('/procesos', [ProcessController::class, 'store']);
 Route::get('/procesos/entidad/{idEntidad}', [ProcessController::class, 'obtenerProcesosPorEntidad']);
 Route::get('/proceso-usuario/{idUsuario}', [ProcessController::class, 'obtenerProcesoPorUsuario']);
 Route::get('/proceso-entidad/{idProceso}', [ProcessController::class, 'getInfoPorProceso']);
+Route::get('/procesos-con-entidad', [ProcessController::class, 'procesosConEntidad']);
+
 
 
 //*********************************************************/
@@ -309,6 +311,8 @@ Route::post('/proyecto-mejora', [ProyectoMejoraController::class, 'store']);
 Route::get('/auditorias/por-registro-anio/{idRegistro}', [AuditoriaInternaController::class, 'auditoriasPorAnioDeRegistro']);
 Route::get('/auditorias/registro-anio/{id}', [AuditoriaInternaController::class, 'auditoriasDeRegistroYAnio']);
 Route::delete('/auditorias/{id}', [AuditoriaInternaController::class, 'destroy']);
+Route::get('/proyectos-mejora/{idRegistro}', [ProyectoMejoraController::class, 'getByRegistro']);
+
 
 
 Route::post('/generar-pdf', function (Request $request) {

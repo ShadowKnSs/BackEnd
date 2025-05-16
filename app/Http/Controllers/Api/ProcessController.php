@@ -119,14 +119,28 @@ class ProcessController extends Controller
                         'idRegistro' => $registro->idRegistro
                     ]);
 
-                    DB::table('analisisdatos')->insert([
+                    // Crear el registro de análisis de datos
+                    $analisisDatosId = DB::table('analisisdatos')->insertGetId([
                         'idRegistro' => $registro->idRegistro,
-                        'periodoEvaluacion' => null, 
+                        'periodoEvaluacion' => null,
                     ]);
 
                     Log::info("✅ Registro de análisis de datos creado automáticamente", [
                         'idRegistro' => $registro->idRegistro
                     ]);
+
+                    // Crear también la sección 'Conformidad' en NeceInter
+                    DB::table('neceinter')->insert([
+                        'idAnalisisDatos' => $analisisDatosId,
+                        'seccion' => 'Conformidad',
+                        'interpretacion' => '',
+                        'necesidad' => '',
+                    ]);
+
+                    Log::info("✅ NeceInter con sección Conformidad creado automáticamente", [
+                        'idAnalisisDatos' => $analisisDatosId
+                    ]);
+
                 }
             }
 
@@ -228,20 +242,5 @@ class ProcessController extends Controller
         ]);
     }
 
-    public function getProcesosConEntidad()
-    {
-        $procesos = Proceso::select('idProceso', 'nombreProceso', 'idEntidad')
-                    ->with(['entidad:idEntidadDependencia,nombreEntidad']) 
-                    ->get()
-                    ->map(function ($proceso) {
-                        return [
-                            'id' => $proceso->idProceso,
-                            'nombre' => $proceso->nombreProceso,
-                            'entidad' => $proceso->entidad->nombreEntidad ?? 'Sin entidad'
-                        ];
-                    });
-
-        return response()->json(['procesos' => $procesos]);
-    }
 }
 
