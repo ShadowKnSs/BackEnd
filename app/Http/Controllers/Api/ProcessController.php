@@ -228,5 +228,20 @@ class ProcessController extends Controller
         ]);
     }
 
+    public function getProcesosConEntidad()
+    {
+        $procesos = Proceso::select('idProceso', 'nombreProceso', 'idEntidad')
+                    ->with(['entidad:idEntidadDependencia,nombreEntidad']) 
+                    ->get()
+                    ->map(function ($proceso) {
+                        return [
+                            'id' => $proceso->idProceso,
+                            'nombre' => $proceso->nombreProceso,
+                            'entidad' => $proceso->entidad->nombreEntidad ?? 'Sin entidad'
+                        ];
+                    });
+
+        return response()->json(['procesos' => $procesos]);
+    }
 }
 

@@ -436,3 +436,9 @@ Route::prefix('auditores-asignados')->group(function () {
 
 Route::post('/asignar-auditores', [AuditoresAsignadosController::class, 'store']);
 
+// Ruta para procesos con entidad
+Route::get('/procesos-con-entidades', [ProcessController::class, 'getProcesosConEntidad']);
+
+// Ruta existente para entidades (asegúrate que use el método correcto)
+Route::get('/entidad-nombres2', [EntidadDependenciaController::class, 'getNombres2']);
+
