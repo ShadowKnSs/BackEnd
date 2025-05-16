@@ -4,25 +4,37 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Modelo GestionRiesgos
+ * 
+ * Representa la sección de gestión de riesgos dentro del análisis de un proceso.
+ * Registra la persona responsable y la fecha de elaboración de la matriz de riesgos.
+ * 
+ * Funcionalidades clave:
+ * - Pertenece a un `Registro` de proceso.
+ * - Se relaciona indirectamente con múltiples `Riesgo` (no definido aquí, pero esperado en una relación complementaria).
+ */
 class GestionRiesgos extends Model
 {
-    // Indicamos la tabla en la base de datos donde se almacenan los datos
+    // Nombre de la tabla en la base de datos
     protected $table = 'gestionriesgos';
 
-    // Indicamos la clave primaria personalizada
+    // Clave primaria personalizada
     protected $primaryKey = 'idGesRies';
 
+    // No se utilizan timestamps automáticos
     public $timestamps = false;
 
-
-    // Especificamos los campos que se pueden asignar masivamente
+    // Atributos asignables masivamente
     protected $fillable = [
         'idRegistro',
         'elaboro',
         'fechaelaboracion',
     ];
 
-    // Relación con registro
+    /**
+     * Relación: esta gestión de riesgos pertenece a un registro de análisis de proceso.
+     */
     public function registro()
     {
         return $this->belongsTo(Registros::class, 'idRegistro', 'idRegistro');

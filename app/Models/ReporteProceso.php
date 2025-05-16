@@ -4,18 +4,28 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Modelo ReporteProceso
+ * 
+ * Representa los reportes generados para un proceso específico dentro del sistema de gestión de calidad.
+ * Almacena el nombre del reporte, la fecha de elaboración y el año correspondiente.
+ * 
+ * Funcionalidades clave:
+ * - Se asocia a un proceso (`idProceso`).
+ * - Permite guardar reportes de tipo PDF u otros para consulta histórica.
+ */
 class ReporteProceso extends Model
 {
-    // Especifica el nombre de la tabla en la base de datos
+    // Nombre de la tabla
     protected $table = 'ReporteProceso';
 
-    // Especifica la clave primaria
+    // Clave primaria personalizada
     protected $primaryKey = 'idReporteProceso';
 
-    // Si la tabla no tiene los campos created_at y updated_at
+    // Desactiva timestamps automáticos
     public $timestamps = false;
 
-    // Los campos que se pueden asignar en forma masiva
+    // Campos asignables en masa
     protected $fillable = [
         'idProceso',
         'nombreReporte',
