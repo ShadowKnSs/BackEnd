@@ -150,7 +150,11 @@ Route::apiResource('procesos', controller: ProcessController::class);
 //              Indicadores
 //***********************************************************/
 
+
+Route::get('/indicadoresconsolidados/detalles', [IndicadorConsolidadoController::class, 'indexConDetalles']);
+
 Route::apiResource('indicadoresconsolidados', controller: IndicadorConsolidadoController::class);
+
 
 // Registrar y obtener resultados por tipo de indicador
 Route::prefix('indicadoresconsolidados')->group(function () {
@@ -159,6 +163,7 @@ Route::prefix('indicadoresconsolidados')->group(function () {
 });
 
 // Rutas específicas para Retroalimentación
+Route::post('/retroalimentacion/batch', [RetroalimentacionController::class, 'batch']);
 Route::prefix('retroalimentacion')->group(function () {
     Route::post('{idIndicador}/resultados', [RetroalimentacionController::class, 'store']);
     Route::get('{idIndicador}/resultados', [RetroalimentacionController::class, 'show']);
@@ -178,7 +183,6 @@ Route::prefix('evalua-proveedores')->group(function () {
 
 // Ruta para obtener solo indicadores de tipo retroalimentación
 Route::get('/indicadores/retroalimentacion', [IndicadorConsolidadoController::class, 'indexRetroalimentacion']);
-Route::get('/indicadores-riesgo', [IndicadorConsolidadoController::class, 'obtenerIndGesRiesgos']);
 
 
 
