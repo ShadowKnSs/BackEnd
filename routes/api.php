@@ -73,6 +73,8 @@ use App\Http\Controllers\Api\CronogramaController;
 
 
 use App\Http\Controllers\Api\SupervisorController;
+use App\Http\Controllers\Api\ReporteProyectoMejoraController;
+
 
 //Login
 use App\Http\Controllers\Api\AuthController;
@@ -175,7 +177,7 @@ Route::prefix('encuesta')->group(function () {
     Route::get('{idIndicador}/resultados', [EncuestaController::class, 'show']);
 });
 
-// Rutas específicas para Evaluación de Proveedores
+// Rutas específicas para Evaluación de 
 Route::prefix('evalua-proveedores')->group(function () {
     Route::post('{idIndicador}/resultados', [EvaluaProveedoresController::class, 'store']);
     Route::get('{idIndicador}/resultados', [EvaluaProveedoresController::class, 'show']);
@@ -317,6 +319,7 @@ Route::get('/auditorias/registro-anio/{id}', [AuditoriaInternaController::class,
 Route::delete('/auditorias/{id}', [AuditoriaInternaController::class, 'destroy']);
 Route::get('/proyectos-mejora/{idRegistro}', [ProyectoMejoraController::class, 'getByRegistro']);
 
+Route::get('/reporte-proyecto-mejora/{id}', [ReporteProyectoMejoraController::class, 'generar']);
 
 
 Route::post('/generar-pdf', function (Request $request) {

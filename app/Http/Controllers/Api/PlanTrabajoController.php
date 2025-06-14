@@ -25,7 +25,7 @@ class PlanTrabajoController extends Controller
     // Crear un plan de trabajo, junto con la actividad de mejora (si no se envía idActividadMejora) y las fuentes asociadas
     public function store(Request $request)
     {
-        Log::info("Iniciando creación de plan de trabajo", $request->all());
+        Log::info("📥 Iniciando creación de plan de trabajo", $request->all());
 
         $request->validate([
             'idRegistro' => 'required|integer|exists:Registros,idRegistro',
@@ -35,7 +35,6 @@ class PlanTrabajoController extends Controller
             'revisadoPor' => 'nullable|string|max:100',
             'fechaRevision' => 'nullable|date',
             'elaboradoPor' => 'nullable|string|max:255',
-
             'fuentes' => 'nullable|array',
             'fuentes.*.responsable' => 'required_with:fuentes|string|max:255',
             'fuentes.*.fechaInicio' => 'required_with:fuentes|date',
@@ -50,50 +49,47 @@ class PlanTrabajoController extends Controller
         try {
             DB::beginTransaction();
 
-            // Buscar ActividadMejora existente
             $actividad = ActividadMejora::where('idRegistro', $request->idRegistro)->first();
             if (!$actividad) {
-                Log::warning("No se encontró ActividadMejora con idRegistro: " . $request->idRegistro);
+                Log::warning("⚠️ ActividadMejora no encontrada para idRegistro: {$request->idRegistro}");
                 return response()->json(['message' => 'No existe actividad de mejora para este registro'], 404);
             }
-            Log::info("ActividadMejora encontrada: " . $actividad->idActividadMejora);
 
-            // Crear PlanTrabajo
-            $plan = PlanTrabajo::updateOrCreate(
-                ['idActividadMejora' => $actividad->idActividadMejora],
-                [
-                    'responsable' => $request->responsable,
-                    'fechaElaboracion' => $request->fechaElaboracion,
-                    'objetivo' => $request->objetivo,
-                    'revisadoPor' => $request->revisadoPor,
-                    'fechaRevision' => $request->fechaRevision,
-                    'elaboradoPor' => $request->elaboradoPor,
-                ]
-            );
-            Log::info("PlanTrabajo creado: " . $plan->idPlanTrabajo);
+            $plan = PlanTrabajo::firstOrNew(['idActividadMejora' => $actividad->idActividadMejora]);
+            $plan->fill($request->only([
+                'responsable',
+                'fechaElaboracion',
+                'objetivo',
+                'revisadoPor',
+                'fechaRevision',
+                'elaboradoPor'
+            ]));
+            $plan->save();
 
-            // Crear Fuentes si existen
+            // Asociar fuentes con upsert si hay
             if ($request->has('fuentes') && is_array($request->fuentes)) {
-                foreach ($request->fuentes as $fuenteData) {
-                    $plan->fuentes()->create($fuenteData);
-                }
-                Log::info("Fuentes asociadas al plan creadas: " . count($request->fuentes));
-            } else {
-                Log::info("No se enviaron fuentes, solo se creó el plan.");
+                $fuentes = collect($request->fuentes)->map(function ($fuente) use ($plan) {
+                    return array_merge($fuente, ['idPlanTrabajo' => $plan->idPlanTrabajo]);
+                })->toArray();
+
+                FuentePt::where('idPlanTrabajo', $plan->idPlanTrabajo)->delete(); // Optional: limpiar duplicados antiguos
+                FuentePt::insert($fuentes); // Mejor que múltiples `create()`
             }
 
             DB::commit();
 
             return response()->json([
-                'message' => 'Plan de trabajo y fuentes creados exitosamente.',
-                'planTrabajo' => $plan->load('actividadMejora', 'fuentes'),
+                'message' => 'Plan y fuentes creados exitosamente.',
+                'planTrabajo' => $plan->load('actividadMejora', 'fuentes')
             ], 201);
+
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("Error en PlanTrabajoController@store: " . $e->getMessage());
-            return response()->json(['message' => 'Error al crear plan y fuentes'], 500);
+            Log::error("❌ Error al guardar plan de trabajo: " . $e->getMessage());
+            return response()->json(['message' => 'Error interno al guardar el plan'], 500);
         }
     }
+
 
 
     // Mostrar un plan de trabajo específico
@@ -111,43 +107,72 @@ class PlanTrabajoController extends Controller
     // Actualizar un plan de trabajo y opcionalmente sus fuentes
     public function update(Request $request, $id)
     {
-        Log::info("Actualizando plan de trabajo con id: " . $id);
+        Log::info("🔄 Actualizando plan de trabajo con id: {$id}");
+
         $planTrabajo = PlanTrabajo::find($id);
         if (!$planTrabajo) {
-            Log::warning("Plan de trabajo no encontrado para actualizar, id: " . $id);
+            Log::warning("⚠️ Plan de trabajo no encontrado: {$id}");
             return response()->json(['message' => 'Plan de trabajo no encontrado'], 404);
         }
 
         $validator = Validator::make($request->all(), [
-            'planTrabajo.fechaElaboracion' => 'sometimes|required|date',
-            'planTrabajo.objetivo' => 'sometimes|required|string|max:255',
-            'planTrabajo.revisadoPor' => 'sometimes|required|string|max:100',
-            'planTrabajo.responsable' => 'sometimes|required|string|max:100',
+            'planTrabajo.fechaElaboracion' => 'sometimes|date',
+            'planTrabajo.objetivo' => 'sometimes|string|max:255',
+            'planTrabajo.revisadoPor' => 'sometimes|string|max:100',
+            'planTrabajo.responsable' => 'sometimes|string|max:255',
+            'planTrabajo.elaboradoPor' => 'sometimes|string|max:255',
+            'planTrabajo.fechaRevision' => 'sometimes|date',
+
+            'fuentes' => 'sometimes|array|min:1',
+            'fuentes.*.responsable' => 'required|string|max:255',
+            'fuentes.*.fechaInicio' => 'required|date',
+            'fuentes.*.fechaTermino' => 'required|date|after_or_equal:fuentes.*.fechaInicio',
+            'fuentes.*.estado' => 'required|in:En proceso,Cerrado',
+            'fuentes.*.nombreFuente' => 'required|string|max:255',
+            'fuentes.*.elementoEntrada' => 'required|string',
+            'fuentes.*.descripcion' => 'required|string|max:255',
+            'fuentes.*.entregable' => 'required|string|max:255',
         ]);
 
         if ($validator->fails()) {
-            Log::error("Error de validación en update:", $validator->errors()->toArray());
+            Log::error("❌ Errores de validación en update", $validator->errors()->toArray());
             return response()->json($validator->errors(), 422);
         }
 
-        $planData = $request->input('planTrabajo', []);
-        $planTrabajo->update($planData);
-        Log::info("Plan de trabajo actualizado", ['idPlanTrabajo' => $planTrabajo->idPlanTrabajo]);
+        try {
+            DB::beginTransaction();
 
-        if ($request->has('fuentes')) {
-            Log::info("Actualizando fuentes para el plan de trabajo id: " . $planTrabajo->idPlanTrabajo);
-            FuentePt::where('idPlanTrabajo', $planTrabajo->idPlanTrabajo)->delete();
-            foreach ($request->input('fuentes') as $fuente) {
-                $fuente['idPlanTrabajo'] = $planTrabajo->idPlanTrabajo;
-                FuentePt::create($fuente);
+            $planData = $request->input('planTrabajo', []);
+            $planTrabajo->update($planData);
+            Log::info("✅ Plan actualizado: {$planTrabajo->idPlanTrabajo}");
+
+            if ($request->has('fuentes') && is_array($request->fuentes)) {
+                Log::info("🔁 Reemplazando fuentes para el plan id: {$planTrabajo->idPlanTrabajo}");
+
+                // Borrar solo si se van a insertar nuevas
+                FuentePt::where('idPlanTrabajo', $planTrabajo->idPlanTrabajo)->delete();
+
+                $nuevas = collect($request->fuentes)->map(function ($f) use ($planTrabajo) {
+                    return array_merge($f, ['idPlanTrabajo' => $planTrabajo->idPlanTrabajo]);
+                })->toArray();
+
+                FuentePt::insert($nuevas);
             }
-        }
 
-        return response()->json([
-            'message' => 'Plan de trabajo actualizado exitosamente',
-            'planTrabajo' => $planTrabajo->load('actividadMejora', 'fuentes')
-        ], 200);
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Plan de trabajo actualizado exitosamente',
+                'planTrabajo' => $planTrabajo->load('actividadMejora', 'fuentes')
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("💥 Error en update: {$e->getMessage()}");
+            return response()->json(['message' => 'Error interno al actualizar el plan'], 500);
+        }
     }
+
 
     // Eliminar un plan de trabajo (y sus fuentes, en cascada)
     public function destroy($id)

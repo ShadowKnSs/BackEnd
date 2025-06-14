@@ -21,10 +21,8 @@ class ProyectoMejoraController extends Controller
      */
     public function store(Request $request)
     {
-
         Log::info('Inicio de store ProyectoMejora', ['payload' => $request->all()]);
 
-        // Validación de datos recibidos
         $data = $request->validate([
             'idRegistro' => 'required|integer',
             'division' => 'required|string',
@@ -42,6 +40,7 @@ class ProyectoMejoraController extends Controller
             'situacionActual' => 'nullable|string',
             'indicadoresExito' => 'nullable|array',
             'indicadoresExito.*.nombre' => 'nullable|string',
+            'indicadoresExito.*.meta' => 'nullable|numeric',
             'recursos' => 'nullable|array',
             'recursos.*.tiempoEstimado' => 'nullable|string',
             'recursos.*.recursosMatHum' => 'nullable|string',
@@ -56,17 +55,11 @@ class ProyectoMejoraController extends Controller
 
         DB::beginTransaction();
         try {
-
-            // Buscar la actividad de mejora vinculada a ese registro
             $actividad = ActividadMejora::where('idRegistro', $data['idRegistro'])->first();
             if (!$actividad) {
-                Log::warning('No se encontró ActividadMejora para idRegistro', ['idRegistro' => $data['idRegistro']]);
-                return response()->json([
-                    'message' => 'No se encontró una ActividadMejora para el idRegistro proporcionado.'
-                ], 400);
+                return response()->json(['message' => 'No se encontró una ActividadMejora para el idRegistro.'], 400);
             }
-            // Crear el registro principal en la tabla proyectomejora
-            Log::info('Creando ProyectoMejora para actividad', ['idActividadMejora' => $actividad->idActividadMejora]);
+
             $proyecto = ProyectoMejora::create([
                 'idActividadMejora' => $actividad->idActividadMejora,
                 'division' => $data['division'],
@@ -81,75 +74,59 @@ class ProyectoMejoraController extends Controller
                 'aprobacionNombre' => $data['aprobacionNombre'] ?? null,
                 'aprobacionPuesto' => $data['aprobacionPuesto'] ?? null,
             ]);
-            Log::info('Proyecto creado', ['idProyectoMejora' => $proyecto->idProyectoMejora]);
 
-
-            // Insertar cada objetivo (si se proporcionan)
-            if (isset($data['objetivos'])) {
-                foreach ($data['objetivos'] as $obj) {
-                    Objetivo::create([
-                        'idProyectoMejora' => $proyecto->idProyectoMejora,
-                        'descripcionObj' => $obj['descripcion'] ?? null,
-                    ]);
-                }
+            if (!empty($data['objetivos'])) {
+                $objetivos = array_map(fn($obj) => [
+                    'idProyectoMejora' => $proyecto->idProyectoMejora,
+                    'descripcionObj' => $obj['descripcion'] ?? null
+                ], $data['objetivos']);
+                Objetivo::insert($objetivos);
             }
 
-            // Insertar responsables
-            if (isset($data['responsables'])) {
-                foreach ($data['responsables'] as $resp) {
-                    ResponsableInv::create([
-                        'idProyectoMejora' => $proyecto->idProyectoMejora,
-                        'nombre' => $resp['nombre'] ?? null,
-                    ]);
-                }
+            if (!empty($data['responsables'])) {
+                $responsables = array_map(fn($r) => [
+                    'idProyectoMejora' => $proyecto->idProyectoMejora,
+                    'nombre' => $r['nombre'] ?? null
+                ], $data['responsables']);
+                ResponsableInv::insert($responsables);
             }
 
-            // Insertar indicadores de éxito
-            if (isset($data['indicadoresExito'])) {
-                foreach ($data['indicadoresExito'] as $ind) {
-                    IndicadoresExito::create([
-                        'idProyectoMejora' => $proyecto->idProyectoMejora,
-                        'nombreInd' => $ind['nombre'] ?? null,
-                    ]);
-                }
+            if (!empty($data['indicadoresExito'])) {
+                $indicadores = array_map(fn($i) => [
+                    'idProyectoMejora' => $proyecto->idProyectoMejora,
+                    'nombreInd' => $i['nombre'] ?? null,
+                    'meta' => $i['meta'] ?? null,
+                ], $data['indicadoresExito']);
+                IndicadoresExito::insert($indicadores);
             }
 
-            // Insertar recursos
-            if (isset($data['recursos'])) {
-                foreach ($data['recursos'] as $rec) {
-                    Recurso::create([
-                        'idProyectoMejora' => $proyecto->idProyectoMejora,
-                        'tiempoEstimado' => $rec['tiempoEstimado'] ?? null,
-                        'recursosMatHum' => $rec['recursosMatHum'] ?? null,
-                        'costo' => 0
-                    ]);
-                }
+
+            if (!empty($data['recursos'])) {
+                $recursos = array_map(fn($r) => [
+                    'idProyectoMejora' => $proyecto->idProyectoMejora,
+                    'tiempoEstimado' => $r['tiempoEstimado'] ?? null,
+                    'recursosMatHum' => $r['recursosMatHum'] ?? null,
+                    'costo' => 0
+                ], $data['recursos']);
+                Recurso::insert($recursos);
             }
 
-            // Insertar plan de trabajo (actividades)
-            if (isset($data['actividadesPM'])) {
-                foreach ($data['actividadesPM'] as $act) {
-                    ActividadesPM::create([
-                        'idProyectoMejora' => $proyecto->idProyectoMejora,
-                        'descripcionAct' => $act['actividad'] ?? null,
-                        'responsable' => $act['responsable'] ?? null,
-                        'fecha' => $act['fecha'] ?? null,
-                    ]);
-                }
+            if (!empty($data['actividadesPM'])) {
+                $actividades = array_map(fn($a) => [
+                    'idProyectoMejora' => $proyecto->idProyectoMejora,
+                    'descripcionAct' => $a['actividad'] ?? null,
+                    'responsable' => $a['responsable'] ?? null,
+                    'fecha' => $a['fecha'] ?? null
+                ], $data['actividadesPM']);
+                ActividadesPM::insert($actividades);
             }
 
             DB::commit();
-            return response()->json([
-                'message' => 'Proyecto guardado correctamente',
-                'data' => $proyecto
-            ], 201);
+            return response()->json(['message' => 'Proyecto guardado correctamente', 'data' => $proyecto], 201);
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Error en store ProyectoMejora', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
-            return response()->json([
-                'message' => 'Error al guardar el proyecto',
-                'error' => $e->getMessage()
-            ], 500);
+            Log::error('Error en store ProyectoMejora', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Error al guardar el proyecto', 'error' => $e->getMessage()], 500);
         }
     }
 
@@ -202,15 +179,18 @@ class ProyectoMejoraController extends Controller
             'noMejora' => 'nullable|integer',
             'responsable' => 'nullable|string',
             'descripcionMejora' => 'nullable|string',
-            'objetivos' => 'nullable|array',
-            'objetivos.*.descripcion' => 'nullable|string',
             'areaImpacto' => 'nullable|string',
             'personalBeneficiado' => 'nullable|string',
+            'situacionActual' => 'nullable|string',
+            'aprobacionNombre' => 'nullable|string',
+            'aprobacionPuesto' => 'nullable|string',
+            'objetivos' => 'nullable|array',
+            'objetivos.*.descripcion' => 'nullable|string',
             'responsables' => 'nullable|array',
             'responsables.*.nombre' => 'nullable|string',
-            'situacionActual' => 'nullable|string',
             'indicadoresExito' => 'nullable|array',
             'indicadoresExito.*.nombre' => 'nullable|string',
+            'indicadoresExito.*.meta' => 'nullable|numeric',
             'recursos' => 'nullable|array',
             'recursos.*.tiempoEstimado' => 'nullable|string',
             'recursos.*.recursosMatHum' => 'nullable|string',
@@ -219,12 +199,11 @@ class ProyectoMejoraController extends Controller
             'actividadesPM.*.actividad' => 'nullable|string',
             'actividadesPM.*.responsable' => 'nullable|string',
             'actividadesPM.*.fecha' => 'nullable|date',
-            'aprobacionNombre' => 'nullable|string',
-            'aprobacionPuesto' => 'nullable|string'
         ]);
 
         DB::beginTransaction();
         try {
+            // Update principal
             $proyecto->update([
                 'division' => $data['division'],
                 'departamento' => $data['departamento'],
@@ -246,54 +225,59 @@ class ProyectoMejoraController extends Controller
             $proyecto->recursos()->delete();
             $proyecto->actividades()->delete();
 
-            // Reinsertar nuevos datos
-            foreach ($data['objetivos'] ?? [] as $obj) {
-                Objetivo::create([
-                    'idProyectoMejora' => $proyecto->idProyectoMejora,
-                    'descripcionObj' => $obj['descripcion'] ?? null,
-                ]);
+            $id = $proyecto->idProyectoMejora;
+
+            // Reinsertar relaciones (con insert masivo si hay datos)
+            if (!empty($data['objetivos'])) {
+                Objetivo::insert(array_map(fn($o) => [
+                    'idProyectoMejora' => $id,
+                    'descripcionObj' => $o['descripcion'] ?? null,
+                ], $data['objetivos']));
             }
 
-            foreach ($data['responsables'] ?? [] as $resp) {
-                ResponsableInv::create([
-                    'idProyectoMejora' => $proyecto->idProyectoMejora,
-                    'nombre' => $resp['nombre'] ?? null,
-                ]);
+            if (!empty($data['responsables'])) {
+                ResponsableInv::insert(array_map(fn($r) => [
+                    'idProyectoMejora' => $id,
+                    'nombre' => $r['nombre'] ?? null,
+                ], $data['responsables']));
             }
 
-            foreach ($data['indicadoresExito'] ?? [] as $ind) {
-                IndicadoresExito::create([
-                    'idProyectoMejora' => $proyecto->idProyectoMejora,
-                    'nombreInd' => $ind['nombre'] ?? null,
-                    'meta' => $ind['meta'] ?? null,
-                ]);
+            if (!empty($data['indicadoresExito'])) {
+                IndicadoresExito::insert(array_map(fn($i) => [
+                    'idProyectoMejora' => $id,
+                    'nombreInd' => $i['nombre'] ?? null,
+                    'meta' => $i['meta'] ?? null,
+                ], $data['indicadoresExito']));
             }
 
-            foreach ($data['recursos'] ?? [] as $rec) {
-                Recurso::create([
-                    'idProyectoMejora' => $proyecto->idProyectoMejora,
-                    'tiempoEstimado' => $rec['tiempoEstimado'] ?? null,
-                    'recursosMatHum' => $rec['recursosMatHum'] ?? null,
-                    'costo' => $rec['costo'] ?? 0,
-                ]);
+            if (!empty($data['recursos'])) {
+                Recurso::insert(array_map(fn($r) => [
+                    'idProyectoMejora' => $id,
+                    'tiempoEstimado' => $r['tiempoEstimado'] ?? null,
+                    'recursosMatHum' => $r['recursosMatHum'] ?? null,
+                    'costo' => $r['costo'] ?? 0,
+                ], $data['recursos']));
             }
 
-            foreach ($data['actividadesPM'] ?? [] as $act) {
-                ActividadesPM::create([
-                    'idProyectoMejora' => $proyecto->idProyectoMejora,
-                    'descripcionAct' => $act['actividad'] ?? null,
-                    'responsable' => $act['responsable'] ?? null,
-                    'fecha' => $act['fecha'] ?? null,
-                ]);
+            if (!empty($data['actividadesPM'])) {
+                ActividadesPM::insert(array_map(fn($a) => [
+                    'idProyectoMejora' => $id,
+                    'descripcionAct' => $a['actividad'] ?? null,
+                    'responsable' => $a['responsable'] ?? null,
+                    'fecha' => $a['fecha'] ?? null,
+                ], $data['actividadesPM']));
             }
 
             DB::commit();
-            return response()->json(['message' => 'Proyecto actualizado correctamente']);
+            return response()->json(['message' => 'Proyecto actualizado correctamente'], 200);
+
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('Error en update ProyectoMejora', ['error' => $e->getMessage()]);
             return response()->json(['message' => 'Error al actualizar el proyecto', 'error' => $e->getMessage()], 500);
         }
     }
+
 
     public function destroy($id)
     {
@@ -304,37 +288,51 @@ class ProyectoMejoraController extends Controller
 
         DB::beginTransaction();
         try {
-            // Eliminar en cascada
-            $proyecto->objetivos()->delete();
-            $proyecto->responsablesInv()->delete();
-            $proyecto->indicadoresExito()->delete();
-            $proyecto->recursos()->delete();
-            $proyecto->actividades()->delete();
+            $id = $proyecto->idProyectoMejora;
 
-            // Eliminar el proyecto
+            // Eliminación en bloque por relaciones
+            Objetivo::where('idProyectoMejora', $id)->delete();
+            ResponsableInv::where('idProyectoMejora', $id)->delete();
+            IndicadoresExito::where('idProyectoMejora', $id)->delete();
+            Recurso::where('idProyectoMejora', $id)->delete();
+            ActividadesPM::where('idProyectoMejora', $id)->delete();
+
             $proyecto->delete();
 
             DB::commit();
-            return response()->json(['message' => 'Proyecto eliminado correctamente']);
+            return response()->json(['message' => 'Proyecto eliminado correctamente'], 200);
+
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('Error en destroy ProyectoMejora', ['error' => $e->getMessage()]);
             return response()->json(['message' => 'Error al eliminar el proyecto', 'error' => $e->getMessage()], 500);
         }
     }
 
+
     public function getByRegistro($idRegistro)
     {
-        $actividad = ActividadMejora::where('idRegistro', $idRegistro)->first();
+        $actividad = ActividadMejora::select('idActividadMejora')
+            ->where('idRegistro', $idRegistro)
+            ->first();
 
         if (!$actividad) {
             return response()->json(['message' => 'No se encontró actividad'], 404);
         }
 
-        $proyectos = ProyectoMejora::where('idActividadMejora', $actividad->idActividadMejora)
-            ->with(['objetivos', 'responsablesInv', 'indicadoresExito', 'recursos', 'actividades'])
+        $proyectos = ProyectoMejora::with([
+            'objetivos',
+            'responsablesInv',
+            'indicadoresExito',
+            'recursos',
+            'actividades'
+        ])
+            ->where('idActividadMejora', $actividad->idActividadMejora)
+            ->orderByDesc('fecha')
             ->get();
 
         return response()->json($proyectos);
     }
+
 
 }
