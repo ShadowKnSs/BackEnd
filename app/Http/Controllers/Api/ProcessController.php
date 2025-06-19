@@ -223,24 +223,19 @@ class ProcessController extends Controller
 
 
     public function getInfoPorProceso($idProceso)
-    {
-        $proceso = Proceso::find($idProceso);
+{
+    $proceso = Proceso::with('entidad')->find($idProceso);
 
-        if (!$proceso) {
-            return response()->json(['error' => 'Proceso no encontrado'], 404);
-        }
-
-        $entidad = EntidadDependencia::find($proceso->idEntidad);
-
-        if (!$entidad) {
-            return response()->json(['error' => 'Entidad no encontrada'], 404);
-        }
-
-        return response()->json([
-            'proceso' => $proceso->nombreProceso,
-            'entidad' => $entidad->nombreEntidad,
-        ]);
+    if (!$proceso || !$proceso->entidad) {
+        return response()->json(['error' => 'Datos incompletos'], 404);
     }
+
+    return response()->json([
+        'proceso' => $proceso->nombreProceso,
+        'entidad' => $proceso->entidad->nombreEntidad,
+    ]);
+}
+
 
     public function procesosConEntidad()
     {

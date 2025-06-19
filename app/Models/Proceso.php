@@ -11,35 +11,35 @@ class Proceso extends Model
     // Indicamos la clave primaria personalizada
     protected $primaryKey = 'idProceso';
 
-     protected $fillable = [
-         'idMacroproceso',
-         'idUsuario',
-         'idEntidad',
-         'nombreProceso',
-         'objetivo',
-         'alcance',
-         'anioCertificado',
-         'norma',
-         'duracionCetificado',
-         'estado',
-         'icono'
-     ];
- 
-     // Relación con MacroProceso
-     public function macroproceso()
-     {
-         return $this->belongsTo(MacroProceso::class, 'idMacroproceso', 'idMacroproceso');
-     }
- 
-     // Relación con Usuario (asumiendo que usas el modelo User)
-     public function usuario()
-     {
-         return $this->belongsTo(Usuario::class, 'idUsuario', 'idUsuario');
-     }
- 
-     // Relación con EntidadDependencia
-     public function entidad()
-     {
-         return $this->belongsTo(EntidadDependencia::class, 'idEntidad', 'idEntidadDependencia');
-     }
+    protected $fillable = [
+        'idMacroproceso',
+        'idUsuario',
+        'idEntidad',
+        'nombreProceso',
+        'objetivo',
+        'alcance',
+        'anioCertificado',
+        'norma',
+        'duracionCetificado',
+        'estado',
+        'icono'
+    ];
+
+    // Relación con MacroProceso
+    public function macroproceso()
+    {
+        return $this->belongsTo(MacroProceso::class, 'idMacroproceso', 'idMacroproceso');
+    }
+
+    // Relación con Usuario (asumiendo que usas el modelo User)
+    public function usuario()
+    {
+        return $this->belongsTo(Usuario::class, 'idUsuario', 'idUsuario');
+    }
+
+    // Relación con EntidadDependencia
+    public function entidad()
+    {
+        return $this->belongsTo(EntidadDependencia::class, 'idEntidad');
+    }
 }

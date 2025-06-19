@@ -199,10 +199,9 @@ Route::get('procesos-nombres', [ProcessController::class, 'getNombres']);
 //*********************************************************/
 Route::get('actividadcontrol/{idProceso}', [ActividadControlController::class, 'index']);
 Route::get('mapaproceso/{idProceso}', [MapaProcesoController::class, 'index']);
-Route::apiResource('controlcambios', ControlCambioController::class);
 Route::get('/controlcambios/proceso/{idProceso}', [ControlCambioController::class, 'porProceso']);
-Route::apiResource('mapaproceso', MapaProcesoController::class);
 Route::apiResource('indmapaproceso', IndMapaProcesoController::class);
+Route::apiResource('mapaproceso', MapaProcesoController::class);
 Route::apiResource('actividadcontrol', ActividadControlController::class);
 Route::get('/caratula/{idProceso}', [CaratulaController::class, 'show']);
 Route::post('/caratula', [CaratulaController::class, 'store']);
@@ -287,7 +286,6 @@ Route::delete('/actividades/{idActividadPlan}', [PlanCorrectivoController::class
 // Para Manual Operativo
 Route::apiResource('controlcambios', ControlCambioController::class);
 Route::apiResource('mapaproceso', MapaProcesoController::class);
-Route::apiResource('indmapaproceso', IndMapaProcesoController::class);
 Route::prefix('documentos')->group(function () {
     Route::get('/', [DocumentoController::class, 'index']);
     Route::get('/{id}', [DocumentoController::class, 'show']);
