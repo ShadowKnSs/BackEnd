@@ -154,4 +154,26 @@ class EntidadDependenciaController extends Controller
     }
 
 
+    public function obtenerProcesosPorNombreEntidad(Request $request)
+    {
+        $nombre = $request->query('nombre');
+
+        $entidad = EntidadDependencia::with(['procesos:idProceso,nombreProceso,idEntidad'])
+            ->where('nombreEntidad', $nombre)
+            ->first();
+
+        if (!$entidad) {
+            return response()->json(['message' => 'Entidad no encontrada'], 404);
+        }
+
+        if ($entidad->procesos->isEmpty()) {
+            return response()->json(['message' => 'No se encontraron procesos para esta entidad'], 404);
+        }
+
+        return response()->json([
+            'idEntidad' => $entidad->idEntidadDependencia,
+            'procesos' => $entidad->procesos
+        ]);
+    }
+
 }

@@ -7,6 +7,9 @@ use Illuminate\Http\Request;
 use App\Models\PlanTrabajo;
 use App\Models\ActividadMejora;
 use App\Models\FuentePt;
+use App\Models\Riesgo;
+use App\Models\Registros;
+use App\Models\GestionRiesgos;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
@@ -107,23 +110,26 @@ class PlanTrabajoController extends Controller
     // Actualizar un plan de trabajo y opcionalmente sus fuentes
     public function update(Request $request, $id)
     {
-        Log::info("🔄 Actualizando plan de trabajo con id: {$id}");
+        Log::info("🔄 Iniciando actualización del Plan de Trabajo ID={$id}");
 
         $planTrabajo = PlanTrabajo::find($id);
         if (!$planTrabajo) {
-            Log::warning("⚠️ Plan de trabajo no encontrado: {$id}");
+            Log::warning("⚠️ No se encontró el plan de trabajo con ID={$id}");
             return response()->json(['message' => 'Plan de trabajo no encontrado'], 404);
         }
 
+        Log::info("📥 Datos recibidos para actualizar:", $request->all());
+
         $validator = Validator::make($request->all(), [
-            'planTrabajo.fechaElaboracion' => 'sometimes|date',
-            'planTrabajo.objetivo' => 'sometimes|string|max:255',
-            'planTrabajo.revisadoPor' => 'sometimes|string|max:100',
-            'planTrabajo.responsable' => 'sometimes|string|max:255',
-            'planTrabajo.elaboradoPor' => 'sometimes|string|max:255',
-            'planTrabajo.fechaRevision' => 'sometimes|date',
+            'fechaElaboracion' => 'sometimes|date',
+            'objetivo' => 'sometimes|string|max:255',
+            'revisadoPor' => 'sometimes|string|max:100',
+            'responsable' => 'sometimes|string|max:255',
+            'elaboradoPor' => 'sometimes|string|max:255',
+            'fechaRevision' => 'sometimes|date',
 
             'fuentes' => 'sometimes|array|min:1',
+            'fuentes.*.noActividad' => 'required|integer|min:1',
             'fuentes.*.responsable' => 'required|string|max:255',
             'fuentes.*.fechaInicio' => 'required|date',
             'fuentes.*.fechaTermino' => 'required|date|after_or_equal:fuentes.*.fechaInicio',
@@ -135,44 +141,130 @@ class PlanTrabajoController extends Controller
         ]);
 
         if ($validator->fails()) {
-            Log::error("❌ Errores de validación en update", $validator->errors()->toArray());
+            Log::error("❌ Falló la validación de los datos:", $validator->errors()->toArray());
             return response()->json($validator->errors(), 422);
         }
 
         try {
             DB::beginTransaction();
 
-            $planData = $request->input('planTrabajo', []);
+            $planData = $request->only([
+                'fechaElaboracion',
+                'objetivo',
+                'revisadoPor',
+                'responsable',
+                'elaboradoPor',
+                'fechaRevision'
+            ]);
+
+            Log::info("✏️ Actualizando datos básicos del plan:", $planData);
             $planTrabajo->update($planData);
-            Log::info("✅ Plan actualizado: {$planTrabajo->idPlanTrabajo}");
+            Log::info("✅ Datos del plan actualizados correctamente");
 
-            if ($request->has('fuentes') && is_array($request->fuentes)) {
-                Log::info("🔁 Reemplazando fuentes para el plan id: {$planTrabajo->idPlanTrabajo}");
+            if ($request->has('fuentes')) {
+                Log::info("🔁 Actualizando fuentes (cantidad: " . count($request->fuentes) . ")");
 
-                // Borrar solo si se van a insertar nuevas
-                FuentePt::where('idPlanTrabajo', $planTrabajo->idPlanTrabajo)->delete();
+                // Eliminar fuentes anteriores
+                $deleted = FuentePt::where('idPlanTrabajo', $planTrabajo->idPlanTrabajo)->delete();
+                Log::info("🗑️ Fuentes anteriores eliminadas: {$deleted}");
 
-                $nuevas = collect($request->fuentes)->map(function ($f) use ($planTrabajo) {
-                    return array_merge($f, ['idPlanTrabajo' => $planTrabajo->idPlanTrabajo]);
-                })->toArray();
+                foreach ($request->fuentes as $i => $fuente) {
+                    Log::info("➕ Insertando fuente [{$i}]:", $fuente);
 
-                FuentePt::insert($nuevas);
+                    $nueva = new FuentePt([
+                        'idPlanTrabajo' => $planTrabajo->idPlanTrabajo,
+                        'responsable' => $fuente['responsable'],
+                        'fechaInicio' => $fuente['fechaInicio'],
+                        'fechaTermino' => $fuente['fechaTermino'],
+                        'estado' => $fuente['estado'],
+                        'nombreFuente' => $fuente['nombreFuente'],
+                        'elementoEntrada' => $fuente['elementoEntrada'],
+                        'descripcion' => $fuente['descripcion'],
+                        'entregable' => $fuente['entregable'],
+                    ]);
+                    $nueva->save();
+
+                    Log::info("📌 Fuente creada con idFuente={$nueva->idFuente}");
+
+                    // === Asociar con Riesgo ===
+                    $actividad = ActividadMejora::find($planTrabajo->idActividadMejora);
+                    if (!$actividad) {
+                        Log::warning("⛔ No se encontró ActividadMejora id={$planTrabajo->idActividadMejora}");
+                        continue;
+                    }
+
+                    $registroBase = Registros::find($actividad->idRegistro);
+                    if (!$registroBase) {
+                        Log::warning("⛔ Registro base no encontrado para actividad={$actividad->idActividadMejora}");
+                        continue;
+                    }
+
+                    $registroGR = Registros::where('idProceso', $registroBase->idProceso)
+                        ->where('año', $registroBase->año)
+                        ->where('Apartado', 'Gestión de Riesgo')
+                        ->first();
+                    if (!$registroGR) {
+                        Log::warning("⛔ Registro de gestión de riesgo no encontrado");
+                        continue;
+                    }
+
+                    $gestion = GestionRiesgos::where('idRegistro', $registroGR->idRegistro)->first();
+                    if (!$gestion) {
+                        Log::warning("⛔ Gestión de riesgo no encontrada para registro id={$registroGR->idRegistro}");
+                        continue;
+                    }
+
+                    $accionMejora = 'PT-' . str_pad($fuente['noActividad'], 2, '0', STR_PAD_LEFT);
+
+                    $riesgo = Riesgo::where('idGesRies', $gestion->idGesRies)
+                        ->where('descripcion', $fuente['elementoEntrada'])
+                        ->first();
+
+                    if ($riesgo) {
+                        Log::info("🔄 Actualizando riesgo existente id={$riesgo->idRiesgo}");
+                        $riesgo->update([
+                            'actividades' => $fuente['descripcion'],
+                            'responsable' => $fuente['responsable'],
+                            'accionMejora' => $accionMejora,
+                        ]);
+                    } else {
+                        Log::info("🆕 Creando nuevo riesgo para fuente={$nueva->idFuente}");
+                        $nuevoRiesgo = Riesgo::create([
+                            'idGesRies' => $gestion->idGesRies,
+                            'idFuente' => $nueva->idFuente,
+                            'descripcion' => $fuente['elementoEntrada'],
+                            'actividades' => $fuente['descripcion'],
+                            'accionMejora' => $accionMejora,
+                            'responsable' => $fuente['responsable'],
+                            'valorSeveridad' => 1,
+                            'valorOcurrencia' => 1,
+                            'valorNRP' => 1,
+                        ]);
+                        Log::info("✅ Riesgo creado id={$nuevoRiesgo->idRiesgo}");
+                    }
+                }
             }
 
+
             DB::commit();
+            Log::info("✅ Plan y fuentes actualizados correctamente");
 
             return response()->json([
-                'message' => 'Plan de trabajo actualizado exitosamente',
-                'planTrabajo' => $planTrabajo->load('actividadMejora', 'fuentes')
+                'message' => 'Plan y fuentes actualizados correctamente',
+                'planTrabajo' => $planTrabajo
             ], 200);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("💥 Error en update: {$e->getMessage()}");
-            return response()->json(['message' => 'Error interno al actualizar el plan'], 500);
+            Log::error("❌ Error al actualizar plan de trabajo: " . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'message' => 'Error al actualizar plan de trabajo',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
-
 
     // Eliminar un plan de trabajo (y sus fuentes, en cascada)
     public function destroy($id)

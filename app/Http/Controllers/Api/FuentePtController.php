@@ -6,8 +6,13 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\FuentePt;
 use App\Models\PlanTrabajo;
+use App\Models\ActividadMejora;
+use App\Models\Riesgo;
+use App\Models\GestionRiesgos;
+use App\Models\Registros;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use Log;
 
 class FuentePtController extends Controller
 {
@@ -38,7 +43,58 @@ class FuentePtController extends Controller
 
             foreach ($request->fuentes as $fuente) {
                 $fuente['idPlanTrabajo'] = $plan->idPlanTrabajo;
-                FuentePt::create($fuente);
+                $nuevaFuente = FuentePt::create($fuente);
+
+                // === Obtener idGesRies ===
+                $actividad = ActividadMejora::find($plan->idActividadMejora);
+                if (!$actividad)
+                    continue;
+
+                $registroBase = Registros::find($actividad->idRegistro);
+                if (!$registroBase)
+                    continue;
+
+                $registroGR = Registros::where('idProceso', $registroBase->idProceso)
+                    ->where('año', $registroBase->año)
+                    ->where('Apartado', 'Gestión de Riesgo')
+                    ->first();
+
+                if (!$registroGR)
+                    continue;
+
+                $gestion = GestionRiesgos::where('idRegistro', $registroGR->idRegistro)->first();
+                if (!$gestion)
+                    continue;
+
+                $idGesRies = $gestion->idGesRies;
+
+                // === Buscar riesgo existente por descripcion = fuente.elementoEntrada
+                $riesgo = Riesgo::where('idGesRies', $idGesRies)
+                    ->where('descripcion', $fuente['elementoEntrada'])
+                    ->first();
+
+                if ($riesgo) {
+                    // Actualizar el riesgo existente
+                    $riesgo->update([
+                        'actividades' => $fuente['descripcion'],
+                        'responsable' => $fuente['responsable'],
+                    ]);
+                } else {
+                    // Generar PT-XX secuencial
+                    $ptCount = Riesgo::where('idGesRies', $idGesRies)
+                        ->where('accionMejora', 'like', 'PT-%')
+                        ->count();
+                    $numeroPT = str_pad($ptCount + 1, 2, '0', STR_PAD_LEFT);
+
+                    // Crear nuevo riesgo
+                    Riesgo::create([
+                        'idGesRies' => $idGesRies,
+                        'descripcion' => $fuente['elementoEntrada'],
+                        'actividades' => $fuente['descripcion'],
+                        'accionMejora' => "PT-$numeroPT",
+                        'responsable' => $fuente['responsable'],
+                    ]);
+                }
             }
         });
 
@@ -63,6 +119,8 @@ class FuentePtController extends Controller
         if (!$fuente) {
             return response()->json(['message' => 'Fuente no encontrada'], 404);
         }
+        Log::info("[update] Datos recibidos en fuente:", $request->all());
+
 
         $validator = Validator::make($request->all(), [
             'responsable' => 'sometimes|required|string|max:255',
@@ -73,18 +131,31 @@ class FuentePtController extends Controller
             'elementoEntrada' => 'sometimes|required|string|max:255',
             'descripcion' => 'sometimes|required|string|max:255',
             'entregable' => 'sometimes|required|string|max:255',
+            'noActividad' => 'required|integer|min:1',
         ]);
 
         if ($validator->fails()) {
             return response()->json($validator->errors(), 422);
         }
 
-        $fuente->update($request->all());
+        $fuente->update($request->except('noActividad'));
+
+        // === Buscar el riesgo asociado ===
+        $riesgo = Riesgo::where('idFuente', $fuente->idFuente)->first();
+        if ($riesgo) {
+            $riesgo->update([
+                'responsable' => $request->responsable,
+                'actividades' => $request->descripcion,
+                'accionMejora' => 'PT-' . str_pad($request->noActividad, 2, '0', STR_PAD_LEFT),
+            ]);
+        }
+
         return response()->json([
             'message' => 'Fuente actualizada exitosamente',
             'fuente' => $fuente
         ], 200);
     }
+
 
     public function destroy($id)
     {

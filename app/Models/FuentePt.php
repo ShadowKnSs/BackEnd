@@ -20,11 +20,18 @@ class FuentePt extends Model
         'nombreFuente',
         'elementoEntrada',
         'descripcion',
-        'entregable'
+        'entregable',
     ];
 
+    // Relación con Plan de Trabajo
     public function planTrabajo()
     {
         return $this->belongsTo(PlanTrabajo::class, 'idPlanTrabajo', 'idPlanTrabajo');
+    }
+
+    // Relación con Riesgos
+    public function riesgos()
+    {
+        return $this->hasMany(Riesgo::class, 'idFuente', 'idFuente');
     }
 }

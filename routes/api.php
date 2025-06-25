@@ -103,6 +103,8 @@ Route::post('/entidades', [EntidadDependenciaController::class, 'store']);
 Route::get('/entidades', [EntidadDependenciaController::class, 'index']);
 Route::put('/entidades/{id}', [EntidadDependenciaController::class, 'update']);
 Route::delete('/entidades/{id}', [EntidadDependenciaController::class, 'destroy']);
+Route::get('/procesos-por-nombre-entidad', [EntidadDependenciaController::class, 'obtenerProcesosPorNombreEntidad']);
+
 
 //*********************************************************/
 //                  Procesos y Relacionado
@@ -124,8 +126,12 @@ Route::post('cronograma/filtrar', [CronogramaController::class, 'index']);
 Route::post('cronograma', [CronogramaController::class, 'store']);
 Route::put('cronograma/{id}', [CronogramaController::class, 'update']);
 Route::delete('/cronograma/{id}', [CronogramaController::class, 'destroy']);
+Route::get('/auditorias/todas', [CronogramaController::class, 'todas']);
 
 
+//*********************************************************/
+//                  Minutas
+//*********************************************************/
 Route::post('minutasAdd', [MinutaController::class, 'store']); // crear minuta
 Route::get('/minutas/registro/{idRegistro}', [MinutaController::class, 'getMinutasByRegistro']); //obtener todad las minutas de un proceso en un año 
 Route::put('/minutas/{id}', [MinutaController::class, 'update']); //actualizar una minuta
@@ -220,8 +226,6 @@ Route::post('/mapa-proceso/{idProceso}/subir-diagrama', [MapaProcesoController::
 Route::get('/getIdRegistroGR', [GestionRiesgoController::class, 'getIdRegistro']);
 
 
-// 1) GET datos-generales
-Route::get('gestionriesgos/{idRegistro}/datos-generales', [GestionRiesgoController::class, 'getDatosGenerales']);
 
 // 2) GET /api/gestionriesgos/{idRegistro} => showByRegistro
 Route::get('gestionriesgos/{idRegistro}', [GestionRiesgoController::class, 'showByRegistro']);
@@ -444,4 +448,5 @@ Route::prefix('auditores-asignados')->group(function () {
 });
 
 Route::post('/asignar-auditores', [AuditoresAsignadosController::class, 'store']);
+Route::get('/auditorias/supervisor/{idUsuario}',[CronogramaController::class, 'porSupervisor']);
 

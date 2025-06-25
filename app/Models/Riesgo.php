@@ -7,17 +7,14 @@ use Illuminate\Database\Eloquent\Model;
 class Riesgo extends Model
 {
     public $timestamps = false;
-    // Indicamos la tabla en la base de datos donde se almacenan los datos
+
     protected $table = 'riesgos';
 
-    // Indicamos la clave primaria personalizada
     protected $primaryKey = 'idRiesgo';
 
-
-    // Especificamos los campos que se pueden asignar masivamente
     protected $fillable = [
         'idGesRies',
-        'responsable',
+        'idFuente', // <- nuevo campo de relación
         'fuente',
         'tipoRiesgo',
         'descripcion',
@@ -34,11 +31,18 @@ class Riesgo extends Model
         'reevaluacionNRP',
         'reevaluacionEfectividad',
         'analisisEfectividad',
+        'responsable',
     ];
 
-    // Relación con Proceso
+    // Relación con Gestión de Riesgos
     public function gestRies()
     {
         return $this->belongsTo(GestionRiesgos::class, 'idGesRies', 'idGesRies');
+    }
+
+    // Relación con Fuente de Plan de Trabajo (fuentept)
+    public function fuentePT()
+    {
+        return $this->belongsTo(FuentePt::class, 'idFuente', 'idFuente');
     }
 }
