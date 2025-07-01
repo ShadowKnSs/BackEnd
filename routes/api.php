@@ -425,11 +425,6 @@ Route::get('/notificaciones/count/{idUsuario}', [NotificacionController::class, 
 
 //Route::get('/emitir-notificacion/{idUsuario}', [NotificacionTestController::class, 'enviarNotificacion']);
 
-
-
-
-
-
 //*********************************************************/
 //                  Busqueda de Supervisores
 //*********************************************************/
