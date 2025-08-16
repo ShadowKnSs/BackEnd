@@ -25,7 +25,7 @@ class UsuarioController extends Controller
             'RPE' => 'required|string|unique:usuario,RPE',
             'pass' => 'required|string|min:8',
             'roles' => 'required|array|min:1',
-            'roles.*' => 'integer|exists:tipousuario,idTipoUsuario',
+            'roles.*' => 'integer|exists:tipoUsuario,idTipoUsuario',
             'procesosSupervisor' => 'array',
             'procesosSupervisor.*' => 'integer|exists:proceso,idProceso',
         ]);
@@ -50,6 +50,7 @@ class UsuarioController extends Controller
 
             // Insertar en supervisor_proceso si tiene el rol de Supervisor
             $rolSupervisor = TipoUsuario::where('nombreRol', 'Supervisor')->first();
+
             if ($rolSupervisor && in_array($rolSupervisor->idTipoUsuario, $validated['roles'])) {
                 if (!empty($validated['procesosSupervisor'])) {
                     foreach ($validated['procesosSupervisor'] as $idProceso) {
@@ -59,7 +60,9 @@ class UsuarioController extends Controller
                         ]);
                     }
                 }
+                // Si no trae procesos, simplemente se crea el Supervisor sin asignación inicial
             }
+
             DB::commit();
 
             return response()->json([
@@ -81,9 +84,9 @@ class UsuarioController extends Controller
     public function getSupervisores()
     {
         try {
-           $supervisores = Usuario::whereHas('roles', function ($q) {
-            $q->where('nombreRol', 'Supervisor');
-        })->get(['idUsuario','nombre','apellidoPat','apellidoMat']);
+            $supervisores = Usuario::whereHas('roles', function ($q) {
+                $q->where('nombreRol', 'Supervisor');
+            })->get(['idUsuario', 'nombre', 'apellidoPat', 'apellidoMat']);
 
             return response()->json([
                 'success' => true,
@@ -99,13 +102,66 @@ class UsuarioController extends Controller
         }
     }
 
+    // App/Http/Controllers/Api/UsuarioController.php
+
     public function index()
     {
-        //$usuarios = Usuario::with(['roles', 'tipoPrincipal'])->get();
         $usuarios = Usuario::with(['roles'])->get();
-    return response()->json(['data' => $usuarios]);
-    }
 
+        // Filtra líderes
+        $leaders = $usuarios->filter(fn($u) => $u->roles->contains('nombreRol', 'Líder'));
+
+        if ($leaders->isNotEmpty()) {
+            $leaderIds = $leaders->pluck('idUsuario');
+
+            // procesos de cada líder (1 proceso por líder)
+            $procesos = DB::table('proceso')
+                ->whereIn('idUsuario', $leaderIds)
+                ->select('idProceso', 'idUsuario as idLider')
+                ->get();
+
+            $procIds = $procesos->pluck('idProceso');
+
+            // supervisor asignado a cada proceso
+            $sp = DB::table('supervisor_proceso')
+                ->whereIn('idProceso', $procIds)
+                ->select('idProceso', 'idUsuario as idSupervisor')
+                ->get();
+
+            $supervisorIds = $sp->pluck('idSupervisor')->unique()->values();
+
+            $supervisores = Usuario::whereIn('idUsuario', $supervisorIds)
+                ->get(['idUsuario', 'nombre', 'apellidoPat', 'apellidoMat']);
+
+            // Maps rápidos
+            $procesoByLeader = $procesos->keyBy('idLider');          // idLider -> {idProceso,...}
+            $supervisorByProceso = $sp->keyBy('idProceso');               // idProceso -> {idSupervisor,...}
+            $supervisorUserById = $supervisores->keyBy('idUsuario');     // idSupervisor -> Usuario
+
+            // Adjunta supervisor a cada líder
+            foreach ($usuarios as $u) {
+                if ($u->roles->contains('nombreRol', 'Líder')) {
+                    $proc = $procesoByLeader->get($u->idUsuario);
+                    $supId = $proc ? optional($supervisorByProceso->get($proc->idProceso))->idSupervisor : null;
+
+                    if ($supId && $supervisorUserById->has($supId)) {
+                        $sup = $supervisorUserById->get($supId);
+                        // Campo ad-hoc "supervisor" para que el front lo reciba directo
+                        $u->supervisor = [
+                            'idUsuario' => $sup->idUsuario,
+                            'nombre' => $sup->nombre,
+                            'apellidoPat' => $sup->apellidoPat,
+                            'apellidoMat' => $sup->apellidoMat,
+                        ];
+                    } else {
+                        $u->supervisor = null;
+                    }
+                }
+            }
+        }
+
+        return response()->json(['data' => $usuarios]);
+    }
 
 
     public function update(Request $request, $id)
@@ -122,7 +178,7 @@ class UsuarioController extends Controller
             'RPE' => 'sometimes|string|unique:usuario,RPE,' . $id . ',idUsuario',
             'pass' => 'sometimes|string|min:8',
             'roles' => 'sometimes|array',
-            'roles.*' => 'integer|exists:tipousuario,idTipoUsuario',
+            'roles.*' => 'integer|exists:tipoUsuario,idTipoUsuario',
             'procesosAsignados' => 'nullable|array',
             'procesosAsignados.*' => 'integer|exists:proceso,idProceso',
         ]);
@@ -248,5 +304,69 @@ class UsuarioController extends Controller
         return response()->json(['nombreCompleto' => $nombreCompleto]);
     }
 
+    public function asignarProcesosSupervisor(Request $request, $idUsuario)
+    {
+        $validated = $request->validate([
+            'procesos' => 'required|array|min:1',
+            'procesos.*' => 'integer|exists:proceso,idProceso',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $procesos = $validated['procesos'];
+
+            // 1) Limpiar todas las asignaciones del supervisor actual
+            DB::table('supervisor_proceso')
+                ->where('idUsuario', $idUsuario)
+                ->delete();
+
+            // 2) Asegurar 1 supervisor por proceso:
+            //    si alguno de los procesos ya estaba asignado a otro supervisor, lo liberamos
+            DB::table('supervisor_proceso')
+                ->whereIn('idProceso', $procesos)
+                ->delete();
+
+            // 3) Insertar nuevas asignaciones
+            $rows = [];
+            foreach ($procesos as $idProceso) {
+                $rows[] = [
+                    'idUsuario' => $idUsuario,
+                    'idProceso' => $idProceso,
+                ];
+            }
+            DB::table('supervisor_proceso')->insert($rows);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Procesos asignados al supervisor correctamente',
+                'asignados' => $procesos,
+            ], 200);
+
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al asignar procesos',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function procesosDeSupervisor($idUsuario)
+    {
+        $procesos = DB::table('supervisor_proceso as sp')
+            ->join('proceso as p', 'sp.idProceso', '=', 'p.idProceso')
+            ->select('p.idProceso', 'p.nombreProceso')
+            ->where('sp.idUsuario', $idUsuario)
+            ->get();
+
+        return response()->json([
+            'procesos' => $procesos,
+            'procesosIds' => $procesos->pluck('idProceso')
+        ]);
+    }
 
 }

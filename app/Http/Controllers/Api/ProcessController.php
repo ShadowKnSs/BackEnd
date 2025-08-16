@@ -130,7 +130,7 @@ class ProcessController extends Controller
                     ]);
 
                     // Crear también la sección 'Conformidad' en NeceInter
-                    DB::table('neceinter')->insert([
+                    DB::table('NeceInter')->insert([
                         'idAnalisisDatos' => $analisisDatosId,
                         'seccion' => 'Conformidad',
                         'interpretacion' => '',

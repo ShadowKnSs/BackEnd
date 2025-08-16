@@ -412,6 +412,9 @@ Route::get('/supervisores', [UsuarioController::class, 'getSupervisores']);*/
 Route::apiResource('usuarios', UsuarioController::class);
 Route::get('tiposusuario', [TipoUsuarioController::class, 'index']);
 Route::get('supervisores', [UsuarioController::class, 'getSupervisores']);
+Route::post('/usuarios/{idUsuario}/asignar-procesos', [UsuarioController::class, 'asignarProcesosSupervisor']);
+Route::get('/usuarios/{idUsuario}/procesos-supervisor', [UsuarioController::class, 'procesosDeSupervisor']);
+
 Route::get('/auditores', [UsuarioController::class, 'getAuditores']);
 Route::get('/auditores/basico', [UsuarioController::class, 'getAuditoresBasico']);
 Route::get('/auditores/{idUsuario}/procesos', [UsuarioController::class, 'getProcesosPorAuditor']);

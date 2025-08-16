@@ -18,8 +18,8 @@ class AuthController extends Controller
         ]);
 
         $usuario = Usuario::where('RPE', $request->rpe)->first();
-        //if (!$usuario || !Hash::check($request->password, $usuario->pass)) {
-             if (!$usuario || hash('sha256', $request->password) !== $usuario->pass) {
+        if (!$usuario || !Hash::check($request->password, $usuario->pass)) {
+             //if (!$usuario || hash('sha256', $request->password) !== $usuario->pass) {
             return response()->json(['message' => 'Credenciales inválidas'], 401);
         }
 
