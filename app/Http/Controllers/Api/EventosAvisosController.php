@@ -35,10 +35,10 @@ class EventosAvisosController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'idUsuario' => 'required|integer',
-            'tipo' => 'required|in:Evento,Aviso',
-            'imagen' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
-        ]);
+    'idUsuario' => ['required','integer','exists:usuario,idUsuario'],
+    'tipo'      => ['required','in:Evento,Aviso'],
+    'imagen'    => ['nullable','image','mimes:jpeg,png,jpg,gif','max:2048'],
+]);
 
         $rutaImg = null;
 

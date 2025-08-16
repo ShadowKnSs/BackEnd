@@ -18,13 +18,13 @@ class AuthController extends Controller
         ]);
 
         $usuario = Usuario::where('RPE', $request->rpe)->first();
-        if (!$usuario || !Hash::check($request->password, $usuario->pass)) {
-            // if (!$usuario || hash('sha256', $request->password) !== $usuario->pass) {
+        //if (!$usuario || !Hash::check($request->password, $usuario->pass)) {
+             if (!$usuario || hash('sha256', $request->password) !== $usuario->pass) {
             return response()->json(['message' => 'Credenciales inválidas'], 401);
         }
 
         $roles = DB::table('usuario_tipo as ut')
-            ->join('tipousuario as t', 'ut.idTipoUsuario', '=', 't.idTipoUsuario')
+            ->join('tipoUsuario as t', 'ut.idTipoUsuario', '=', 't.idTipoUsuario')
             ->where('ut.idUsuario', $usuario->idUsuario)
             ->select('t.idTipoUsuario', 't.nombreRol')
             ->get();

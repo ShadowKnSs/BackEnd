@@ -42,18 +42,11 @@ class UsuarioController extends Controller
                 'gradoAcademico' => $validated['gradoAcademico'],
                 'RPE' => $validated['RPE'],
                 'pass' => Hash::make($validated['pass']),
-                'idTipoUsuario' => 1,
                 'activo' => 1,
                 'fechaRegistro' => now(),
             ]);
 
             $usuario->roles()->sync($validated['roles']);
-
-            if (!empty($validated['roles'])) {
-                $usuario->update(['idTipoUsuario' => $validated['roles'][0]]);
-
-            }
-
 
             // Insertar en supervisor_proceso si tiene el rol de Supervisor
             $rolSupervisor = TipoUsuario::where('nombreRol', 'Supervisor')->first();
@@ -88,17 +81,9 @@ class UsuarioController extends Controller
     public function getSupervisores()
     {
         try {
-            $rolSupervisor = TipoUsuario::where('nombreRol', 'Supervisor')->first();
-
-            if (!$rolSupervisor) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Rol de Supervisor no encontrado en la base de datos'
-                ], 404);
-            }
-
-            $supervisores = Usuario::where('idTipoUsuario', $rolSupervisor->idTipoUsuario)
-                ->get(['idUsuario', 'nombre', 'apellidoPat', 'apellidoMat']);
+           $supervisores = Usuario::whereHas('roles', function ($q) {
+            $q->where('nombreRol', 'Supervisor');
+        })->get(['idUsuario','nombre','apellidoPat','apellidoMat']);
 
             return response()->json([
                 'success' => true,
@@ -116,8 +101,9 @@ class UsuarioController extends Controller
 
     public function index()
     {
-        $usuarios = Usuario::with(['roles', 'tipoPrincipal'])->get();
-        return response()->json(['data' => $usuarios]);
+        //$usuarios = Usuario::with(['roles', 'tipoPrincipal'])->get();
+        $usuarios = Usuario::with(['roles'])->get();
+    return response()->json(['data' => $usuarios]);
     }
 
 
@@ -148,15 +134,12 @@ class UsuarioController extends Controller
             if (isset($validated['pass'])) {
                 $validated['pass'] = Hash::make($validated['pass']);
             }
+            unset($validated['roles'], $validated['procesosAsignados']);
 
             $usuario->update($validated);
 
             if (isset($validated['roles'])) {
                 $usuario->roles()->sync($validated['roles']);
-
-                if (count($validated['roles'])) {
-                    $usuario->update(['idTipoUsuario' => $validated['roles'][0]]);
-                }
             }
 
             DB::commit();
