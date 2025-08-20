@@ -10,4 +10,4 @@ Route::get('/', function () {
 
 
 
-// Route::get('/login-institucional/callback', [AuthInstitucionalController::class, 'handleCallback']);
+//Route::get('/login-institucional/callback', [AuthInstitucionalController::class, 'handleCallback']);

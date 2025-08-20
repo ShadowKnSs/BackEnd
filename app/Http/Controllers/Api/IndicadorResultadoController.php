@@ -178,12 +178,12 @@ class IndicadorResultadoController extends Controller
             $resultados = DB::table('IndicadoresConsolidados as ic')
                 ->join('ResultadoIndi as ri', 'ic.idIndicador', '=', 'ri.idIndicador')
                 ->join('Registros as r', 'ic.idRegistro', '=', 'r.idRegistro')
-                ->join('analisisdatos as ad', 'r.idRegistro', '=', 'ad.idRegistro')
                 ->where('ic.origenIndicador', 'ActividadControl')
                 ->where('ic.idProceso', $idProceso)
                 // ->where('ad.seccion', 'DesempeñoProceso')
                 ->select([
                     'ic.nombreIndicador',
+                    'ic.meta',
                     'ri.resultadoSemestral1',
                     'ri.resultadoSemestral2',
                     // 'ad.interpretacion',

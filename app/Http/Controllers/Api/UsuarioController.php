@@ -222,53 +222,41 @@ class UsuarioController extends Controller
         return response()->json(null, 204);
     }
 
-    public function getAuditores()
-    {
-        try {
-            $rolAuditor = TipoUsuario::where('nombreRol', 'Auditor')->first();
+   public function getAuditores()
+{
+    try {
+        $auditores = \DB::table('usuario as u')
+            ->join('usuario_tipo as ut', 'ut.idUsuario', '=', 'u.idUsuario')
+            ->where('ut.idTipoUsuario', 5)       // Auditor
+            ->where('u.activo', 1)
+            ->select('u.idUsuario','u.nombre','u.apellidoPat','u.apellidoMat',
+                     'u.correo','u.telefono','u.gradoAcademico')
+            ->get();
 
-            if (!$rolAuditor) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Rol de Auditor no encontrado'
-                ], 404);
-            }
-
-            $auditores = Usuario::where('idTipoUsuario', $rolAuditor->idTipoUsuario)
-                ->get(['idUsuario', 'nombre', 'apellidoPat', 'apellidoMat', 'correo', 'telefono', 'gradoAcademico']);
-
-            return response()->json([
-                'success' => true,
-                'data' => $auditores
-            ]);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al obtener auditores',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+        return response()->json(['success' => true, 'data' => $auditores]);
+    } catch (\Throwable $e) {
+        return response()->json(['success' => false, 'message' => 'Error al obtener auditores', 'error' => $e->getMessage()], 500);
     }
+}
+
 
     public function getAuditoresBasico()
-    {
-        try {
-            $auditores = Usuario::where('idTipoUsuario', 2)
-                ->get(['idUsuario', 'nombre', 'apellidoPat', 'apellidoMat', 'correo', 'telefono', 'gradoAcademico']);
+{
+    try {
+        $auditores = \DB::table('usuario as u')
+            ->join('usuario_tipo as ut', 'ut.idUsuario', '=', 'u.idUsuario')
+            ->where('ut.idTipoUsuario', 2)       // Ajusta al rol “básico” que necesites
+            ->where('u.activo', 1)
+            ->select('u.idUsuario','u.nombre','u.apellidoPat','u.apellidoMat',
+                     'u.correo','u.telefono','u.gradoAcademico')
+            ->get();
 
-            return response()->json([
-                'success' => true,
-                'data' => $auditores
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al obtener auditores',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+        return response()->json(['success' => true, 'data' => $auditores]);
+    } catch (\Throwable $e) {
+        return response()->json(['success' => false, 'message' => 'Error al obtener auditores', 'error' => $e->getMessage()], 500);
     }
+}
+
 
     public function getProcesosPorAuditor($idUsuario)
     {

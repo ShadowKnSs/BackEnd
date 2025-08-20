@@ -41,6 +41,15 @@ class ProcessController extends Controller
                     'Apartado' => $apartado
                 ]);
 
+                if ($apartado === "Gestión de Riesgo") {
+        GestionRiesgos::firstOrCreate(
+            ['idRegistro' => $registro->idRegistro],
+            ['elaboro' => null, 'fechaelaboracion' => null]
+        );
+        Log::info("✅ gestionriesgos creado automáticamente", [
+            'idRegistro' => $registro->idRegistro
+        ]);
+    }
                 if ($apartado === "Acciones de Mejora") {
                     ActividadMejora::firstOrCreate([
                         'idRegistro' => $registro->idRegistro
@@ -63,11 +72,11 @@ class ProcessController extends Controller
 
                     DB::table('encuesta')->insert([
                         'idIndicador' => $indicadorEncuesta->idIndicador,
-                        'malo' => 0,
-                        'regular' => 0,
-                        'bueno' => 0,
-                        'excelente' => 0,
-                        'noEncuestas' => 0,
+                        'malo' => null,
+                        'regular' => null,
+                        'bueno' => null,
+                        'excelente' => null,
+                        'noEncuestas' => null,
                     ]);
 
                     // Retroalimentación
@@ -85,10 +94,10 @@ class ProcessController extends Controller
                         DB::table('retroalimentacion')->insert([
                             'idIndicador' => $indicadorRetro->idIndicador,
                             'metodo' => $metodo,
-                            'cantidadFelicitacion' => 0,
-                            'cantidadSugerencia' => 0,
-                            'cantidadQueja' => 0,
-                            'total' => 0,
+                            'cantidadFelicitacion' => null,
+                            'cantidadSugerencia' => null,
+                            'cantidadQueja' => null,
+                            'total' => null,
                         ]);
                     }
 
@@ -107,12 +116,12 @@ class ProcessController extends Controller
                         'metaConfiable' => 90,
                         'metaCondicionado' => 70,
                         'metaNoConfiable' => 50,
-                        'resultadoConfiableSem1' => 0,
-                        'resultadoConfiableSem2' => 0,
-                        'resultadoCondicionadoSem1' => 0,
-                        'resultadoCondicionadoSem2' => 0,
-                        'resultadoNoConfiableSem1' => 0,
-                        'resultadoNoConfiableSem2' => 0,
+                        'resultadoConfiableSem1' => null,
+                        'resultadoConfiableSem2' => null,
+                        'resultadoCondicionadoSem1' => null,
+                        'resultadoCondicionadoSem2' => null,
+                        'resultadoNoConfiableSem1' => null,
+                        'resultadoNoConfiableSem2' => null,
                     ]);
 
                     Log::info("✅ Indicadores automáticos creados correctamente en Análisis de Datos", [

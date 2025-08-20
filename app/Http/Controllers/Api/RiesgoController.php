@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Registros;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+
+use App\Models\Registros;
 use App\Models\Riesgo;
 use App\Models\GestionRiesgos;
 use App\Models\IndicadorConsolidado;
@@ -13,12 +15,9 @@ use App\Models\FuentePt;
 use App\Models\ActividadMejora;
 use App\Models\PlanTrabajo;
 
-use Log;
-
 class RiesgoController extends Controller
 {
     /**
-     * Muestra todos los riesgos asociados a una gestión de riesgos específica.
      * GET: /api/gestionriesgos/{idGesRies}/riesgos
      */
     public function index($idGesRies)
@@ -37,15 +36,14 @@ class RiesgoController extends Controller
     }
 
     /**
-     * Crea un nuevo riesgo asociado a la gestión de riesgos (idGesRies),
-     * y crea un indicador en la tabla IndicadorConsolidado.
      * POST: /api/gestionriesgos/{idGesRies}/riesgos
+     * Crea el riesgo, crea el indicador (sin FK en riesgos), y opcionalmente crea una fuente PT.
      */
     public function store(Request $request, $idGesRies)
     {
         DB::beginTransaction();
         try {
-            // Validación
+            // 1) Validar datos del riesgo
             $data = $request->validate([
                 'tipoRiesgo' => 'required|string',
                 'descripcion' => 'required|string',
@@ -66,96 +64,91 @@ class RiesgoController extends Controller
                 'analisisEfectividad' => 'nullable|string',
             ]);
 
-            // Verificar existencia
+            // 2) Cargar gestión y su registro base
             $gestion = GestionRiesgos::findOrFail($idGesRies);
-            $registroGestion = Registros::findOrFail($gestion->idregistro);
+            $registroGestion = Registros::findOrFail($gestion->idRegistro);
 
             $idProceso = $registroGestion->idProceso;
-            $año = $registroGestion->año;
+            $anio      = $registroGestion->año;
 
-            // Obtener registro de indicadores
-            $registroIndicadores = Registros::where([
-                ['idProceso', $idProceso],
-                ['año', $año],
-                ['Apartado', 'Gestión de Riesgo']
-            ])->firstOrFail();
+            // 3) Localizar el registro del apartado "Gestión de Riesgo" (con y sin acento)
+            $registroIndicadores = Registros::where('idProceso', $idProceso)
+                ->where('año', $anio)
+                ->whereIn('Apartado', ['Gestión de Riesgo', 'Gestion de Riesgo'])
+                ->firstOrFail();
 
-            // Crear riesgo
+            // 4) Crear Riesgo
             $data['idGesRies'] = $idGesRies;
             $riesgo = Riesgo::create($data);
 
-            // Crear indicador
+            // 5) Crear Indicador asociado (pero SIN FK en riesgos)
             $indicador = IndicadorConsolidado::create([
-                'idRegistro' => $registroIndicadores->idRegistro,
-                'idProceso' => $idProceso,
+                'idRegistro'      => $registroIndicadores->idRegistro,
+                'idProceso'       => $idProceso,
                 'nombreIndicador' => $riesgo->descripcion,
                 'origenIndicador' => 'GestionRiesgo',
-                'periodicidad' => 'Anual',
-                'meta' => null,
+                'periodicidad'    => 'Anual',
+                'meta'            => null,
             ]);
 
-            // Asociar fuente PT si aplica
-            $actividad = ActividadMejora::whereHas('registro', function ($q) use ($idProceso, $año) {
-                $q->where('idProceso', $idProceso)->where('año', $año);
-            })->first();
+            // 6) Si ya existe un Plan de Trabajo en el mismo proceso/año, crear una fuente mínima
+        $actividad = ActividadMejora::whereHas('registro', function ($q) use ($idProceso, $anio) {
+    $q->where('idProceso', $idProceso)->where('año', $anio);
+})->first();
 
-            if ($actividad) {
-                $plan = PlanTrabajo::where('idActividadMejora', $actividad->idActividadMejora)->first();
-                if ($plan) {
-                    $fuente = FuentePt::create([
-                        'idPlanTrabajo' => $plan->idPlanTrabajo,
-                        'nombreFuente' => 'GESTIÓN DE RIESGOS',
-                        'elementoEntrada' => $riesgo->descripcion,
-                    ]);
+if ($actividad) {
+    $plan = PlanTrabajo::where('idActividadMejora', $actividad->idActividadMejora)->first();
+    if ($plan) {
+        // Consecutivo para noActividad (y/o numero)
+        $next = (int) (FuentePt::where('idPlanTrabajo', $plan->idPlanTrabajo)->max('noActividad') ?? 0) + 1;
+
+        // Defaults seguros
+        $fechaInicio  = $riesgo->fechaImp ?: now()->toDateString();
+        $fechaTermino = $riesgo->fechaEva ?: $fechaInicio;
+        $estado       = 'En proceso';
+        $responsable  = $riesgo->responsable ?: 'Por definir';
+
+        // Payload base
+        $payload = [
+            'idPlanTrabajo'   => $plan->idPlanTrabajo,
+            'noActividad'     => $next,             // <- nombre correcto de la columna
+            'responsable'     => $responsable,
+            'fechaInicio'     => $fechaInicio,
+            'fechaTermino'    => $fechaTermino,
+            'estado'          => $estado,
+            'nombreFuente'    => 'Gestión de Riesgos',
+            'elementoEntrada' => $riesgo->descripcion,
+            'descripcion'     => $riesgo->actividades ?? '',
+            'entregable'      => '',
+        ];
+
+        $fuente = FuentePt::create($payload);
+
+                    // opcional: guardar idFuente en riesgo si quieres relación hacia PT
                     $riesgo->update(['idFuente' => $fuente->idFuente]);
                 }
-            }
+    }
 
             DB::commit();
             return response()->json([
-                'message' => 'Riesgo e indicador creados correctamente.',
-                'riesgo' => $riesgo,
+                'message'   => 'Riesgo e indicador creados correctamente.',
+                'riesgo'    => $riesgo,
                 'indicador' => $indicador
             ], 201);
 
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error("Error en RiesgoController@store: " . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
             return response()->json([
                 'message' => 'Error al crear el riesgo.',
-                'error' => $e->getMessage()
+                'error'   => $e->getMessage()
             ], 500);
         }
     }
 
-
-
     /**
-     * Muestra un riesgo específico asociado a una gestión.
-     * GET: /api/gestionriesgos/{idGesRies}/riesgos/{idRiesgo}
-     */
-    public function show($idGesRies, $idRiesgo)
-    {
-        $gestion = GestionRiesgos::find($idGesRies);
-        if (!$gestion) {
-            return response()->json(['message' => 'No existe gestionriesgos con idGesRies=' . $idGesRies], 404);
-        }
-
-        $riesgo = Riesgo::where([
-            ['idGesRies', '=', $idGesRies],
-            ['idRiesgo', '=', $idRiesgo]
-        ])->first();
-
-        if (!$riesgo) {
-            return response()->json(['message' => 'Riesgo no encontrado para esta gestión'], 404);
-        }
-
-        return response()->json($riesgo, 200);
-    }
-
-
-    /**
-     * Actualiza un riesgo existente.
      * PUT: /api/gestionriesgos/{idGesRies}/riesgos/{idRiesgo}
+     * Actualiza el riesgo y, si cambia la descripción, sincroniza el nombre del indicador.
      */
     public function update(Request $request, $idGesRies, $idRiesgo)
     {
@@ -174,69 +167,93 @@ class RiesgoController extends Controller
             'tipoRiesgo' => 'nullable|string',
             'descripcion' => 'nullable|string',
             'consecuencias' => 'nullable|string',
-            'valorSeveridad' => 'nullable|integer|min:1|max:10',
-            'valorOcurrencia' => 'nullable|integer|min:1|max:10',
+            'valorSeveridad' => 'nullable|integer|min:1|max:100',
+            'valorOcurrencia' => 'nullable|integer|min:1|max:100',
             'valorNRP' => 'nullable|integer',
             'actividades' => 'nullable|string',
             'accionMejora' => 'nullable|string',
             'fechaImp' => 'nullable|date',
             'fechaEva' => 'nullable|date',
             'responsable' => 'nullable|string',
-            'reevaluacionSeveridad' => 'nullable|integer|min:1|max:10',
-            'reevaluacionOcurrencia' => 'nullable|integer|min:1|max:10',
+            'reevaluacionSeveridad' => 'nullable|integer|min:1|max:100',
+            'reevaluacionOcurrencia' => 'nullable|integer|min:1|max:100',
             'reevaluacionNRP' => 'nullable|integer',
             'reevaluacionEfectividad' => 'nullable|string',
             'analisisEfectividad' => 'nullable|string',
         ]);
 
-        DB::transaction(function () use ($gestion, $riesgo, $data) {
-            if (isset($data['descripcion']) && $riesgo->idIndicador) {
-                $indicador = IndicadorConsolidado::find($riesgo->idIndicador);
+        DB::beginTransaction();
+        try {
+            // Guardamos la descripción previa para localizar el indicador
+            $oldDescripcion = $riesgo->descripcion;
+
+            // 1) Actualizar riesgo
+            $riesgo->update($data);
+
+            // 2) Sincronizar el nombre del indicador si cambió la descripción
+            if (array_key_exists('descripcion', $data) && $data['descripcion'] !== $oldDescripcion) {
+                $registroGestion = Registros::findOrFail($gestion->idRegistro);
+
+                $indicador = IndicadorConsolidado::where('idRegistro', $registroGestion->idRegistro)
+                    ->where('origenIndicador', 'GestionRiesgo')
+                    ->where('nombreIndicador', $oldDescripcion)
+                    ->first();
+
                 if ($indicador) {
-                    $indicador->nombreIndicador = $data['descripcion'];
-                    $indicador->save();
+                    $indicador->update(['nombreIndicador' => $riesgo->descripcion]);
                 }
             }
 
-            if (($data['fuente'] ?? $riesgo->fuente) === 'GESTIÓN DE RIESGOS') {
+            // 3) Si la fuente PT está marcada como Gestión de Riesgos, actualizar/crear fuente mínima
+            if (($data['fuente'] ?? $riesgo->fuente) === 'Gestión de Riesgos') {
+                // Si el riesgo ya tiene fuente, la sincronizamos
                 if ($riesgo->idFuente) {
                     FuentePt::where('idFuente', $riesgo->idFuente)->update([
-                        'nombreFuente' => 'GESTIÓN DE RIESGOS',
-                        'elementoEntrada' => $data['descripcion'] ?? $riesgo->descripcion,
+                        'nombreFuente'    => 'Gestión de Riesgos',
+                        'elementoEntrada' => $riesgo->descripcion,
+                        'responsable'     => $riesgo->responsable,
+                        'descripcion'     => $riesgo->actividades,
                     ]);
                 } else {
-                    $registro = Registros::find($gestion->idregistro);
-                    $actividad = ActividadMejora::where('idRegistro', $registro->idRegistro)->first();
+                    // crear si existe plan
+                    $registroBase = Registros::find($gestion->idRegistro);
+                    $actividad = ActividadMejora::where('idRegistro', $registroBase->idRegistro)->first();
                     if ($actividad) {
-                        $idPlanTrabajo = PlanTrabajo::where('idActividadMejora', $actividad->idActividadMejora)->value('idPlanTrabajo');
-                        if ($idPlanTrabajo) {
+                        $plan = PlanTrabajo::where('idActividadMejora', $actividad->idActividadMejora)->first();
+                        if ($plan) {
                             $fuente = FuentePt::create([
-                                'idPlanTrabajo' => $idPlanTrabajo,
-                                'nombreFuente' => 'GESTIÓN DE RIESGOS',
-                                'elementoEntrada' => $data['descripcion'] ?? $riesgo->descripcion,
-                                'responsable' => $data['responsable'] ?? 'Por definir',
-                                'fechaInicio' => now(),
-                                'fechaTermino' => now()->addDays(7),
-                                'estado' => 'En proceso',
-                                'descripcion' => '',
-                                'entregable' => '',
+                                'idPlanTrabajo'  => $plan->idPlanTrabajo,
+                                'nombreFuente'   => 'Gestión de Riesgos',
+                                'elementoEntrada'=> $riesgo->descripcion,
+                                'responsable'    => $riesgo->responsable,
+                                'fechaInicio'    => $riesgo->fechaImp ?? null,
+                                'fechaTermino'   => $riesgo->fechaEva ?? null,
+                                'estado'         => null,
+                                'descripcion'    => $riesgo->actividades ?? null,
+                                'entregable'     => null,
                             ]);
-                            $data['idFuente'] = $fuente->idFuente;
+                            $riesgo->update(['idFuente' => $fuente->idFuente]);
                         }
                     }
                 }
             }
 
-            $riesgo->update($data);
-        });
+            DB::commit();
+            return response()->json($riesgo, 200);
 
-        return response()->json($riesgo, 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Error en RiesgoController@update: " . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            return response()->json([
+                'message' => 'Error al actualizar el riesgo.',
+                'error'   => $e->getMessage()
+            ], 500);
+        }
     }
 
-
     /**
-     * Elimina un riesgo específico asociado a una gestión.
      * DELETE: /api/gestionriesgos/{idGesRies}/riesgos/{idRiesgo}
+     * Elimina el riesgo, su indicador (buscado por nombre/origen/registro) y su fuente PT si existe.
      */
     public function destroy($idGesRies, $idRiesgo)
     {
@@ -259,35 +276,33 @@ class RiesgoController extends Controller
                 return response()->json(['message' => 'Riesgo no encontrado para esta gestión'], 404);
             }
 
-            // Eliminar indicador consolidado si existe
-            if ($riesgo->idIndicador) {
-                IndicadorConsolidado::where('idIndicador', $riesgo->idIndicador)->delete();
-                Log::info("[RiesgoController@destroy] IndicadorConsolidado eliminado con idIndicador={$riesgo->idIndicador}");
-            }
+            // 1) Eliminar indicador asociado (sin FK): buscar por idRegistro + origen + nombre
+            $registroGestion = Registros::findOrFail($gestion->idRegistro);
+            IndicadorConsolidado::where('idRegistro', $registroGestion->idRegistro)
+                ->where('origenIndicador', 'GestionRiesgo')
+                ->where('nombreIndicador', $riesgo->descripcion)
+                ->delete();
 
-            // Eliminar fuentePT si existe
+            // 2) Eliminar fuente PT si hay
             if ($riesgo->idFuente) {
                 FuentePt::where('idFuente', $riesgo->idFuente)->delete();
-                Log::info("[RiesgoController@destroy] FuentePt eliminada con idFuente={$riesgo->idFuente}");
+                Log::info("[RiesgoController@destroy] FuentePt eliminada idFuente={$riesgo->idFuente}");
             }
 
+            // 3) Eliminar riesgo
             $riesgo->delete();
-            Log::info("[RiesgoController@destroy] Riesgo eliminado con idRiesgo=$idRiesgo");
+            Log::info("[RiesgoController@destroy] Riesgo eliminado idRiesgo=$idRiesgo");
 
             DB::commit();
             return response()->json(['message' => 'Riesgo eliminado correctamente.'], 200);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("[RiesgoController@destroy] Error al eliminar Riesgo: " . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
-            ]);
+            Log::error("[RiesgoController@destroy] Error: " . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
             return response()->json([
                 'message' => 'Error al eliminar el Riesgo.',
-                'error' => $e->getMessage()
+                'error'   => $e->getMessage()
             ], 500);
         }
     }
-
-
 }

@@ -384,20 +384,20 @@ class IndicadorConsolidadoController extends Controller
         }
 
         $indicadores = $query->get()->map(function ($ind) {
-            $flat = $ind->toArray();
-            if (isset($flat['resultado_indi'])) {
-                $flat = array_merge($flat, $flat['resultado_indi']);
-                unset($flat['resultado_indi']);
-            }
+    $flat = $ind->toArray();
 
-            return $flat;
-        });
+    foreach (['resultado_indi', 'encuesta', 'retroalimentacion', 'evalua_proveedores'] as $rel) {
+        if (isset($flat[$rel]) && is_array($flat[$rel])) {
+            $flat = array_merge($flat, $flat[$rel]);
+            unset($flat[$rel]);
+        }
+    }
+    return $flat;
+});
+
 
         return response()->json(['indicadores' => $indicadores]);
     }
-
-
-
 
 }
 

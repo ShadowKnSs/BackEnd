@@ -14,7 +14,9 @@ class GestionRiesgos extends Model
 
     public $timestamps = false;
 
-
+ protected $casts = [
+        'fechaelaboracion' => 'date:Y-m-d',
+    ];
     // Especificamos los campos que se pueden asignar masivamente
     protected $fillable = [
         'idRegistro',

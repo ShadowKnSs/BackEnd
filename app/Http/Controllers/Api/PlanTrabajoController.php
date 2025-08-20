@@ -25,73 +25,140 @@ class PlanTrabajoController extends Controller
     }
 
 
-    // Crear un plan de trabajo, junto con la actividad de mejora (si no se envía idActividadMejora) y las fuentes asociadas
-    public function store(Request $request)
-    {
-        Log::info("📥 Iniciando creación de plan de trabajo", $request->all());
+   public function store(Request $request)
+{
+    Log::info("📥 Iniciando creación de plan de trabajo", $request->all());
 
-        $request->validate([
-            'idRegistro' => 'required|integer|exists:Registros,idRegistro',
-            'responsable' => 'required|string|max:255',
-            'fechaElaboracion' => 'required|date',
-            'objetivo' => 'required|string|max:255',
-            'revisadoPor' => 'nullable|string|max:100',
-            'fechaRevision' => 'nullable|date',
-            'elaboradoPor' => 'nullable|string|max:255',
-            'fuentes' => 'nullable|array',
-            'fuentes.*.responsable' => 'required_with:fuentes|string|max:255',
-            'fuentes.*.fechaInicio' => 'required_with:fuentes|date',
-            'fuentes.*.fechaTermino' => 'required_with:fuentes|date|after_or_equal:fuentes.*.fechaInicio',
-            'fuentes.*.estado' => 'required_with:fuentes|in:En proceso,Cerrado',
-            'fuentes.*.nombreFuente' => 'required_with:fuentes|string|max:255',
-            'fuentes.*.elementoEntrada' => 'required_with:fuentes|string',
-            'fuentes.*.descripcion' => 'required_with:fuentes|string|max:255',
-            'fuentes.*.entregable' => 'required_with:fuentes|string|max:255',
-        ]);
+    // 1) Validación
+    $validator = \Validator::make($request->all(), [
+        'idRegistro' => 'required|integer|exists:registros,idRegistro',
 
-        try {
-            DB::beginTransaction();
+        'planTrabajo' => 'required|array',
+        'planTrabajo.fechaElaboracion' => 'required|date',
+        'planTrabajo.objetivo'         => 'required|string|max:255',
+        'planTrabajo.revisadoPor'      => 'nullable|string|max:100',
+        'planTrabajo.fechaRevision'    => 'nullable|date',
+        'planTrabajo.elaboradoPor'     => 'nullable|string|max:255',
+        // 'planTrabajo.responsable'   => 'nullable|string|max:255', // lo derivamos si no viene
 
-            $actividad = ActividadMejora::where('idRegistro', $request->idRegistro)->first();
-            if (!$actividad) {
-                Log::warning("⚠️ ActividadMejora no encontrada para idRegistro: {$request->idRegistro}");
-                return response()->json(['message' => 'No existe actividad de mejora para este registro'], 404);
-            }
+        'fuentes' => 'nullable|array',
+        'fuentes.*.responsable'     => 'required_with:fuentes|string|max:255',
+        'fuentes.*.fechaInicio'     => 'required_with:fuentes|date',
+        // apunta al campo hermano dentro del mismo ítem:
+        'fuentes.*.fechaTermino'    => 'required_with:fuentes|date|after_or_equal:fuentes.*.fechaInicio',
+        'fuentes.*.estado'          => 'nullable|in:En proceso,Cerrado',
+        'fuentes.*.nombreFuente'    => 'nullable|string|max:255',
+        'fuentes.*.elementoEntrada' => 'required_with:fuentes|string',
+        'fuentes.*.descripcion'     => 'required_with:fuentes|string',     // TEXT: sin max
+        'fuentes.*.entregable'      => 'required_with:fuentes|string',     // TEXT: sin max
+        // 'fuentes.*.numero'        => 'nullable|integer|min:1',
+        // 'fuentes.*.noActividad'   => 'nullable|integer|min:1',
+    ]);
 
-            $plan = PlanTrabajo::firstOrNew(['idActividadMejora' => $actividad->idActividadMejora]);
-            $plan->fill($request->only([
-                'responsable',
-                'fechaElaboracion',
-                'objetivo',
-                'revisadoPor',
-                'fechaRevision',
-                'elaboradoPor'
-            ]));
-            $plan->save();
-
-            // Asociar fuentes con upsert si hay
-            if ($request->has('fuentes') && is_array($request->fuentes)) {
-                $fuentes = collect($request->fuentes)->map(function ($fuente) use ($plan) {
-                    return array_merge($fuente, ['idPlanTrabajo' => $plan->idPlanTrabajo]);
-                })->toArray();
-
-                FuentePt::where('idPlanTrabajo', $plan->idPlanTrabajo)->delete(); // Optional: limpiar duplicados antiguos
-                FuentePt::insert($fuentes); // Mejor que múltiples `create()`
-            }
-
-            DB::commit();
-
-            return response()->json([
-                'message' => 'Plan y fuentes creados exitosamente.',
-                'planTrabajo' => $plan->load('actividadMejora', 'fuentes')
-            ], 201);
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error("❌ Error al guardar plan de trabajo: " . $e->getMessage());
-            return response()->json(['message' => 'Error interno al guardar el plan'], 500);
-        }
+    if ($validator->fails()) {
+        Log::error("❌ Validación fallida al crear plan de trabajo", $validator->errors()->toArray());
+        return response()->json(['errors' => $validator->errors()], 422);
     }
+
+    try {
+        DB::beginTransaction();
+
+        // 2) Actividad de Mejora vinculada al idRegistro
+        $actividad = ActividadMejora::where('idRegistro', $request->idRegistro)->first();
+        if (!$actividad) {
+            Log::warning("⚠️ ActividadMejora no encontrada para idRegistro={$request->idRegistro}");
+            return response()->json(['message' => 'No existe actividad de mejora para este registro'], 404);
+        }
+
+        // 3) Datos del plan
+        $pt = $request->input('planTrabajo', []);
+
+        // 4) Un plan por ActividadMejora
+        $plan = PlanTrabajo::firstOrNew(['idActividadMejora' => $actividad->idActividadMejora]);
+
+        // 5) Rellenar plan (+ fallback para responsable)
+        $plan->fill([
+            'fechaElaboracion' => $pt['fechaElaboracion'],
+            'objetivo'         => $pt['objetivo'],
+            'revisadoPor'      => $pt['revisadoPor'] ?? null,
+            'fechaRevision'    => $pt['fechaRevision'] ?? null,
+            'elaboradoPor'     => $pt['elaboradoPor'] ?? null,
+        ]);
+        $plan->responsable = $pt['responsable']
+            ?? ($pt['elaboradoPor'] ?? ($request->input('fuentes.0.responsable') ?? 'Por definir'));
+
+        $plan->idActividadMejora = $actividad->idActividadMejora;
+        $plan->save();
+
+        // 6) Fuentes (si vienen)
+        if ($request->filled('fuentes') && is_array($request->fuentes)) {
+
+            // Limpia anteriores
+            FuentePt::where('idPlanTrabajo', $plan->idPlanTrabajo)->delete();
+
+            // Detectar columnas existentes en la tabla
+            $hasNumero      = Schema::hasColumn('fuentept', 'numero');
+            $hasNoActividad = Schema::hasColumn('fuentept', 'noActividad');
+
+            // Consecutivo base (toma la col disponible)
+            if ($hasNumero) {
+                $baseMax = FuentePt::where('idPlanTrabajo', $plan->idPlanTrabajo)->max('numero') ?? 0;
+            } elseif ($hasNoActividad) {
+                $baseMax = FuentePt::where('idPlanTrabajo', $plan->idPlanTrabajo)->max('noActividad') ?? 0;
+            } else {
+                $baseMax = 0;
+            }
+
+            $batch = collect($request->fuentes)->values()->map(function ($f, $idx) use ($plan, $hasNumero, $hasNoActividad, $baseMax) {
+
+                // Consecutivo: usa el que venga; si no, genera uno
+                $numero = $f['numero'] ?? ($f['noActividad'] ?? ($baseMax + $idx + 1));
+
+                // Defaults seguros
+                $estado       = in_array(($f['estado'] ?? ''), ['En proceso', 'Cerrado']) ? $f['estado'] : 'En proceso';
+                $fechaInicio  = $f['fechaInicio']  ?? now()->toDateString();
+                $fechaTermino = $f['fechaTermino'] ?? $fechaInicio; // mínimo mismo día
+                $nombreFuente = $f['nombreFuente'] ?? 'Gestión de Riesgos';
+
+                $base = [
+                    'idPlanTrabajo'   => $plan->idPlanTrabajo,
+                    'responsable'     => $f['responsable']     ?? ($plan->responsable ?? 'Por definir'),
+                    'fechaInicio'     => $fechaInicio,
+                    'fechaTermino'    => $fechaTermino,
+                    'estado'          => $estado,
+                    'nombreFuente'    => $nombreFuente,
+                    'elementoEntrada' => $f['elementoEntrada'] ?? '',
+                    'descripcion'     => $f['descripcion']     ?? '',
+                    'entregable'      => $f['entregable']      ?? '',
+                ];
+
+                // Solo agrega las columnas que existan en la BD
+                if ($hasNumero)      { $base['numero']      = $numero; }
+                if ($hasNoActividad) { $base['noActividad'] = $numero; }
+
+                return $base;
+            })->toArray();
+
+            if (!empty($batch)) {
+                FuentePt::insert($batch);
+            }
+        }
+
+        DB::commit();
+
+        return response()->json([
+            'message'     => 'Plan y fuentes creados exitosamente.',
+            'planTrabajo' => $plan->load('actividadMejora', 'fuentes'),
+        ], 201);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        Log::error("❌ Error al guardar plan de trabajo: " . $e->getMessage(), [
+            'trace' => $e->getTraceAsString()
+        ]);
+        return response()->json(['message' => 'Error interno al guardar el plan'], 500);
+    }
+}
 
 
 

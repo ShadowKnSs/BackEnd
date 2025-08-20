@@ -44,7 +44,7 @@ class DocumentoController extends Controller
             $data = $request->validate([
                 'idProceso' => 'required|integer',
                 'nombreDocumento' => 'required|string',
-                'codigoDocumento' => 'required|string',
+                'codigoDocumento' => 'nullable|string',
                 'tipoDocumento' => 'required|in:interno,externo',
                 'fechaRevision' => 'nullable|date',
                 'fechaVersion' => 'nullable|date',
@@ -60,6 +60,15 @@ class DocumentoController extends Controller
 
             \Log::debug('✅ Datos validados correctamente', $data);
 
+            // convertir vacíos a null
+foreach ([
+  'codigoDocumento','fechaRevision','fechaVersion','noRevision','noCopias',
+  'tiempoRetencion','lugarAlmacenamiento','disposicion','responsable','urlArchivo'
+] as $k) {
+    if (!array_key_exists($k, $data) || $data[$k] === '') {
+        $data[$k] = null;
+    }
+}
             // Generar código automáticamente queda pendiente
 
 
@@ -109,7 +118,7 @@ class DocumentoController extends Controller
             $data = $request->validate([
                 'idProceso' => 'sometimes|required|integer',
                 'nombreDocumento' => 'sometimes|required|string',
-                'codigoDocumento' => 'sometimes|required|string',
+                'codigoDocumento' => 'sometimes|nullable|string',
                 'tipoDocumento' => 'sometimes|required|in:interno,externo',
                 'fechaRevision' => 'nullable|date',
                 'fechaVersion' => 'nullable|date',

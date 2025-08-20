@@ -124,7 +124,7 @@ class ReporteProcesoController extends Controller
 
         }
 
-        $graficaPlanControl = $this->verificaGrafica("plan_control_{$idProceso}_{$anio}.png");
+        $graficaPlanControl = $this->verificaGrafica("planControl_{$idProceso}_{$anio}.png");
         $graficaEncuesta = $this->verificaGrafica("encuesta_{$idProceso}_{$anio}.png");
         $graficaRetroalimentacion = $this->verificaGrafica("retroalimentacion_{$idProceso}_{$anio}.png");
         $graficaMP = $this->verificaGrafica("mapaProceso_{$idProceso}_{$anio}.png");

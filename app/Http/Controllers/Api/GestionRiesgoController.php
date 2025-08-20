@@ -50,17 +50,20 @@ class GestionRiesgoController extends Controller
      *    - Si existe, retornar la fila.
      */
     public function showByRegistro($idRegistro)
-    {
+{
+    try {
         $gestion = GestionRiesgos::where('idRegistro', $idRegistro)->first();
 
         if (!$gestion) {
             return response()->json(['message' => 'No existe un registro en gestionriesgos para este idRegistro'], 404);
         }
 
-        $gestion->fechaelaboracion = optional($gestion->fechaelaboracion)->format('Y-m-d');
-
         return response()->json($gestion, 200);
+    } catch (\Exception $e) {
+        Log::error("Error in showByRegistro: " . $e->getMessage());
+        return response()->json(['message' => 'Internal Server Error'], 500);
     }
+}
 
 
     /**
