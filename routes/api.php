@@ -74,7 +74,7 @@ use App\Http\Controllers\Api\CronogramaController;
 
 use App\Http\Controllers\Api\SupervisorController;
 use App\Http\Controllers\Api\ReporteProyectoMejoraController;
-
+use App\Http\Controllers\AuthInstitucionalController;
 
 //Login
 use App\Http\Controllers\Api\AuthController;
@@ -85,6 +85,8 @@ use App\Http\Controllers\Api\AuditoresAsignadosController;
 //                          Login
 //*********************************************************/
 Route::post('/login', [AuthController::class, 'login']);
+Route::get('/login-institucional', [AuthInstitucionalController::class, 'redirectToInstitucionalLogin']);
+Route::get('/login-institucional/callback', [AuthInstitucionalController::class, 'handleCallback']);
 
 //*********************************************************/
 //                  Para Las Notiicas
