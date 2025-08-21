@@ -24,6 +24,7 @@ class Documento extends Model
         'medioAlmacenamiento',
         'disposicion',
         'responsable',
+        'urlArchivo',
     ];
     
 }

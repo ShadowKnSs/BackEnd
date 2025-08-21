@@ -23,13 +23,13 @@ class Riesgo extends Model
     // Nombre de la tabla correspondiente
     protected $table = 'riesgos';
 
-    // Clave primaria personalizada
+    // Indicamos la clave primaria personalizada
     protected $primaryKey = 'idRiesgo';
 
     // Atributos asignables en masa
     protected $fillable = [
         'idGesRies',
-        'responsable',
+        'idFuente', // <- nuevo campo de relación
         'fuente',
         'tipoRiesgo',
         'descripcion',
@@ -46,6 +46,7 @@ class Riesgo extends Model
         'reevaluacionNRP',
         'reevaluacionEfectividad',
         'analisisEfectividad',
+        'responsable',
     ];
 
     /**
@@ -54,5 +55,11 @@ class Riesgo extends Model
     public function gestRies()
     {
         return $this->belongsTo(GestionRiesgos::class, 'idGesRies', 'idGesRies');
+    }
+
+    // Relación con Fuente de Plan de Trabajo (fuentept)
+    public function fuentePT()
+    {
+        return $this->belongsTo(FuentePt::class, 'idFuente', 'idFuente');
     }
 }

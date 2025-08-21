@@ -17,12 +17,12 @@ class ActividadControl extends Model
         'idProceso',
         'nombreActividad',
         'procedimiento',
-        'caracteriticasVerificar',
+        'caracteristicasVerificar',
         'criterioAceptacion',
         'frecuencia',
         'identificacionSalida',
         'registroSalida',
-        'tratamiento', //Posible error en el nombre
+        'tratamiento', 
         'responsable' 
     ];
 }

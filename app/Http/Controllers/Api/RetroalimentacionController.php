@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Retroalimentacion;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 class RetroalimentacionController extends Controller
 {
@@ -94,4 +95,25 @@ class RetroalimentacionController extends Controller
             ], 500);
         }
     }
+
+    public function batch(Request $request)
+    {
+       $ids = $request->input('ids', []);
+    if (!is_array($ids) || empty($ids)) {
+        return response()->json([], 200);
+    }
+
+    $resultados = DB::table('retroalimentacion as r')
+        ->join('IndicadoresConsolidados as i', 'r.idIndicador', '=', 'i.idIndicador')
+        ->whereIn('r.idIndicador', $ids)
+        ->select([
+            'r.idIndicador',
+            'i.nombreIndicador',
+            'r.cantidadFelicitacion',
+            'r.cantidadSugerencia',
+            'r.cantidadQueja'
+        ])
+        ->get();
+
+    return response()->json($resultados, 200);}
 }

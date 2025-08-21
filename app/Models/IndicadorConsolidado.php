@@ -78,4 +78,9 @@ class IndicadorConsolidado extends Model
     {
         return $this->belongsTo(Registros::class, 'idRegistro', 'idRegistro');
     }
+
+    public function indicadorMapaProceso()
+    {
+        return $this->hasOne(IndMapaProceso::class, 'idIndicador', 'idIndicador');
+    }
 }

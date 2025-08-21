@@ -16,10 +16,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 class TipoUsuario extends Model
 {
-    // Nombre de la tabla en la base de datos
-    protected $table = 'tipousuario';
-
-    // Clave primaria personalizada
+    protected $table = 'tipoUsuario';
     protected $primaryKey = 'idTipoUsuario';
 
     // Atributos que se pueden asignar en masa

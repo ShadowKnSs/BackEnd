@@ -6,23 +6,12 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Laravel\Sanctum\HasApiTokens; // Agregar esta línea
 
-/**
- * Modelo Usuario
- * 
- * Representa a un usuario del sistema SGC. Puede tener múltiples roles y estar asociado
- * a procesos que supervisa. Este modelo extiende de `Authenticatable` para permitir autenticación.
- * 
- * Funcionalidades clave:
- * - Acceso a roles múltiples mediante `usuario_tipo`.
- * - Rol principal asociado mediante `idTipoUsuario`.
- * - Supervisión de procesos específicos mediante `supervisor_proceso`.
- */
 class Usuario extends Authenticatable
 {
-    use HasFactory, Notifiable;
-
-    // Tabla correspondiente en la base de datos
+    use HasApiTokens, HasFactory, Notifiable; // Agregar HasApiTokens aquí
+    
     protected $table = 'usuario';
 
     // Clave primaria personalizada

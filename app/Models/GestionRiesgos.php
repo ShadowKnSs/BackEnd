@@ -25,7 +25,10 @@ class GestionRiesgos extends Model
     // No se utilizan timestamps automáticos
     public $timestamps = false;
 
-    // Atributos asignables masivamente
+ protected $casts = [
+        'fechaelaboracion' => 'date:Y-m-d',
+    ];
+    // Especificamos los campos que se pueden asignar masivamente
     protected $fillable = [
         'idRegistro',
         'elaboro',
