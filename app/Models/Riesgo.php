@@ -23,7 +23,7 @@ class Riesgo extends Model
     // Nombre de la tabla correspondiente
     protected $table = 'riesgos';
 
-    // Indicamos la clave primaria personalizada
+    // Clave primaria personalizada
     protected $primaryKey = 'idRiesgo';
 
     // Atributos asignables en masa
