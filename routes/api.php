@@ -78,6 +78,7 @@ use App\Http\Controllers\AuthInstitucionalController;
 
 //Login
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\ManualController;
 
 use App\Http\Controllers\Api\AuditoresAsignadosController;
 
@@ -119,8 +120,6 @@ Route::get('/proceso-usuario/{idUsuario}', [ProcessController::class, 'obtenerPr
 Route::get('/proceso-entidad/{idProceso}', [ProcessController::class, 'getInfoPorProceso']);
 Route::get('/procesos-con-entidad', [ProcessController::class, 'procesosConEntidad']);
 Route::get('procesos-nombres', [ProcessController::class, 'getNombres']);
-
-
 
 //*********************************************************/
 //                  Cronograma
@@ -459,3 +458,8 @@ Route::prefix('auditores-asignados')->group(function () {
 Route::post('/asignar-auditores', [AuditoresAsignadosController::class, 'store']);
 Route::get('/auditorias/supervisor/{idUsuario}',[CronogramaController::class, 'porSupervisor']);
 
+
+//*********************************************************/
+//                 Descargar Manuales
+//*********************************************************/
+Route::get('/descargar-manual/{rol}', [ManualController::class, 'download'])->name('manual.download');
