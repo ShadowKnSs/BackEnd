@@ -73,6 +73,8 @@ use App\Http\Controllers\Api\CronogramaController;
 
 
 use App\Http\Controllers\Api\SupervisorController;
+use App\Http\Controllers\Api\ReporteProyectoMejoraController;
+use App\Http\Controllers\AuthInstitucionalController;
 
 //Login
 use App\Http\Controllers\Api\AuthController;
@@ -83,6 +85,8 @@ use App\Http\Controllers\Api\AuditoresAsignadosController;
 //                          Login
 //*********************************************************/
 Route::post('/login', [AuthController::class, 'login']);
+Route::get('/login-institucional', [AuthInstitucionalController::class, 'redirectToInstitucionalLogin']);
+Route::get('/login-institucional/callback', [AuthInstitucionalController::class, 'handleCallback']);
 
 //*********************************************************/
 //                  Para Las Notiicas
@@ -101,6 +105,8 @@ Route::post('/entidades', [EntidadDependenciaController::class, 'store']);
 Route::get('/entidades', [EntidadDependenciaController::class, 'index']);
 Route::put('/entidades/{id}', [EntidadDependenciaController::class, 'update']);
 Route::delete('/entidades/{id}', [EntidadDependenciaController::class, 'destroy']);
+Route::get('/procesos-por-nombre-entidad', [EntidadDependenciaController::class, 'obtenerProcesosPorNombreEntidad']);
+
 
 //*********************************************************/
 //                  Procesos y Relacionado
@@ -112,6 +118,7 @@ Route::get('/procesos/entidad/{idEntidad}', [ProcessController::class, 'obtenerP
 Route::get('/proceso-usuario/{idUsuario}', [ProcessController::class, 'obtenerProcesoPorUsuario']);
 Route::get('/proceso-entidad/{idProceso}', [ProcessController::class, 'getInfoPorProceso']);
 Route::get('/procesos-con-entidad', [ProcessController::class, 'procesosConEntidad']);
+Route::get('procesos-nombres', [ProcessController::class, 'getNombres']);
 
 
 
@@ -122,24 +129,26 @@ Route::post('cronograma/filtrar', [CronogramaController::class, 'index']);
 Route::post('cronograma', [CronogramaController::class, 'store']);
 Route::put('cronograma/{id}', [CronogramaController::class, 'update']);
 Route::delete('/cronograma/{id}', [CronogramaController::class, 'destroy']);
+Route::get('/auditorias/todas', [CronogramaController::class, 'todas']);
 
-
+//**************************************************/
+//             Minutas Segumineto
+//**************************************************/
 Route::post('minutasAdd', [MinutaController::class, 'store']); // crear minuta
 Route::get('/minutas/registro/{idRegistro}', [MinutaController::class, 'getMinutasByRegistro']); //obtener todad las minutas de un proceso en un año 
 Route::put('/minutas/{id}', [MinutaController::class, 'update']); //actualizar una minuta
 Route::delete('/minutasDelete/{id}', [MinutaController::class, 'destroy']);
 
+//**************************************************/
+//              Registros
+//**************************************************/
 Route::put('/registros/{id}', [RegistrosController::class, 'updateCarpeta']);
 
-
-// ✅ Rutas con nombre explícito primero
 Route::get('/registros/idRegistro', [RegistrosController::class, 'obtenerIdRegistro']);
 Route::get('/registros/years/{idProceso}', [RegistrosController::class, 'obtenerAnios']);
 Route::post('/registros/filtrar', [RegistrosController::class, 'obtenerRegistrosPorProcesoYApartado']);
 
-
-
-// ✅ CRUD estándar después
+// CRUD estándar después
 Route::post('/registros', [RegistrosController::class, 'store']);
 Route::put('/registros{id}', [RegistrosController::class, 'update']);
 Route::get('/registros/{idRegistro}', [RegistrosController::class, 'show']);
@@ -150,7 +159,11 @@ Route::apiResource('procesos', controller: ProcessController::class);
 //              Indicadores
 //***********************************************************/
 
+
+Route::get('/indicadoresconsolidados/detalles', [IndicadorConsolidadoController::class, 'indexConDetalles']);
+
 Route::apiResource('indicadoresconsolidados', controller: IndicadorConsolidadoController::class);
+
 
 // Registrar y obtener resultados por tipo de indicador
 Route::prefix('indicadoresconsolidados')->group(function () {
@@ -159,6 +172,7 @@ Route::prefix('indicadoresconsolidados')->group(function () {
 });
 
 // Rutas específicas para Retroalimentación
+Route::post('/retroalimentacion/batch', [RetroalimentacionController::class, 'batch']);
 Route::prefix('retroalimentacion')->group(function () {
     Route::post('{idIndicador}/resultados', [RetroalimentacionController::class, 'store']);
     Route::get('{idIndicador}/resultados', [RetroalimentacionController::class, 'show']);
@@ -170,7 +184,7 @@ Route::prefix('encuesta')->group(function () {
     Route::get('{idIndicador}/resultados', [EncuestaController::class, 'show']);
 });
 
-// Rutas específicas para Evaluación de Proveedores
+// Rutas específicas para Evaluación de 
 Route::prefix('evalua-proveedores')->group(function () {
     Route::post('{idIndicador}/resultados', [EvaluaProveedoresController::class, 'store']);
     Route::get('{idIndicador}/resultados', [EvaluaProveedoresController::class, 'show']);
@@ -179,12 +193,9 @@ Route::prefix('evalua-proveedores')->group(function () {
 // Ruta para obtener solo indicadores de tipo retroalimentación
 Route::get('/indicadores/retroalimentacion', [IndicadorConsolidadoController::class, 'indexRetroalimentacion']);
 Route::get('/indicadores-riesgo', [IndicadorConsolidadoController::class, 'obtenerIndGesRiesgos']);
-
-
-
-
-Route::get('procesos-nombres', [ProcessController::class, 'getNombres']);
-
+Route::get('/plan-control/{idProceso}', [IndicadorResultadoController::class, 'getResultadosPlanControl']);
+Route::get('/mapa-proceso', [IndicadorResultadoController::class, 'getResultadosIndMapaProceso']);
+Route::get('/gestion-riesgos/{idRegistro}', [IndicadorResultadoController::class, 'getResultadosRiesgos']);
 
 
 
@@ -193,30 +204,40 @@ Route::get('procesos-nombres', [ProcessController::class, 'getNombres']);
 //*********************************************************/
 Route::get('actividadcontrol/{idProceso}', [ActividadControlController::class, 'index']);
 Route::get('mapaproceso/{idProceso}', [MapaProcesoController::class, 'index']);
-Route::apiResource('controlcambios', ControlCambioController::class);
 Route::get('/controlcambios/proceso/{idProceso}', [ControlCambioController::class, 'porProceso']);
-Route::apiResource('mapaproceso', MapaProcesoController::class);
 Route::apiResource('indmapaproceso', IndMapaProcesoController::class);
+Route::apiResource('mapaproceso', MapaProcesoController::class);
 Route::apiResource('actividadcontrol', ActividadControlController::class);
 Route::get('/caratula/{idProceso}', [CaratulaController::class, 'show']);
 Route::post('/caratula', [CaratulaController::class, 'store']);
 Route::get('caratulas/proceso/{idProceso}', [CaratulaController::class, 'show']);
 Route::put('caratulas/{id}', [CaratulaController::class, 'update']);
 Route::apiResource('caratulas', CaratulaController::class);
-
-//Para Auditoria Interna
-Route::apiResource('auditorias', AuditoriaInternaController::class);
+Route::post('/mapa-proceso/{idProceso}/subir-diagrama', [MapaProcesoController::class, 'subirDiagramaFlujo']);
+Route::apiResource('controlcambios', ControlCambioController::class);
+Route::apiResource('mapaproceso', MapaProcesoController::class);
+Route::apiResource('indmapaproceso', IndMapaProcesoController::class);
+Route::prefix('documentos')->group(function () {
+    Route::get('/', [DocumentoController::class, 'index']);
+    Route::get('/{id}', [DocumentoController::class, 'show']);
+    Route::post('/', [DocumentoController::class, 'store']);
+    Route::put('/{id}', [DocumentoController::class, 'update']);
+    Route::delete('/{id}', [DocumentoController::class, 'destroy']);
+});
+//*********************************************************/
+//                  Auditoría
+//*********************************************************/Route::apiResource('auditorias', AuditoriaInternaController::class);
 Route::apiResource('reportesauditoria', ReporteAuditoriaController::class)->only([ 'index', 'store', 'destroy' ]);
 Route::get('/reporte-pdf/{id}', [ReporteAuditoriaController::class, 'descargarPDF']);
 
-Route::post('/mapa-proceso/{idProceso}/subir-diagrama', [MapaProcesoController::class, 'subirDiagramaFlujo']);
 
 
+//**************************************************/
+// Gestión de Riegos
+//**************************************************/
 Route::get('/getIdRegistroGR', [GestionRiesgoController::class, 'getIdRegistro']);
 
 
-// 1) GET datos-generales
-Route::get('gestionriesgos/{idRegistro}/datos-generales', [GestionRiesgoController::class, 'getDatosGenerales']);
 
 // 2) GET /api/gestionriesgos/{idRegistro} => showByRegistro
 Route::get('gestionriesgos/{idRegistro}', [GestionRiesgoController::class, 'showByRegistro']);
@@ -227,7 +248,6 @@ Route::post('gestionriesgos', [GestionRiesgoController::class, 'store']);
 // 4) PUT /api/gestionriesgos/{idGesRies} => update
 Route::put('gestionriesgos/{idGesRies}', [GestionRiesgoController::class, 'update']);
 Route::post('gestionriesgos/{idGesRies}/riesgos', [RiesgoController::class, 'store']);
-
 
 // Listar riesgos de una gestión
 Route::get('gestionriesgos/{idGesRies}/riesgos', [RiesgoController::class, 'index']);
@@ -252,10 +272,6 @@ Route::put('/analisisDatos/{idRegistro}/guardar-completo', [FormAnalisisDatosCon
 Route::get('/getIdRegistro', [FormAnalisisDatosController::class, 'getIdRegistro']);
 Route::put('analisisDatos/{idRegistro}/necesidad-interpretacion', [FormAnalisisDatosController::class, 'updateNecesidadInterpretacion']);
 
-//Ruta para obtener resultados de los resultados de plan de control
-Route::get('/plan-control/{idProceso}', [IndicadorResultadoController::class, 'getResultadosPlanControl']);
-Route::get('/mapa-proceso', [IndicadorResultadoController::class, 'getResultadosIndMapaProceso']);
-Route::get('/gestion-riesgos/{idRegistro}', [IndicadorResultadoController::class, 'getResultadosRiesgos']);
 
 //**************************************************/
 //              Plan Correctivo
@@ -281,7 +297,6 @@ Route::delete('/actividades/{idActividadPlan}', [PlanCorrectivoController::class
 // Para Manual Operativo
 Route::apiResource('controlcambios', ControlCambioController::class);
 Route::apiResource('mapaproceso', MapaProcesoController::class);
-Route::apiResource('indmapaproceso', IndMapaProcesoController::class);
 Route::prefix('documentos')->group(function () {
     Route::get('/', [DocumentoController::class, 'index']);
     Route::get('/{id}', [DocumentoController::class, 'show']);
@@ -305,7 +320,9 @@ Route::post('/plantrabajo/{id}/fuentes', [FuentePtController::class, 'store']);
 Route::delete('/fuente/{id}', [FuentePtController::class, 'destroy']);
 Route::put('/fuente/{id}', [FuentePtController::class, 'update']);
 
-
+//**************************************************/
+//             Acciones de Mejorea
+//**************************************************/
 Route::get('/plantrabajo/registro/{idRegistro}', [PlanTrabajoController::class, 'getByRegistro']);
 Route::post('/proyecto-mejora', [ProyectoMejoraController::class, 'store']);
 Route::get('/auditorias/por-registro-anio/{idRegistro}', [AuditoriaInternaController::class, 'auditoriasPorAnioDeRegistro']);
@@ -313,8 +330,11 @@ Route::get('/auditorias/registro-anio/{id}', [AuditoriaInternaController::class,
 Route::delete('/auditorias/{id}', [AuditoriaInternaController::class, 'destroy']);
 Route::get('/proyectos-mejora/{idRegistro}', [ProyectoMejoraController::class, 'getByRegistro']);
 
+Route::get('/reporte-proyecto-mejora/{id}', [ReporteProyectoMejoraController::class, 'generar']);
 
-
+//**************************************************/
+//            Reporte
+//**************************************************/
 Route::post('/generar-pdf', function (Request $request) {
     try {
         Log::info('Solicitud recibida:', $request->all());
@@ -403,6 +423,9 @@ Route::get('/supervisores', [UsuarioController::class, 'getSupervisores']);*/
 Route::apiResource('usuarios', UsuarioController::class);
 Route::get('tiposusuario', [TipoUsuarioController::class, 'index']);
 Route::get('supervisores', [UsuarioController::class, 'getSupervisores']);
+Route::post('/usuarios/{idUsuario}/asignar-procesos', [UsuarioController::class, 'asignarProcesosSupervisor']);
+Route::get('/usuarios/{idUsuario}/procesos-supervisor', [UsuarioController::class, 'procesosDeSupervisor']);
+
 Route::get('/auditores', [UsuarioController::class, 'getAuditores']);
 Route::get('/auditores/basico', [UsuarioController::class, 'getAuditoresBasico']);
 Route::get('/auditores/{idUsuario}/procesos', [UsuarioController::class, 'getProcesosPorAuditor']);
@@ -415,11 +438,6 @@ Route::get('/notificaciones/count/{idUsuario}', [NotificacionController::class, 
 
 
 //Route::get('/emitir-notificacion/{idUsuario}', [NotificacionTestController::class, 'enviarNotificacion']);
-
-
-
-
-
 
 //*********************************************************/
 //                  Busqueda de Supervisores
@@ -439,6 +457,7 @@ Route::prefix('auditores-asignados')->group(function () {
 });
 
 Route::post('/asignar-auditores', [AuditoresAsignadosController::class, 'store']);
+Route::get('/auditorias/supervisor/{idUsuario}',[CronogramaController::class, 'porSupervisor']);
 
 // Ruta para procesos con entidad
 Route::get('/procesos-con-entidades', [ProcessController::class, 'getProcesosConEntidad']);

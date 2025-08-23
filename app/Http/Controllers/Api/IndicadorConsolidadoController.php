@@ -38,8 +38,11 @@ class IndicadorConsolidadoController extends Controller
 
             Log::info("✅ Indicadores filtrados", ['total' => $indicadores->count()]);
 
-            return response()->json(['indicadores' => $indicadores], 200);
-
+            return response()->json([
+                'indicadores' => $indicadores,
+                'idProceso' => $registro->idProceso
+            ], 200);
+            
         } catch (\Exception $e) {
             Log::error("❌ Error al obtener indicadores", ['error' => $e->getMessage()]);
             return response()->json(['message' => 'Error al obtener los indicadores'], 500);
@@ -353,5 +356,48 @@ class IndicadorConsolidadoController extends Controller
             return response()->json(['message' => 'Error al obtener indicadores.'], 500);
         }
     }
+
+    public function indexConDetalles(Request $request)
+    {
+        $idRegistro = $request->query('idRegistro');
+        $idProceso = $request->query('idProceso');
+        $tipo = $request->query('tipo'); // para detectar estructura
+
+        $query = IndicadorConsolidado::query()
+            ->with([
+                'encuesta:idIndicador,malo,regular,excelente,bueno,noEncuestas',
+                'retroalimentacion:idIndicador,cantidadFelicitacion,cantidadSugerencia,cantidadQueja',
+                'evaluaProveedores:idIndicador,resultadoConfiableSem1,resultadoConfiableSem2,resultadoCondicionadoSem1,resultadoCondicionadoSem2,resultadoNoConfiableSem1,resultadoNoConfiableSem2',
+                'resultadoIndi:idIndicador,resultadoSemestral1,resultadoSemestral2,resultadoAnual',
+                'indicadorMapaProceso:idIndicador,descripcion,formula,periodoMed,responsable'
+            ])
+            ->select('idIndicador', 'nombreIndicador', 'origenIndicador', 'meta', 'periodicidad');
+
+        if ($idRegistro) {
+            $query->where('idRegistro', $idRegistro)
+                ->whereNotIn('origenIndicador', ['ActividadControl', 'MapaProceso']);
+        } elseif ($idProceso && $tipo === 'estructura') {
+            $query->where('idProceso', $idProceso)
+                ->whereIn('origenIndicador', ['ActividadControl', 'MapaProceso']);
+        } else {
+            return response()->json(['message' => 'Parámetros inválidos.'], 400);
+        }
+
+        $indicadores = $query->get()->map(function ($ind) {
+    $flat = $ind->toArray();
+
+    foreach (['resultado_indi', 'encuesta', 'retroalimentacion', 'evalua_proveedores'] as $rel) {
+        if (isset($flat[$rel]) && is_array($flat[$rel])) {
+            $flat = array_merge($flat, $flat[$rel]);
+            unset($flat[$rel]);
+        }
+    }
+    return $flat;
+});
+
+
+        return response()->json(['indicadores' => $indicadores]);
+    }
+
 }
 

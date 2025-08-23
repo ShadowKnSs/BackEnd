@@ -5,17 +5,18 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Caratula;
+use App\Services\ControlCambiosService;
 
 class CaratulaController extends Controller
 {
     public function show($idProceso)
     {
         $caratula = Caratula::where('idProceso', $idProceso)->first();
-    
+
         if (!$caratula) {
             return response()->json(null);
         }
-    
+
         return response()->json([
             'idCaratula' => $caratula->idCaratula,
             'idProceso' => $caratula->idProceso,
@@ -26,7 +27,7 @@ class CaratulaController extends Controller
             'aproboNombre' => $caratula->aprobo_nombre,
             'aproboCargo' => $caratula->aprobo_cargo,
         ]);
-    }    
+    }
 
     public function store(Request $request)
     {
@@ -50,6 +51,14 @@ class CaratulaController extends Controller
                 'aprobo_nombre',
                 'aprobo_cargo',
             ])
+        );
+
+        // Registrar cambio automático
+        ControlCambiosService::registrarCambio(
+            $request->idProceso,
+            'Carátula',
+            'agregó',
+            'Responsable: ' . ($request->responsable_nombre ?? 'N/A')
         );
 
         return response()->json([
@@ -80,7 +89,14 @@ class CaratulaController extends Controller
             'aprobo_cargo' => $request->aprobo_cargo,
         ]);
 
+        // Registrar cambio automático
+        ControlCambiosService::registrarCambio(
+            $caratula->idProceso,
+            'Carátula',
+            'editó',
+            'Responsable: ' . $request->responsable_nombre
+        );
+
         return response()->json($caratula);
     }
-
 }

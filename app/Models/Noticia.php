@@ -4,18 +4,33 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Carbon\Carbon; 
+use Carbon\Carbon;
 
-
+/**
+ * Modelo Noticia
+ * 
+ * Representa una noticia o publicación informativa dentro del sistema.
+ * Almacena título, descripción, fecha de publicación, imagen asociada y el autor (usuario).
+ * 
+ * Funcionalidades clave:
+ * - Relación con `Usuario` mediante `idUsuario`.
+ * - Usa Carbon para dar formato legible a `fechaPublicacion`.
+ * - No utiliza timestamps automáticos.
+ */
 class Noticia extends Model
 {
     use HasFactory;
 
+    // Nombre de la tabla en la base de datos
     protected $table = 'Noticias';
+
+    // Clave primaria personalizada
     protected $primaryKey = 'idNoticias';
 
+    // No se usan timestamps automáticos
     public $timestamps = false;
 
+    // Atributos asignables masivamente
     protected $fillable = [
         'idUsuario',
         'titulo',
@@ -23,13 +38,15 @@ class Noticia extends Model
         'fechaPublicacion',
         'rutaImg'
     ];
-  
+
+    // Fecha tratada como objeto Carbon
     protected $dates = ['fechaPublicacion'];
 
+    /**
+     * Accesor para formatear la fecha de publicación como 'dd-mm-YYYY HH:mm'
+     */
     public function getFechaPublicacionAttribute($value)
     {
-        // $value es el valor bruto (ej: "2025-03-05T18:38:05.000000Z")
-        // Carbon::parse($value) convierte a Carbon
         return Carbon::parse($value)->format('d-m-Y H:i');
     }
 }

@@ -69,12 +69,12 @@ class TokenTemporalController extends Controller
 
         // Buscar permisos para el idTipoUsuario = 2 (Auditor)
         $permisos = \DB::table('permiso')
-            ->where('idTipoUser', 2)
+            ->where('idTipoUser', 5)
             ->get(['modulo', 'tipoAcceso']);
 
         // Construir el objeto de rol manualmente
         $rol = [
-            'idTipoUsuario' => 2,
+            'idTipoUsuario' => 5,
             'nombreRol' => 'Auditor',
             'permisos' => $permisos
         ];
