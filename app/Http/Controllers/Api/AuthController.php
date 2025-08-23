@@ -17,29 +17,53 @@ class AuthController extends Controller
             'password' => 'required|string',
         ]);
 
-        $usuario = Usuario::where('RPE', $request->rpe)->first();
-        if (!$usuario || !Hash::check($request->password, $usuario->pass)) {
-             //if (!$usuario || hash('sha256', $request->password) !== $usuario->pass) {
+        // Buscar usuario incluyendo inactivos para verificar estado
+        $usuario = Usuario::withoutGlobalScope('active')
+            ->where('RPE', $request->rpe)
+            ->first();
+
+        // Verificar existencia y estado activo
+        if (!$usuario || $usuario->activo != 1) {
+            return response()->json(['message' => 'Credenciales inválidas o cuenta desactivada'], 401);
+        }
+
+        // Verificar contraseña
+        if (!Hash::check($request->password, $usuario->pass)) {
             return response()->json(['message' => 'Credenciales inválidas'], 401);
         }
 
+        // Obtener roles y permisos en una sola consulta optimizada
         $roles = DB::table('usuario_tipo as ut')
             ->join('tipoUsuario as t', 'ut.idTipoUsuario', '=', 't.idTipoUsuario')
+            ->leftJoin('permiso as p', 't.idTipoUsuario', '=', 'p.idTipoUser')
             ->where('ut.idUsuario', $usuario->idUsuario)
-            ->select('t.idTipoUsuario', 't.nombreRol')
+            ->select(
+                't.idTipoUsuario', 
+                't.nombreRol', 
+                'p.modulo', 
+                'p.tipoAcceso'
+            )
             ->get();
 
-        foreach ($roles as $rol) {
-            $rol->permisos = DB::table('permiso')
-                ->where('idTipoUser', $rol->idTipoUsuario)
-                ->select('modulo', 'tipoAcceso')
-                ->get();
-        }
+        // Agrupar permisos por rol
+        $groupedRoles = $roles->groupBy('idTipoUsuario')->map(function ($group) {
+            $first = $group->first();
+            return [
+                'idTipoUsuario' => $first->idTipoUsuario,
+                'nombreRol' => $first->nombreRol,
+                'permisos' => $group->where('modulo', '!=', null)
+                    ->map(function ($item) {
+                        return [
+                            'modulo' => $item->modulo,
+                            'tipoAcceso' => $item->tipoAcceso
+                        ];
+                    })->unique()->values()
+            ];
+        })->values();
 
         return response()->json([
             'usuario' => $usuario,
-            'roles' => $roles
+            'roles' => $groupedRoles
         ]);
     }
-
 }

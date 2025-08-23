@@ -9,65 +9,82 @@ use App\Models\TipoUsuario;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 
 
 class UsuarioController extends Controller
 {
     public function store(Request $request)
     {
+        $allRoles = TipoUsuario::pluck('nombreRol', 'idTipoUsuario')->toArray();
+
         $validated = $request->validate([
-            'nombre' => 'required|string',
-            'apellidoPat' => 'required|string',
-            'apellidoMat' => 'nullable|string',
+            'nombre' => 'required|string|max:255',
+            'apellidoPat' => 'required|string|max:255',
+            'apellidoMat' => 'nullable|string|max:255',
             'correo' => 'required|email|unique:usuario,correo',
-            'telefono' => 'required|string',
-            'gradoAcademico' => 'nullable|string',
-            'RPE' => 'required|string|unique:usuario,RPE',
+            'telefono' => 'required|string|max:10',
+            'gradoAcademico' => 'nullable|string|max:100',
+            'RPE' => 'required|string|max:20|unique:usuario,RPE',
             'pass' => 'required|string|min:8',
             'roles' => 'required|array|min:1',
             'roles.*' => 'integer|exists:tipoUsuario,idTipoUsuario',
-            'procesosSupervisor' => 'array',
+            'procesosSupervisor' => 'sometimes|array',
             'procesosSupervisor.*' => 'integer|exists:proceso,idProceso',
         ]);
 
         DB::beginTransaction();
 
         try {
+            // Crear usuario sin consultas adicionales
             $usuario = Usuario::create([
                 'nombre' => $validated['nombre'],
                 'apellidoPat' => $validated['apellidoPat'],
-                'apellidoMat' => $validated['apellidoMat'],
+                'apellidoMat' => $validated['apellidoMat'] ?? null,
                 'correo' => $validated['correo'],
                 'telefono' => $validated['telefono'],
-                'gradoAcademico' => $validated['gradoAcademico'],
+                'gradoAcademico' => $validated['gradoAcademico'] ?? null,
                 'RPE' => $validated['RPE'],
                 'pass' => Hash::make($validated['pass']),
                 'activo' => 1,
                 'fechaRegistro' => now(),
             ]);
 
+            // Sincronizar roles (más eficiente que attach individual)
             $usuario->roles()->sync($validated['roles']);
 
-            // Insertar en supervisor_proceso si tiene el rol de Supervisor
-            $rolSupervisor = TipoUsuario::where('nombreRol', 'Supervisor')->first();
-
-            if ($rolSupervisor && in_array($rolSupervisor->idTipoUsuario, $validated['roles'])) {
-                if (!empty($validated['procesosSupervisor'])) {
-                    foreach ($validated['procesosSupervisor'] as $idProceso) {
-                        DB::table('supervisor_proceso')->insert([
-                            'idUsuario' => $usuario->idUsuario,
-                            'idProceso' => $idProceso
-                        ]);
-                    }
+            // Verificar si es supervisor y procesar asignaciones
+            $esSupervisor = false;
+            foreach ($validated['roles'] as $roleId) {
+                if (isset($allRoles[$roleId]) && $allRoles[$roleId] === 'Supervisor') {
+                    $esSupervisor = true;
+                    break;
                 }
-                // Si no trae procesos, simplemente se crea el Supervisor sin asignación inicial
+            }
+
+            if ($esSupervisor && !empty($validated['procesosSupervisor'])) {
+                // Insertar en lote para mejor rendimiento
+                $procesosData = array_map(function ($idProceso) use ($usuario) {
+                    return [
+                        'idUsuario' => $usuario->idUsuario,
+                        'idProceso' => $idProceso,
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ];
+                }, $validated['procesosSupervisor']);
+
+                DB::table('supervisor_proceso')->insert($procesosData);
             }
 
             DB::commit();
 
+            // Cargar relaciones necesarias para la respuesta
+            $usuario->load('roles');
+
             return response()->json([
                 'message' => 'Usuario creado exitosamente',
-                'usuario' => $usuario->load('roles')
+                'usuario' => $usuario
             ], 201);
 
         } catch (\Exception $e) {
@@ -75,8 +92,7 @@ class UsuarioController extends Controller
             \Log::error('Error al crear usuario: ' . $e->getMessage());
             return response()->json([
                 'message' => 'Error al crear usuario',
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'error' => $e->getMessage()
             ], 500);
         }
     }
@@ -104,63 +120,64 @@ class UsuarioController extends Controller
 
     // App/Http/Controllers/Api/UsuarioController.php
 
-    public function index()
+    // En el método index, optimizar la carga de relaciones
+    public function index(Request $request)
     {
-        $usuarios = Usuario::with(['roles'])->get();
+        $perPage = min((int) $request->get('per_page', 10), 100);
+        $qParam = $request->query('q');
+        $rol = $request->query('rol');
+        $estado = $request->query('estado', 'all'); // all|true|false
+        $excludeMe = filter_var($request->query('exclude_me', 'true'), FILTER_VALIDATE_BOOLEAN);
 
-        // Filtra líderes
-        $leaders = $usuarios->filter(fn($u) => $u->roles->contains('nombreRol', 'Líder'));
+        $query = Usuario::with(['roles', 'procesosSupervisados.proceso'])
+            ->estado($estado)
+            ->buscar($qParam)
+            ->filtrarRol($rol);
 
-        if ($leaders->isNotEmpty()) {
-            $leaderIds = $leaders->pluck('idUsuario');
+        if ($excludeMe && Auth::check()) {
+            $query->where('idUsuario', '!=', Auth::id());
+        }
 
-            // procesos de cada líder (1 proceso por líder)
-            $procesos = DB::table('proceso')
-                ->whereIn('idUsuario', $leaderIds)
-                ->select('idProceso', 'idUsuario as idLider')
-                ->get();
+        $usuarios = $query->orderByDesc('fechaRegistro')->paginate($perPage);
 
-            $procIds = $procesos->pluck('idProceso');
+        // Lógica optimizada para obtener supervisores
+        $leaderIds = $usuarios->filter(function ($u) {
+            return $u->roles->contains('nombreRol', 'Líder');
+        })->pluck('idUsuario');
 
-            // supervisor asignado a cada proceso
-            $sp = DB::table('supervisor_proceso')
-                ->whereIn('idProceso', $procIds)
-                ->select('idProceso', 'idUsuario as idSupervisor')
-                ->get();
+        if ($leaderIds->isNotEmpty()) {
+            // Cargar toda la información necesaria en una sola consulta
+            $procesosConSupervisores = DB::table('proceso as p')
+                ->join('supervisor_proceso as sp', 'p.idProceso', '=', 'sp.idProceso')
+                ->join('usuario as u', 'sp.idUsuario', '=', 'u.idUsuario')
+                ->whereIn('p.idUsuario', $leaderIds)
+                ->select('p.idUsuario as idLider', 'u.idUsuario', 'u.nombre', 'u.apellidoPat', 'u.apellidoMat')
+                ->get()
+                ->groupBy('idLider');
 
-            $supervisorIds = $sp->pluck('idSupervisor')->unique()->values();
-
-            $supervisores = Usuario::whereIn('idUsuario', $supervisorIds)
-                ->get(['idUsuario', 'nombre', 'apellidoPat', 'apellidoMat']);
-
-            // Maps rápidos
-            $procesoByLeader = $procesos->keyBy('idLider');          // idLider -> {idProceso,...}
-            $supervisorByProceso = $sp->keyBy('idProceso');               // idProceso -> {idSupervisor,...}
-            $supervisorUserById = $supervisores->keyBy('idUsuario');     // idSupervisor -> Usuario
-
-            // Adjunta supervisor a cada líder
-            foreach ($usuarios as $u) {
-                if ($u->roles->contains('nombreRol', 'Líder')) {
-                    $proc = $procesoByLeader->get($u->idUsuario);
-                    $supId = $proc ? optional($supervisorByProceso->get($proc->idProceso))->idSupervisor : null;
-
-                    if ($supId && $supervisorUserById->has($supId)) {
-                        $sup = $supervisorUserById->get($supId);
-                        // Campo ad-hoc "supervisor" para que el front lo reciba directo
-                        $u->supervisor = [
-                            'idUsuario' => $sup->idUsuario,
-                            'nombre' => $sup->nombre,
-                            'apellidoPat' => $sup->apellidoPat,
-                            'apellidoMat' => $sup->apellidoMat,
-                        ];
-                    } else {
-                        $u->supervisor = null;
-                    }
+            // Asignar supervisores
+            foreach ($usuarios as $usuario) {
+                if ($usuario->roles->contains('nombreRol', 'Líder') && isset($procesosConSupervisores[$usuario->idUsuario])) {
+                    $supervisor = $procesosConSupervisores[$usuario->idUsuario]->first();
+                    $usuario->supervisor = [
+                        'idUsuario' => $supervisor->idUsuario,
+                        'nombre' => $supervisor->nombre,
+                        'apellidoPat' => $supervisor->apellidoPat,
+                        'apellidoMat' => $supervisor->apellidoMat,
+                    ];
                 }
             }
         }
 
-        return response()->json(['data' => $usuarios]);
+        return response()->json([
+            'data' => $usuarios->items(),
+            'pagination' => [
+                'current_page' => $usuarios->currentPage(),
+                'per_page' => $usuarios->perPage(),
+                'total' => $usuarios->total(),
+                'last_page' => $usuarios->lastPage(),
+            ]
+        ]);
     }
 
 
@@ -190,19 +207,22 @@ class UsuarioController extends Controller
             if (isset($validated['pass'])) {
                 $validated['pass'] = Hash::make($validated['pass']);
             }
+
+            // Remover campos que no existen en la tabla usuario
             unset($validated['roles'], $validated['procesosAsignados']);
 
             $usuario->update($validated);
 
-            if (isset($validated['roles'])) {
-                $usuario->roles()->sync($validated['roles']);
+            // Sincronizar roles en la tabla pivote si se proporcionan
+            if ($request->has('roles')) {
+                $usuario->roles()->sync($request->roles);
             }
 
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'data' => $usuario->load(['roles', 'tipoPrincipal'])
+                'data' => $usuario->load(['roles']) // Remover 'tipoPrincipal' si no existe
             ]);
 
         } catch (\Exception $e) {
@@ -217,45 +237,81 @@ class UsuarioController extends Controller
 
     public function destroy($id)
     {
-        $usuario = Usuario::findOrFail($id);
-        $usuario->delete();
-        return response()->json(null, 204);
+        try {
+            $usuario = Usuario::withInactive()->findOrFail($id);
+
+            // Verificación simple sin políticas complejas
+            if (auth()->id() === $usuario->idUsuario) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No puedes desactivarte a ti mismo'
+                ], 422);
+            }
+
+            $usuario->update(['activo' => 0]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Usuario desactivado correctamente'
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al desactivar el usuario',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
-   public function getAuditores()
-{
-    try {
-        $auditores = \DB::table('usuario as u')
-            ->join('usuario_tipo as ut', 'ut.idUsuario', '=', 'u.idUsuario')
-            ->where('ut.idTipoUsuario', 5)       // Auditor
-            ->where('u.activo', 1)
-            ->select('u.idUsuario','u.nombre','u.apellidoPat','u.apellidoMat',
-                     'u.correo','u.telefono','u.gradoAcademico')
-            ->get();
+    public function getAuditores()
+    {
+        try {
+            $auditores = \DB::table('usuario as u')
+                ->join('usuario_tipo as ut', 'ut.idUsuario', '=', 'u.idUsuario')
+                ->where('ut.idTipoUsuario', 5)       // Auditor
+                ->where('u.activo', 1)
+                ->select(
+                    'u.idUsuario',
+                    'u.nombre',
+                    'u.apellidoPat',
+                    'u.apellidoMat',
+                    'u.correo',
+                    'u.telefono',
+                    'u.gradoAcademico'
+                )
+                ->get();
 
-        return response()->json(['success' => true, 'data' => $auditores]);
-    } catch (\Throwable $e) {
-        return response()->json(['success' => false, 'message' => 'Error al obtener auditores', 'error' => $e->getMessage()], 500);
+            return response()->json(['success' => true, 'data' => $auditores]);
+        } catch (\Throwable $e) {
+            return response()->json(['success' => false, 'message' => 'Error al obtener auditores', 'error' => $e->getMessage()], 500);
+        }
     }
-}
 
 
     public function getAuditoresBasico()
-{
-    try {
-        $auditores = \DB::table('usuario as u')
-            ->join('usuario_tipo as ut', 'ut.idUsuario', '=', 'u.idUsuario')
-            ->where('ut.idTipoUsuario', 2)       // Ajusta al rol “básico” que necesites
-            ->where('u.activo', 1)
-            ->select('u.idUsuario','u.nombre','u.apellidoPat','u.apellidoMat',
-                     'u.correo','u.telefono','u.gradoAcademico')
-            ->get();
+    {
+        try {
+            $auditores = \DB::table('usuario as u')
+                ->join('usuario_tipo as ut', 'ut.idUsuario', '=', 'u.idUsuario')
+                ->where('ut.idTipoUsuario', 2)       // Ajusta al rol “básico” que necesites
+                ->where('u.activo', 1)
+                ->select(
+                    'u.idUsuario',
+                    'u.nombre',
+                    'u.apellidoPat',
+                    'u.apellidoMat',
+                    'u.correo',
+                    'u.telefono',
+                    'u.gradoAcademico'
+                )
+                ->get();
 
-        return response()->json(['success' => true, 'data' => $auditores]);
-    } catch (\Throwable $e) {
-        return response()->json(['success' => false, 'message' => 'Error al obtener auditores', 'error' => $e->getMessage()], 500);
+            return response()->json(['success' => true, 'data' => $auditores]);
+        } catch (\Throwable $e) {
+            return response()->json(['success' => false, 'message' => 'Error al obtener auditores', 'error' => $e->getMessage()], 500);
+        }
     }
-}
 
 
     public function getProcesosPorAuditor($idUsuario)
@@ -354,6 +410,17 @@ class UsuarioController extends Controller
         return response()->json([
             'procesos' => $procesos,
             'procesosIds' => $procesos->pluck('idProceso')
+        ]);
+    }
+
+    public function cambiarEstado($id)
+    {
+        $usuario = Usuario::withInactive()->findOrFail($id);
+        $usuario->update(['activo' => !$usuario->activo]);
+
+        return response()->json([
+            'message' => 'Estado actualizado',
+            'activo' => $usuario->activo
         ]);
     }
 
