@@ -430,6 +430,7 @@ Route::get('/auditores', [UsuarioController::class, 'getAuditores']);
 Route::get('/auditores/basico', [UsuarioController::class, 'getAuditoresBasico']);
 Route::get('/auditores/{idUsuario}/procesos', [UsuarioController::class, 'getProcesosPorAuditor']);
 Route::get('/usuario/{id}', [UsuarioController::class, 'obtenerNombreCompleto']);
+Route::post('/usuarios/{id}/reactivar', [UsuarioController::class, 'reactivar']);
 
 
 Route::get('/notificaciones/{idUsuario}', [NotificacionController::class, 'getNotificaciones']);

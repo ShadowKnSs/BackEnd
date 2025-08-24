@@ -136,7 +136,7 @@ class UsuarioController extends Controller
             $query->withInactive()->where('activo', 0);
         } elseif ($estado === 'true') {
             // No toques nada: el Global Scope ya filtra activo = 1
-        } 
+        }
 
         // Aplicar otros filtros
         if ($qParam) {
@@ -449,6 +449,54 @@ class UsuarioController extends Controller
             'message' => 'Estado actualizado',
             'activo' => $usuario->activo
         ]);
+    }
+
+    public function reactivar($id)
+    {
+        try {
+            $usuario = Usuario::withInactive()->findOrFail($id);
+
+            // Verificar si el usuario ya está activo
+            if ($usuario->activo) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'El usuario ya está activo'
+                ], 422);
+            }
+
+            // Verificar si el usuario ha estado inactivo por más de 1 año
+            $fechaInactivacion = $usuario->fecha_inactivacion ?? $usuario->updated_at;
+            $fechaLimite = now()->subYear();
+
+            if ($fechaInactivacion && $fechaInactivacion->lt($fechaLimite)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No se puede reactivar un usuario que ha estado inactivo por más de 1 año'
+                ], 422);
+            }
+
+            // Reactivar el usuario
+            $usuario->update([
+                'activo' => 1,
+                'fecha_inactivacion' => null // Limpiar fecha de inactivación
+            ]);
+
+            // Cargar relaciones para la respuesta
+            $usuario->load(['roles', 'procesosSupervisados.proceso']);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Usuario reactivado correctamente',
+                'usuario' => $usuario
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al reactivar el usuario',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
 

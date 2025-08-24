@@ -98,7 +98,6 @@ class Usuario extends Authenticatable
         if ($estado === 'false') {
             return $q->where('activo', 0);
         }
-        // Para 'all', mostrar todos (incluyendo inactivos)
         return $q->withInactive();
     }
 }
