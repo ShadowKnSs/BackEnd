@@ -8,9 +8,8 @@ use App\Models\Usuario;
 use App\Models\TipoUsuario;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Cache;
 
 
 class UsuarioController extends Controller
@@ -129,10 +128,24 @@ class UsuarioController extends Controller
         $estado = $request->query('estado', 'all'); // all|true|false
         $excludeMe = filter_var($request->query('exclude_me', 'true'), FILTER_VALIDATE_BOOLEAN);
 
-        $query = Usuario::with(['roles', 'procesosSupervisados.proceso'])
-            ->estado($estado)
-            ->buscar($qParam)
-            ->filtrarRol($rol);
+        // Modificar la query para incluir inactivos cuando sea necesario
+        $query = Usuario::with(['roles', 'procesosSupervisados.proceso']);
+
+        if ($estado === 'false') {
+            // Necesitas quitar el Global Scope para poder ver inactivos
+            $query->withInactive()->where('activo', 0);
+        } elseif ($estado === 'true') {
+            // No toques nada: el Global Scope ya filtra activo = 1
+        } 
+
+        // Aplicar otros filtros
+        if ($qParam) {
+            $query->buscar($qParam);
+        }
+
+        if ($rol) {
+            $query->filtrarRol($rol);
+        }
 
         if ($excludeMe && Auth::check()) {
             $query->where('idUsuario', '!=', Auth::id());
@@ -146,7 +159,6 @@ class UsuarioController extends Controller
         })->pluck('idUsuario');
 
         if ($leaderIds->isNotEmpty()) {
-            // Cargar toda la información necesaria en una sola consulta
             $procesosConSupervisores = DB::table('proceso as p')
                 ->join('supervisor_proceso as sp', 'p.idProceso', '=', 'sp.idProceso')
                 ->join('usuario as u', 'sp.idUsuario', '=', 'u.idUsuario')
@@ -155,7 +167,6 @@ class UsuarioController extends Controller
                 ->get()
                 ->groupBy('idLider');
 
-            // Asignar supervisores
             foreach ($usuarios as $usuario) {
                 if ($usuario->roles->contains('nombreRol', 'Líder') && isset($procesosConSupervisores[$usuario->idUsuario])) {
                     $supervisor = $procesosConSupervisores[$usuario->idUsuario]->first();
@@ -401,16 +412,32 @@ class UsuarioController extends Controller
 
     public function procesosDeSupervisor($idUsuario)
     {
-        $procesos = DB::table('supervisor_proceso as sp')
-            ->join('proceso as p', 'sp.idProceso', '=', 'p.idProceso')
-            ->select('p.idProceso', 'p.nombreProceso')
-            ->where('sp.idUsuario', $idUsuario)
-            ->get();
+        // 1. Validar entrada
+        if (!is_numeric($idUsuario) || $idUsuario <= 0) {
+            return response()->json(['procesos' => [], 'procesosIds' => []], 400);
+        }
 
-        return response()->json([
-            'procesos' => $procesos,
-            'procesosIds' => $procesos->pluck('idProceso')
-        ]);
+        // 2. Cache por usuario (más corto ya que es específico)
+        $cacheKey = "procesos_supervisor_{$idUsuario}";
+        $cacheTime = 300; // 5 minutos
+
+        $result = Cache::remember($cacheKey, $cacheTime, function () use ($idUsuario) {
+            $procesos = DB::table('supervisor_proceso as sp')
+                ->join('proceso as p', 'sp.idProceso', '=', 'p.idProceso')
+                ->select('p.idProceso', 'p.nombreProceso')
+                ->where('sp.idUsuario', $idUsuario)
+                // 3. Solo procesos activos
+                ->where('p.estado', 'Activo')
+                ->orderBy('p.nombreProceso')
+                ->get();
+
+            return [
+                'procesos' => $procesos,
+                'procesosIds' => $procesos->pluck('idProceso')
+            ];
+        });
+
+        return response()->json($result);
     }
 
     public function cambiarEstado($id)
@@ -423,5 +450,6 @@ class UsuarioController extends Controller
             'activo' => $usuario->activo
         ]);
     }
+
 
 }

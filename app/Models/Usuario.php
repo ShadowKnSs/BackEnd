@@ -92,10 +92,13 @@ class Usuario extends Authenticatable
 
     public function scopeEstado($q, $estado)
     {
-        if ($estado === 'true')
+        if ($estado === 'true') {
             return $q->where('activo', 1);
-        if ($estado === 'false')
+        }
+        if ($estado === 'false') {
             return $q->where('activo', 0);
-        return $q;
+        }
+        // Para 'all', mostrar todos (incluyendo inactivos)
+        return $q->withInactive();
     }
 }

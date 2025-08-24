@@ -11,3 +11,6 @@ Artisan::command('inspire', function () {
 
 Schedule::command(FinalizarAuditoriasVencidas::class)
     ->hourly();
+
+Schedule::command('tokens:delete-expired')->weeklyOn(0, '00:00');
+

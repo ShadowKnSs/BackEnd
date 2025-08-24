@@ -13,6 +13,8 @@ use App\Models\IndicadorConsolidado;
 use App\Models\EvaluaProveedores;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
+
 
 
 
@@ -249,18 +251,30 @@ class ProcessController extends Controller
 
     public function procesosConEntidad()
     {
-        $procesos = DB::table('proceso')
-            ->join('entidaddependencia', 'proceso.idEntidad', '=', 'entidaddependencia.idEntidadDependencia')
-            ->select(
-                'proceso.idProceso',
-                DB::raw("CONCAT(entidaddependencia.nombreEntidad, ' - ', proceso.nombreProceso) AS nombreCompleto")
-            )
-            ->where('proceso.estado', 'Activo')
-            ->get();
+        // 1. Usar caché para datos que no cambian frecuentemente
+        $cacheKey = 'procesos_con_entidad_active';
+        $cacheTime = 3600; // 1 hora
+
+        $procesos = Cache::remember($cacheKey, $cacheTime, function () {
+            return DB::table('proceso as p')
+                ->join('entidaddependencia as e', 'p.idEntidad', '=', 'e.idEntidadDependencia')
+                ->select(
+                    'p.idProceso',
+                    'e.nombreEntidad',
+                    'p.nombreProceso',
+                    DB::raw("CONCAT(e.nombreEntidad, ' - ', p.nombreProceso) AS nombreCompleto")
+                )
+                ->where('p.estado', 'Activo')
+                // 2. Asegurar índices
+                ->whereRaw('p.idEntidad = e.idEntidadDependencia')
+                // 3. Orden consistente
+                ->orderBy('e.nombreEntidad')
+                ->orderBy('p.nombreProceso')
+                ->get();
+        });
 
         return response()->json(['procesos' => $procesos]);
     }
-
 
 }
 
