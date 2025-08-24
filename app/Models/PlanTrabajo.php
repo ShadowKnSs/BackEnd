@@ -4,31 +4,50 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * Modelo PlanTrabajo
+ * 
+ * Representa el plan de trabajo diseñado como parte de una actividad de mejora.
+ * Incluye información clave como objetivo, responsable, fechas de elaboración y revisión, entregables y estado del plan.
+ * 
+ * Funcionalidades clave:
+ * - Pertenece a una `ActividadMejora`.
+ * - Se relaciona con múltiples fuentes documentales (`FuentePt`).
+ */
 class PlanTrabajo extends Model
 {
+    // Nombre de la tabla asociada
     protected $table = 'plantrabajo';
-    protected $primaryKey = 'idPlanTrabajo';
-    public $timestamps = false; // se usarán created_at y updated_at
 
+    // Clave primaria personalizada
+    protected $primaryKey = 'idPlanTrabajo';
+
+    // No se utilizan timestamps automáticos
+    public $timestamps = false;
+
+    // Campos asignables en masa
     protected $fillable = [
         'idActividadMejora',
         'responsable',
         'fechaElaboracion',
         'objetivo',
         'fechaRevision',
-        'revisadoPor', 
+        'revisadoPor',
         'estado',
         'entregable'
-        
     ];
 
-    // Cada plan de trabajo pertenece a una actividad de mejora
+    /**
+     * Relación: este plan de trabajo pertenece a una actividad de mejora.
+     */
     public function actividadMejora()
     {
         return $this->belongsTo(ActividadMejora::class, 'idActividadMejora', 'idActividadMejora');
     }
 
-    // Un plan de trabajo tiene muchas fuentes (registros de la tabla fuentept)
+    /**
+     * Relación: este plan puede tener múltiples fuentes documentales asociadas.
+     */
     public function fuentes()
     {
         return $this->hasMany(FuentePt::class, 'idPlanTrabajo', 'idPlanTrabajo');

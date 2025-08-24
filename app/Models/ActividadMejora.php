@@ -20,4 +20,10 @@ class ActividadMejora extends Model
     {
         return $this->hasOne(PlanTrabajo::class, 'idActividadMejora', 'idActividadMejora');
     }
+
+    public function registro()
+    {
+        return $this->belongsTo(Registros::class, 'idRegistro');
+    }
+
 }

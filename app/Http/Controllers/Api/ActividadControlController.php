@@ -10,6 +10,8 @@ use App\Models\Registros;
 use App\Models\AnalisisDatos;
 use App\Models\NeceInter;
 use App\Models\IndicadorConsolidado;
+use App\Services\ControlCambiosService;
+
 
 class ActividadControlController extends Controller
 {
@@ -75,6 +77,13 @@ class ActividadControlController extends Controller
             $actividad->idIndicador = $indicador->idIndicador;
             $actividad->save();
 
+             ControlCambiosService::registrarCambio(
+                $actividad->idProceso,
+                'Plan de Control',
+                'agregó',
+                'Actividad: ' . $actividad->nombreActividad
+            );
+
             DB::commit();
 
             return response()->json([
@@ -92,7 +101,6 @@ class ActividadControlController extends Controller
             ], 500);
         }
     }
-
 
 
     // Mostrar una actividad específica
@@ -128,6 +136,13 @@ class ActividadControlController extends Controller
         ]);
 
         $actividad->update($request->all());
+
+         ControlCambiosService::registrarCambio(
+            $actividad->idProceso,
+            'Plan de Control',
+            'editó',
+            'Actividad: ' . $actividad->nombreActividad
+        );
         return response()->json($actividad, 200);
     }
 
@@ -138,7 +153,20 @@ class ActividadControlController extends Controller
         if (!$actividad) {
             return response()->json(['message' => 'No encontrado'], 404);
         }
+
+        $idProceso = $actividad->idProceso;
+        $nombreActividad = $actividad->nombreActividad;
+
         $actividad->delete();
+
+        // Registro automático en Control de Cambios
+        ControlCambiosService::registrarCambio(
+            $idProceso,
+            'Plan de Control',
+            'eliminó',
+            'Actividad: ' . $nombreActividad
+        );
+
         return response()->json(['message' => 'Eliminado'], 200);
     }
 }

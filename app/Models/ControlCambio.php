@@ -15,7 +15,6 @@ class ControlCambio extends Model
 
     protected $fillable = [
         'idProceso',
-        'idArchivo',
         'seccion',
         'edicion',
         'version',

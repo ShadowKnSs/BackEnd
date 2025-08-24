@@ -10,7 +10,7 @@ use Laravel\Sanctum\HasApiTokens; // Agregar esta línea
 
 class Usuario extends Authenticatable
 {
-    //use HasApiTokens, HasFactory, Notifiable; // Agregar HasApiTokens aquí
+    use HasApiTokens, HasFactory, Notifiable; // Agregar HasApiTokens aquí
     
     protected $table = 'usuario';
 
