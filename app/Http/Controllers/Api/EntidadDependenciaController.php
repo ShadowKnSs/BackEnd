@@ -18,8 +18,8 @@ class EntidadDependenciaController extends Controller
             'icono' => 'required|string',
         ]);
 
-        // Verificar si ya existe una entidad con ese nombre (insensible a mayúsculas)
-        $existeEntidad = EntidadDependencia::whereRaw('LOWER(nombreEntidad) = ?', [strtolower($request->nombreEntidad)])
+        // Verificar si ya existe una entidad con ese nombre (case-insensitive compatible con MySQL)
+        $existeEntidad = EntidadDependencia::whereRaw('LOWER(nombreEntidad) = LOWER(?)', [$request->nombreEntidad])
             ->exists();
 
         if ($existeEntidad) {
@@ -39,7 +39,6 @@ class EntidadDependenciaController extends Controller
             'entidad' => $entidad
         ], 201);
     }
-
     //obtener todas las entidades/dependecias 
     public function index()
     {
@@ -47,15 +46,6 @@ class EntidadDependenciaController extends Controller
         return response()->json(['entidades' => $entidades], 200);
     }
 
-    //obtener todas las entidades/dependecias ordenadas por nombre 
-    public function index1()
-    {
-        $entidades = EntidadDependencia::select('idEntidadDependencia', 'nombreEntidad')
-            ->orderBy('nombreEntidad')
-            ->get();
-
-        return response()->json(['entidades' => $entidades]);
-    }
 
     // Función para obtener los nombres de las entidades
     public function getNombres()
