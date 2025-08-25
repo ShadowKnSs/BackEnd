@@ -21,7 +21,7 @@ class FormatosController extends Controller
 
         // Guardar en la base de datos
         $formato = Formatos::create([
-            'idUsuario' => 1,
+            'idUsuario' => $request->idUsuario,
             'nombreFormato' => $request->nombreFormato,
             'ruta' => $ruta,
         ]);
