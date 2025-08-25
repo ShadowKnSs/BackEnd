@@ -48,6 +48,11 @@ class Usuario extends Authenticatable
         return $this->belongsToMany(TipoUsuario::class, 'usuario_tipo', 'idUsuario', 'idTipoUsuario');
     }
 
+    public function procesos()
+    {
+        return $this->hasMany(Proceso::class, 'idUsuario');
+    }
+
     /**
      * Procesos que el usuario supervisa.
      */

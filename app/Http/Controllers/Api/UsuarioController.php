@@ -246,35 +246,94 @@ class UsuarioController extends Controller
     }
 
 
-    public function destroy($id)
-    {
-        try {
-            $usuario = Usuario::withInactive()->findOrFail($id);
-
-            // Verificación simple sin políticas complejas
-            if (auth()->id() === $usuario->idUsuario) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'No puedes desactivarte a ti mismo'
-                ], 422);
-            }
-
-            $usuario->update(['activo' => 0]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Usuario desactivado correctamente'
-            ], 200);
-
-        } catch (\Exception $e) {
+    // En UsuarioController.php, modificar el método destroy
+    public function desactivar($id)
+{
+    try {
+        $usuario = Usuario::findOrFail($id);
+        
+        // Verificar que no sea el usuario actual
+        if (auth()->id() === $usuario->idUsuario) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al desactivar el usuario',
-                'error' => $e->getMessage()
-            ], 500);
+                'message' => 'No puedes desactivarte a ti mismo'
+            ], 422);
         }
-    }
 
+        // Verificar que no esté ya inactivo
+        if (!$usuario->activo) {
+            return response()->json([
+                'success' => false,
+                'message' => 'El usuario ya está inactivo'
+            ], 422);
+        }
+
+        $usuario->update([
+            'activo' => 0,
+            'fecha_inactivacion' => now()
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Usuario desactivado correctamente'
+        ], 200);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error al desactivar el usuario',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
+public function destroy($id)
+{
+    DB::beginTransaction();
+    try {
+        $usuario = Usuario::withInactive()->findOrFail($id);
+
+        // Verificar que el usuario esté inactivo antes de eliminar
+        if ($usuario->activo) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Solo se pueden eliminar usuarios inactivos'
+            ], 422);
+        }
+
+        // Verificar que no sea el usuario actual
+        if (auth()->id() === $usuario->idUsuario) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No puedes eliminarte a ti mismo'
+            ], 422);
+        }
+
+        // Eliminar relaciones en usuario_tipo
+        DB::table('usuario_tipo')->where('idUsuario', $usuario->idUsuario)->delete();
+
+        // Eliminar relaciones en supervisor_proceso
+        DB::table('supervisor_proceso')->where('idUsuario', $usuario->idUsuario)->delete();
+
+        // Finalmente eliminar el usuario
+        $usuario->delete();
+
+        DB::commit();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Usuario eliminado permanentemente'
+        ], 200);
+
+    } catch (\Exception $e) {
+        DB::rollBack();
+        return response()->json([
+            'success' => false,
+            'message' => 'Error al eliminar el usuario',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
     public function getAuditores()
     {
         try {
