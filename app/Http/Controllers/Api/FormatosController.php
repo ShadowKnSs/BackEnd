@@ -13,7 +13,7 @@ class FormatosController extends Controller
     {
         $request->validate([
             'nombreFormato' => 'required|string|max:255',
-            'archivo' => 'required|file|mimes:pdf|max:2048',
+            'archivo' => 'required|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:5120', // 5MB máximo
         ]);
 
         // Guardar archivo en storage

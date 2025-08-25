@@ -49,7 +49,7 @@ class ProcessController extends Controller
                         ['idRegistro' => $registro->idRegistro],
                         ['elaboro' => null, 'fechaelaboracion' => null]
                     );
-                    Log::info("✅ gestionriesgos creado automáticamente", [
+                    Log::info("gestionriesgos creado automáticamente", [
                         'idRegistro' => $registro->idRegistro
                     ]);
                 }
@@ -57,7 +57,7 @@ class ProcessController extends Controller
                     ActividadMejora::firstOrCreate([
                         'idRegistro' => $registro->idRegistro
                     ]);
-                    Log::info("✅ ActividadMejora creada automáticamente al crear proceso", [
+                    Log::info("ActividadMejora creada automáticamente al crear proceso", [
                         'idRegistro' => $registro->idRegistro
                     ]);
                 }
@@ -127,7 +127,7 @@ class ProcessController extends Controller
                         'resultadoNoConfiableSem2' => null,
                     ]);
 
-                    Log::info("✅ Indicadores automáticos creados correctamente en Análisis de Datos", [
+                    Log::info("Indicadores automáticos creados correctamente en Análisis de Datos", [
                         'idRegistro' => $registro->idRegistro
                     ]);
 
@@ -137,7 +137,7 @@ class ProcessController extends Controller
                         'periodoEvaluacion' => null,
                     ]);
 
-                    Log::info("✅ Registro de análisis de datos creado automáticamente", [
+                    Log::info(" Registro de análisis de datos creado automáticamente", [
                         'idRegistro' => $registro->idRegistro
                     ]);
 
@@ -149,14 +149,14 @@ class ProcessController extends Controller
                         'necesidad' => '',
                     ]);
 
-                    Log::info("✅ NeceInter con sección Conformidad creado automáticamente", [
+                    Log::info("NeceInter con sección Conformidad creado automáticamente", [
                         'idAnalisisDatos' => $analisisDatosId
                     ]);
 
                 }
             }
 
-            DB::commit(); // ✅ AHORA SÍ, AL FINAL DE TODO
+            DB::commit(); 
 
             return response()->json([
                 'message' => 'Proceso y registros creados exitosamente',
