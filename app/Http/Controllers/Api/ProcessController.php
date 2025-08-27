@@ -42,14 +42,14 @@ class ProcessController extends Controller
                 ]);
 
                 if ($apartado === "Gestión de Riesgo") {
-        GestionRiesgos::firstOrCreate(
-            ['idRegistro' => $registro->idRegistro],
-            ['elaboro' => null, 'fechaelaboracion' => null]
-        );
-        Log::info("✅ gestionriesgos creado automáticamente", [
-            'idRegistro' => $registro->idRegistro
-        ]);
-    }
+                    GestionRiesgos::firstOrCreate(
+                        ['idRegistro' => $registro->idRegistro],
+                        ['elaboro' => null, 'fechaelaboracion' => null]
+                    );
+                    Log::info("✅ gestionriesgos creado automáticamente", [
+                        'idRegistro' => $registro->idRegistro
+                    ]);
+                }
                 if ($apartado === "Acciones de Mejora") {
                     ActividadMejora::firstOrCreate([
                         'idRegistro' => $registro->idRegistro
@@ -177,12 +177,16 @@ class ProcessController extends Controller
 
 
 
-    public function index()
+    /*public function index()
     {
         $procesos = Proceso::all();
         return response()->json(['procesos' => $procesos], 200);
+    }*/
+    public function index()
+    {
+        $procesos = Proceso::where('estado', 'Activo')->get();
+        return response()->json($procesos);
     }
-
     public function show($id)
     {
         $proceso = Proceso::findOrFail($id);
@@ -197,10 +201,21 @@ class ProcessController extends Controller
         return response()->json(['proceso' => $proceso], 200);
     }
 
+    /* public function destroy($id)
+     {
+         $proceso = Proceso::findOrFail($id);
+         $proceso->delete();
+         return response()->json(['proceso' => $proceso], 200);
+     }*/
+
     public function destroy($id)
     {
         $proceso = Proceso::findOrFail($id);
-        $proceso->delete();
+
+        // Cambiar el estado a "Inactivo"
+        $proceso->estado = 'Inactivo';
+        $proceso->save();
+
         return response()->json(['proceso' => $proceso], 200);
     }
 
@@ -232,18 +247,18 @@ class ProcessController extends Controller
 
 
     public function getInfoPorProceso($idProceso)
-{
-    $proceso = Proceso::with('entidad')->find($idProceso);
+    {
+        $proceso = Proceso::with('entidad')->find($idProceso);
 
-    if (!$proceso || !$proceso->entidad) {
-        return response()->json(['error' => 'Datos incompletos'], 404);
+        if (!$proceso || !$proceso->entidad) {
+            return response()->json(['error' => 'Datos incompletos'], 404);
+        }
+
+        return response()->json([
+            'proceso' => $proceso->nombreProceso,
+            'entidad' => $proceso->entidad->nombreEntidad,
+        ]);
     }
-
-    return response()->json([
-        'proceso' => $proceso->nombreProceso,
-        'entidad' => $proceso->entidad->nombreEntidad,
-    ]);
-}
 
 
     public function procesosConEntidad()
