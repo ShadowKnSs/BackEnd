@@ -203,4 +203,19 @@ class AuditoriaInternaController extends Controller
         return response()->json($auditorias);
     }
 
+    // AuditoriaInterna.php
+    public function registro() {
+        return $this->belongsTo(Registros::class, 'idRegistro');
+    }
+
+    // Registros.php
+    public function proceso() {
+        return $this->belongsTo(Proceso::class, 'idProceso');
+    }
+
+    // Proceso.php
+    public function entidad() {
+        return $this->belongsTo(EntidadDependencia::class, 'idEntidad');
+    }
+
 }

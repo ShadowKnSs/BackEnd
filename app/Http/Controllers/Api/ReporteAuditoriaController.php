@@ -38,13 +38,14 @@ class ReporteAuditoriaController extends Controller
             'verificacionRuta',
             'puntosMejora',
             'conclusiones',
-            'plazos'
+            'plazos',
+            'registro.proceso.entidad'
         ])->findOrFail($id);        
-    
+
         $pdf = Pdf::loadView('pdf.reporteAud', compact('auditoria'));
         return $pdf->download('informe_auditoria_' . $id . '.pdf');
-
     }
+
     public function buscar(Request $request)
     {
         $query = ReporteAuditoria::query();
