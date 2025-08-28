@@ -13,7 +13,8 @@ class BuscadorProcController extends Controller
     public function buscarPorAnio(Request $request)
     {
         $anio = $request->query('anio');
-        
+        $lider = $request->query('lider');
+
         if (!$anio || !is_numeric($anio)) {
             return response()->json([
                 'success' => false,
@@ -23,9 +24,18 @@ class BuscadorProcController extends Controller
 
         $procesos = Proceso::all(['idProceso', 'nombreProceso as nombreProceso']);
 
-        $reportes = BuscadorProc::with('proceso') 
-            ->whereYear('fechaElaboracion', $anio)
-            ->orderBy('fechaElaboracion', 'desc')
+        $query = BuscadorProc::with(['proceso.usuario.roles'])
+            ->whereYear('fechaElaboracion', $anio);
+
+        if ($lider) {
+            $query->whereHas('proceso.usuario', function ($q) use ($lider) {
+                $q->where('nombre', 'like', "%{$lider}%");
+            })->whereHas('proceso.usuario.roles', function ($q) {
+                $q->where('usuario_tipo.idTipoUsuario', 2);
+            });
+        }
+
+        $reportes = $query->orderBy('fechaElaboracion', 'desc')
             ->get([
                 'idReporteProceso as id',
                 'idProceso',
@@ -37,7 +47,8 @@ class BuscadorProcController extends Controller
             return [
                 'id' => $reporte->id,
                 'idProceso' => $reporte->idProceso,
-                'nombreProceso' => $reporte->proceso->nombre ?? 'Proceso no encontrado',
+                'nombreProceso' => $reporte->proceso->nombreProceso ?? 'Proceso no encontrado',
+                'liderProceso' => $reporte->proceso->usuario->nombre ?? 'Líder no asignado',
                 'nombre' => $reporte->nombre,
                 'fecha' => Carbon::parse($reporte->fechaElaboracion)->format('d/m/Y'),
             ];
@@ -51,4 +62,5 @@ class BuscadorProcController extends Controller
             'data' => $reportes
         ]);
     }
+
 }
