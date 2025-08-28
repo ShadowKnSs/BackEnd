@@ -90,7 +90,23 @@
     <img src="{{ public_path('images/logo2.jpg') }}" style="height: 70px;">
 </div>-->
 
-    <h1>Reporte Semestral {{ $periodo }} {{ $anio }}</h1>
+    <!-- Header con logos -->
+    <header>
+        <table width="100%">
+            <tr>
+                <!--IMPORTANTE!, revisar el tamaño de los logos, no pude probarlos-->
+                <td style="width: 25%; text-align: left;">
+                    <img src="{{ public_path('images/logo3.png') }}" alt="Logo 3" style="height: 160px;">
+                </td>
+                <td style="width: 50%; text-align: center;">
+                    <h1>Reporte Semestral {{ $periodo }} {{ $anio }}</h1>
+                </td>
+                <td style="width: 25%; text-align: right;">
+                    <img src="{{ public_path('images/logo4.jpg') }}" alt="Logo 4" style="height: 160px;">
+                </td>
+            </tr>
+        </table>
+    </header>
 
     <!-- Gestión de Riesgos -->
     @if(!empty($datosRiesgos))

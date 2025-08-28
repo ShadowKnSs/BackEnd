@@ -58,6 +58,26 @@
             text-align: center;
         }
 
+        .pegadas {
+            margin: 0; /* elimina espacio entre tablas */
+            border-collapse: collapse;
+        }
+
+        /* Encabezado gris de las columnas de Equipo Auditor y Personal Auditado */
+        .auditor-header {
+            background-color: #d9d9d9;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .encabezado-gris {
+        background-color: #d9d9d9;
+        font-weight: bold;
+        text-align: center;
+    }
+
+    
+
     </style>
 </head>
 <body>
@@ -78,15 +98,13 @@
     </header>
 
     <!-- ENCABEZADO DE INFORMACIÓN GENERAL -->
-    <table>
-        <!-- Fila de encabezados -->
+    <table class="pegadas">
         <tr class="table-header">
             <th>Dependencia Administrativa / Entidad Académica</th>
             <th>Proceso</th>
             <th>Líder de Proceso</th>
             <th>Fecha</th>
         </tr>
-        <!-- Fila de valores -->
         <tr>
             <td>{{ $auditoria->registro->proceso->entidad->nombreEntidad ?? '---' }}</td>
             <td>{{ $auditoria->registro->proceso->nombreProceso ?? '---' }}</td>
@@ -95,9 +113,8 @@
         </tr>
     </table>
 
-
     <!-- OBJETIVO -->
-    <table>
+    <table class="pegadas">
         <tr class="table-header">
             <td>OBJETIVO DE LA AUDITORÍA</td>
         </tr>
@@ -107,7 +124,7 @@
     </table>
 
     <!-- ALCANCE -->
-    <table>
+    <table class="pegadas">
         <tr class="table-header">
             <td>ALCANCE DE AUDITORÍA</td>
         </tr>
@@ -117,7 +134,7 @@
     </table>
 
     <!-- CRITERIOS -->
-    <table>
+    <table class="pegadas">
         <tr class="table-header">
             <td colspan="2">CRITERIOS DE AUDITORÍA</td>
         </tr>
@@ -129,35 +146,157 @@
     </table>
 
     <!-- EQUIPO AUDITOR Y PERSONAL AUDITADO -->
-    <table>
+    <table class="pegadas">
         <tr class="table-header">
             <td colspan="2">EQUIPO AUDITOR</td>
             <td colspan="2">PERSONAL AUDITADO</td>
         </tr>
-        <tr>
-            <th>ROL ASIGNADO</th>
-            <th>AUDITOR SICAL</th>
-            <th>NOMBRE</th>
-            <th>CARGO</th>
+        <tr class="auditor-header">
+            <td>ROL ASIGNADO</td>
+            <td>AUDITOR SICAL</td>
+            <td>NOMBRE</td>
+            <td>CARGO</td>
         </tr>
-        @foreach($auditoria->equipoAuditor as $item)
+        @php
+            // Calculamos cuántas filas necesitamos según la sección más larga
+            $maxRows = max(count($auditoria->equipoAuditor), count($auditoria->personalAuditado));
+        @endphp
+        @for($i = 0; $i < $maxRows; $i++)
+            <tr>
+                {{-- Equipo Auditor --}}
+                <td>{{ $auditoria->equipoAuditor[$i]->rolAsignado ?? '' }}</td>
+                <td>{{ $auditoria->equipoAuditor[$i]->nombreAuditor ?? '' }}</td>
+                {{-- Personal Auditado --}}
+                <td>{{ $auditoria->personalAuditado[$i]->nombre ?? '' }}</td>
+                <td>{{ $auditoria->personalAuditado[$i]->cargo ?? '' }}</td>
+            </tr>
+        @endfor
+    </table>
+
+    <!-- VERIFICACIÓN DE RUTA DE AUDITORÍA -->
+    <table>
+        <!-- Título principal encima de los encabezados -->
+        <tr class="table-header">
+            <td colspan="7">VERIFICACIÓN DE RUTA DE AUDITORÍA</td>
+        </tr>
+        <!-- Fila de encabezados -->
+        <tr class="table-header">
+            <td>CRITERIO</td>
+            <td>REQ. ASOCIADO</td>
+            <td>OBSERVACIONES</td>
+            <td>EVIDENCIA OBJETIVA</td>
+            <td colspan="3">TIPO DE HALLAZGO</td>
+        </tr>
+        <!-- Sub-encabezado gris para los tipos de hallazgo -->
+        <tr class="table-subheader">
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td>NC</td>
+            <td>PM</td>
+            <td>NINGUNO</td>
+        </tr>
+        @foreach($auditoria->verificacionRuta as $verificacion)
         <tr>
-            <td>{{ $item->rolAsignado }}</td>
-            <td>{{ $item->nombreAuditor }}</td>
-            <td>{{ $item->nombreAuditado ?? '' }}</td>
-            <td>{{ $item->cargoAuditado ?? '' }}</td>
+            <td>{{ $verificacion->criterio }}</td>
+            <td>{{ $verificacion->reqAsociado }}</td>
+            <td>{{ $verificacion->observaciones }}</td>
+            <td>{{ $verificacion->evidencia }}</td>
+            <td>@if($verificacion->tipoHallazgo == 'NC') X @endif</td>
+            <td>@if($verificacion->tipoHallazgo == 'PM') X @endif</td>
+            <td>@if($verificacion->tipoHallazgo == 'NINGUNO') X @endif</td>
         </tr>
         @endforeach
+    </table>
 
-        <!-- Subheader para OBSERVADORES -->
-        <tr class="table-subheader">
-            <td colspan="4">PERSONAL DIGC (OBSERVADORES)</td>
+    <!-- FORTALEZAS Y DEBILIDADES -->
+    <table>
+        <tr class="table-header">
+            <td>FORTALEZAS IDENTIFICADAS</td>
         </tr>
-        @foreach($auditoria->personalAuditado as $item)
         <tr>
-            <td colspan="2"></td>
-            <td>{{ $item->nombre }}</td>
-            <td>{{ $item->cargo }}</td>
+            <td>{{ $auditoria->fortalezas ?? '' }}</td>
+        </tr>
+    </table>
+    <table>
+        <tr class="table-header">
+            <td>DEBILIDADES IDENTIFICADAS</td>
+        </tr>
+        <tr>
+            <td>{{ $auditoria->debilidades ?? '' }}</td>
+        </tr>
+    </table>
+
+    <!-- NO CONFORMIDADES DETECTADAS -->
+    <table>
+        <tr class="table-header">
+            <td colspan="4">NO CONFORMIDADES DETECTADAS</td>
+        </tr>
+        <tr class="encabezado-gris">
+            <td>No.</td>
+            <td>REQ. ISO 9001:2015</td>
+            <td>DESCRIPCIÓN DEL HALLAZGO</td>
+            <td>EVIDENCIA OBJETIVA</td>
+        </tr>
+        @foreach ($auditoria->puntosMejora as $punto)
+            <tr>
+                <td>N/A</td>
+                <td>N/A</td>
+                <td>N/A</td>
+                <td>N/A</td>
+            </tr>
+        @endforeach
+    </table>
+
+    <!-- PUNTOS DE MEJORA DETECTADOS -->
+    <table>
+        <tr class="table-header">
+            <td colspan="4">PUNTOS DE MEJORA DETECTADOS</td>
+        </tr>
+        <tr class="encabezado-gris">
+            <td>No.</td>
+            <td>REQ. ISO 9001:2015</td>
+            <td>DESCRIPCIÓN DEL PUNTO DE MEJORA IDENTIFICADO</td>
+            <td>EVIDENCIA OBJETIVA</td>
+        </tr>
+        @foreach($auditoria->puntosMejora as $pm)
+            <tr>
+                <td>{{ $loop->iteration }}</td>
+                <td>{{ $pm->reqISO ?? 'N/A' }}</td> <!-- <-- Asegúrate de usar el nombre correcto -->
+                <td>{{ $pm->descripcion }}</td>
+                <td>{{ $pm->evidencia }}</td>
+            </tr>
+        @endforeach
+    </table>
+
+    <!-- CONCLUSIONES -->
+    <table>
+        <tr class="table-header">
+            <td colspan="2">CONCLUSIONES GENERALES DE LA AUDITORÍA</td>
+        </tr>
+        @foreach($auditoria->conclusiones as $conclusion)
+            <!-- Fila con el nombre de la conclusión (subcolumna gris) -->
+            <tr class="table-subheader">
+                <td colspan="2">{{ $conclusion->nombre }}</td>
+            </tr>
+            <!-- Fila con la descripción de la conclusión -->
+            <tr>
+                <td colspan="2">{{ $conclusion->descripcionConclusion }}</td>
+            </tr>
+        @endforeach
+    </table>
+
+    <!-- PLAZOS Y CONSIDERACIONES -->
+    <table>
+        <tr class="table-header">
+            <td style="width: 10%;">No.</td>
+            <td style="width: 90%;">PLAZOS Y CONSIDERACIONES</td>
+        </tr>
+        @foreach($auditoria->plazos as $plazo)
+        <tr>
+            <td>{{ $loop->iteration }}</td>
+            <td>{{ $plazo->descripcion }}</td>
         </tr>
         @endforeach
     </table>
