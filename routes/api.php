@@ -263,6 +263,8 @@ Route::put('gestionriesgos/{idGesRies}/riesgos/{idRiesgo}', [RiesgoController::c
 // Eliminar un riesgo
 Route::delete('gestionriesgos/{idGesRies}/riesgos/{idRiesgo}', [RiesgoController::class, 'destroy']);
 
+Route::post('gestionriesgos/{idGesRies}/riesgos/{idRiesgo}/evaluar', [RiesgoController::class, 'evaluarEfectividad']);
+
 //**************************************************/
 //              Análisis Datos
 //**************************************************/
@@ -317,7 +319,7 @@ Route::apiResource('actividadmejora', ActividadMejoraController::class);
 Route::get('/plantrabajo/{id}/fuentes', [FuentePTController::class, 'index']);
 Route::post('/plantrabajo/{id}/fuentes', [FuentePtController::class, 'store']);
 Route::delete('/fuente/{id}', [FuentePtController::class, 'destroy']);
-Route::put('/fuente/{id}', [FuentePtController::class, 'update']);
+Route::put('plantrabajo/fuentes/{id}', [FuentePtController::class, 'update']);
 
 //**************************************************/
 //             Acciones de Mejorea

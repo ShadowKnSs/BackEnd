@@ -144,54 +144,61 @@ class FuentePtController extends Controller
         return response()->json($fuente, 200);
     }
 
-    public function update(Request $request, $id)
-    {
-        $fuente = FuentePt::find($id);
-        if (!$fuente) {
-            return response()->json(['message' => 'Fuente no encontrada'], 404);
-        }
-        Log::info("[FuentePt@update] Datos recibidos:", $request->all());
-
-        // Validación (sin max:255 en textos largos) + noActividad requerido
-        $validator = Validator::make($request->all(), [
-            'responsable'     => 'sometimes|required|string|max:255',
-            'fechaInicio'     => 'sometimes|required|date',
-            'fechaTermino'    => 'sometimes|required|date|after_or_equal:fechaInicio',
-            'estado'          => 'sometimes|required|in:En proceso,Cerrado',
-            'nombreFuente'    => 'sometimes|required|string|max:255',
-            'elementoEntrada' => 'sometimes|required|string',
-            'descripcion'     => 'sometimes|required|string',
-            'entregable'      => 'sometimes|required|string',
-            'noActividad'     => 'required|integer|min:1',
-        ]);
-        if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
-        }
-
-        // Actualiza la fuente (excepto noActividad si no quieres que cambie aquí)
-        $fuente->update($request->except('noActividad'));
-
-        // PT-XX
-        $ptCode = 'PT-' . str_pad($request->noActividad, 2, '0', STR_PAD_LEFT);
-
-        // Sincronizar con RIESGOS por idFuente
-        $riesgo = Riesgo::where('idFuente', $fuente->idFuente)->first();
-        if ($riesgo) {
-            $riesgo->update([
-                'descripcion'  => $request->elementoEntrada ?? $riesgo->descripcion,
-                'actividades'  => $request->descripcion ?? $riesgo->actividades,
-                'responsable'  => $request->responsable ?? $riesgo->responsable,
-                'accionMejora' => $ptCode,
-                'fechaImp'     => $request->fechaInicio ?? $riesgo->fechaImp,
-                'fechaEva'     => $request->fechaTermino ?? $riesgo->fechaEva,
-            ]);
-        }
-
-        return response()->json([
-            'message' => 'Fuente actualizada exitosamente',
-            'fuente'  => $fuente
-        ], 200);
+   public function update(Request $request, $id)
+{
+    $fuente = FuentePt::find($id);
+    if (!$fuente) {
+        return response()->json(['message' => 'Fuente no encontrada'], 404);
     }
+
+    Log::info("[FuentePt@update] Datos recibidos:", $request->all());
+
+    // 1) Normalizar: si viene como fuentes[0], aplanar a payload plano
+    $payload = $request->all();
+    if (isset($payload['fuentes']) && is_array($payload['fuentes']) && isset($payload['fuentes'][0]) && is_array($payload['fuentes'][0])) {
+        $payload = array_merge($payload, $payload['fuentes'][0]);
+    }
+
+    // 2) Validación: textos largos con tope 512 (o sin tope si tus columnas son TEXT)
+    $validator = Validator::make($payload, [
+        'responsable'     => 'sometimes|required|string|max:255',
+        'fechaInicio'     => 'sometimes|required|date',
+        'fechaTermino'    => 'sometimes|required|date|after_or_equal:fechaInicio',
+        'estado'          => 'sometimes|required|in:En proceso,Cerrado',
+        'nombreFuente'    => 'sometimes|required|string|max:255',
+        'elementoEntrada' => 'sometimes|required|string|max:512',
+        'descripcion'     => 'sometimes|required|string|max:512',
+        'entregable'      => 'sometimes|required|string|max:512',
+        'noActividad'     => 'required|integer|min:1',
+    ]);
+    if ($validator->fails()) {
+        return response()->json($validator->errors(), 422);
+    }
+
+    // 3) Actualizar Fuente (evita cambiar noActividad si no corresponde)
+    $fuente->update(collect($payload)->except('noActividad','fuentes')->toArray());
+
+    // 4) PT-XX y sincronía con RIESGOS
+    $ptCode = 'PT-' . str_pad($payload['noActividad'], 2, '0', STR_PAD_LEFT);
+
+    $riesgo = Riesgo::where('idFuente', $fuente->idFuente)->first();
+    if ($riesgo) {
+        $riesgo->update([
+            'descripcion'  => $payload['elementoEntrada'] ?? $riesgo->descripcion,
+            'actividades'  => $payload['descripcion']     ?? $riesgo->actividades,
+            'responsable'  => $payload['responsable']     ?? $riesgo->responsable,
+            'accionMejora' => $ptCode,
+            'fechaImp'     => $payload['fechaInicio']     ?? $riesgo->fechaImp,
+            'fechaEva'     => $payload['fechaTermino']    ?? $riesgo->fechaEva,
+        ]);
+    }
+
+    return response()->json([
+        'message' => 'Fuente actualizada exitosamente',
+        'fuente'  => $fuente
+    ], 200);
+}
+
 
     public function destroy($id)
     {

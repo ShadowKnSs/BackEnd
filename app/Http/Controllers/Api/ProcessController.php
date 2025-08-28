@@ -11,6 +11,7 @@ use App\Models\Registros;
 use App\Models\ActividadMejora;
 use App\Models\IndicadorConsolidado;
 use App\Models\EvaluaProveedores;
+use App\Models\PlanTrabajo;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
@@ -57,8 +58,23 @@ class ProcessController extends Controller
                     ActividadMejora::firstOrCreate([
                         'idRegistro' => $registro->idRegistro
                     ]);
-                    Log::info("ActividadMejora creada automáticamente al crear proceso", [
-                        'idRegistro' => $registro->idRegistro
+
+                     PlanTrabajo::firstOrCreate(
+                        ['idActividadMejora' => $actividadMejora->idActividadMejora],
+                        [
+                            'fechaElaboracion' => now(),
+                            'objetivo' => 'Plan de Trabajo para ' . $proceso->nombreProceso,
+                            'revisadoPor' => null,
+                            'responsable' => null,
+                            'estado' => 'En proceso',
+                            'fuente' => 'Gestión de Riesgos',
+                            'entregable' => 'Cumplimiento de actividades'
+                        ]
+                    );
+
+                    Log::info("ActividadMejora y PlanTrabajo creados automáticamente", [
+                        'idRegistro' => $registro->idRegistro,
+                        'idActividadMejora' => $actividadMejora->idActividadMejora
                     ]);
                 }
 
