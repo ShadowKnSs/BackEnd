@@ -55,7 +55,7 @@ class ProcessController extends Controller
                     ]);
                 }
                 if ($apartado === "Acciones de Mejora") {
-                    ActividadMejora::firstOrCreate([
+                    $actividadMejora = ActividadMejora::firstOrCreate([
                         'idRegistro' => $registro->idRegistro
                     ]);
 
