@@ -13,7 +13,9 @@ class ReporteAuditoriaController extends Controller
 {
     public function index()
     {
-        return ReporteAuditoria::with('auditoria')->get();
+        return ReporteAuditoria::with([
+            'auditoria.registro.proceso.entidad'
+        ])->get();
     }
 
     public function store(Request $request)

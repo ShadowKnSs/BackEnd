@@ -23,7 +23,8 @@ class AuditoriaInternaController extends Controller
             'equipoAuditor',
             'personalAuditado',
             'verificacionRuta',
-            'puntosMejora'
+            'puntosMejora',
+            'registro.proceso.entidad'
         ])->get();
 
         return response()->json($auditorias);
