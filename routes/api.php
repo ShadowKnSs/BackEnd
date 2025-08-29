@@ -119,6 +119,7 @@ Route::get('/proceso-usuario/{idUsuario}', [ProcessController::class, 'obtenerPr
 Route::get('/proceso-entidad/{idProceso}', [ProcessController::class, 'getInfoPorProceso']);
 Route::get('/procesos-con-entidad', [ProcessController::class, 'procesosConEntidad']);
 Route::get('procesos-nombres', [ProcessController::class, 'getNombres']);
+Route::get('procesos', [ProcessController::class, 'index']);
 
 
 
