@@ -13,7 +13,9 @@ class ReporteAuditoriaController extends Controller
 {
     public function index()
     {
-        return ReporteAuditoria::with('auditoria')->get();
+        return ReporteAuditoria::with([
+            'auditoria.registro.proceso.entidad'
+        ])->get();
     }
 
     public function store(Request $request)
@@ -38,13 +40,14 @@ class ReporteAuditoriaController extends Controller
             'verificacionRuta',
             'puntosMejora',
             'conclusiones',
-            'plazos'
+            'plazos',
+            'registro.proceso.entidad'
         ])->findOrFail($id);        
-    
+
         $pdf = Pdf::loadView('pdf.reporteAud', compact('auditoria'));
         return $pdf->download('informe_auditoria_' . $id . '.pdf');
-
     }
+
     public function buscar(Request $request)
     {
         $query = ReporteAuditoria::query();
@@ -125,5 +128,21 @@ class ReporteAuditoriaController extends Controller
         }
         
         abort(404, 'Archivo no encontrado');
+    }
+
+    public function generarPdf($id)
+    {
+        $auditoria = AuditoriaInterna::with([
+            'equipoAuditor',
+            'personalAuditado',
+            'verificacionRuta',
+            'puntosMejora',
+            'criterios',
+            'conclusiones',
+            'plazos'
+        ])->findOrFail($id);
+
+        $pdf = Pdf::loadView('pdf.reporteAud', compact('auditoria'));
+        return $pdf->stream("auditoria_{$id}.pdf"); // devuelve inline para iframe
     }
 }

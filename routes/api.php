@@ -228,6 +228,7 @@ Route::prefix('documentos')->group(function () {
 //*********************************************************/Route::apiResource('auditorias', AuditoriaInternaController::class);
 Route::apiResource('reportesauditoria', ReporteAuditoriaController::class)->only([ 'index', 'store', 'destroy' ]);
 Route::get('/reporte-pdf/{id}', [ReporteAuditoriaController::class, 'descargarPDF']);
+Route::get('/reportesauditoria/{id}/pdf', [ReporteAuditoriaController::class, 'generarPdf']);
 
 
 

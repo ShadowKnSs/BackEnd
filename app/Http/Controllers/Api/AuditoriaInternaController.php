@@ -23,7 +23,8 @@ class AuditoriaInternaController extends Controller
             'equipoAuditor',
             'personalAuditado',
             'verificacionRuta',
-            'puntosMejora'
+            'puntosMejora',
+            'registro.proceso.entidad'
         ])->get();
 
         return response()->json($auditorias);
@@ -201,6 +202,21 @@ class AuditoriaInternaController extends Controller
             ->get();
 
         return response()->json($auditorias);
+    }
+
+    // AuditoriaInterna.php
+    public function registro() {
+        return $this->belongsTo(Registros::class, 'idRegistro');
+    }
+
+    // Registros.php
+    public function proceso() {
+        return $this->belongsTo(Proceso::class, 'idProceso');
+    }
+
+    // Proceso.php
+    public function entidad() {
+        return $this->belongsTo(EntidadDependencia::class, 'idEntidad');
     }
 
 }

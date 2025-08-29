@@ -85,13 +85,23 @@
 </head>
 
 <body>
-
-    <!-- Encabezado del reporte -->
-    <div style="text-align: center; margin-bottom: 20px;">
-        <img src="{{ public_path('/storage/logo/logoSical.png') }}" alt="Logo" width="80">
-        <h2>Sistema de Gestión de Calidad</h2>
-        <p>Reporte generado el {{ date('d/m/Y') }}</p>
-    </div>
+    <!-- Header del reporte con logos -->
+    <header>
+        <table style="width: 100%; margin-bottom: 10px;">
+            <tr>
+                <td style="width: 25%; text-align: left;">
+                    <img src="{{ public_path('images/logo3.png') }}" alt="Logo 3" width="160">
+                </td>
+                <td style="width: 50%; text-align: center;">
+                    <h2 style="margin: 0;">Sistema de Gestión de Calidad</h2>
+                </td>
+                <td style="width: 25%; text-align: right;">
+                    <img src="{{ public_path('images/logo4.jpg') }}" alt="Logo 4" width="160">
+                </td>
+            </tr>
+        </table>
+        <p style="text-align: center; margin: 0;">Reporte generado el {{ date('d/m/Y') }}</p>
+    </header>
 
     <!-- Título del Reporte -->
     <h1 class="title">Reporte del Proceso</h1>
