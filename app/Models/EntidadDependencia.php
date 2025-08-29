@@ -26,7 +26,7 @@ class EntidadDependencia extends Model
     public $timestamps = false;
 
     // Campos asignables masivamente
-    protected $fillable = ['ubicacion', 'nombreEntidad', 'tipo', 'icono'];
+    protected $fillable = ['ubicacion', 'nombreEntidad', 'tipo', 'icono', 'activo'];
 
     /**
      * Relación: esta entidad puede tener muchos procesos asignados.
