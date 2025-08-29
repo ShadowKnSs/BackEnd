@@ -143,6 +143,12 @@ class EntidadDependenciaController extends Controller
         return response()->json(['message' => 'Entidad/dependencia eliminada con éxito'], 200);
     }
 
+    public function getNombres2()
+    {
+        $entidades = Entidad::select('idEntidad', 'nombre')->get();
+        return response()->json(['nombres' => $entidades]);
+    }
+
 
     public function obtenerProcesosPorNombreEntidad(Request $request)
     {

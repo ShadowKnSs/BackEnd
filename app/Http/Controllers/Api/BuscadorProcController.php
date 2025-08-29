@@ -7,13 +7,16 @@ use Illuminate\Http\Request;
 use App\Models\BuscadorProc;
 use App\Models\Proceso;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
+use App\Models\Usuario;
 
 class BuscadorProcController extends Controller
 {
     public function buscarPorAnio(Request $request)
     {
         $anio = $request->query('anio');
-        
+        $lider = $request->query('lider');
+
         if (!$anio || !is_numeric($anio)) {
             return response()->json([
                 'success' => false,
@@ -21,11 +24,26 @@ class BuscadorProcController extends Controller
             ], 400);
         }
 
-        $procesos = Proceso::all(['idProceso', 'nombreProceso as nombreProceso']);
+        // Procesos
+        $procesos = DB::table('proceso')
+            ->join('entidaddependencia', 'proceso.idEntidad', '=', 'entidaddependencia.idEntidadDependencia')
+            ->select(
+                'proceso.idProceso',
+                DB::raw("CONCAT(entidaddependencia.nombreEntidad, ' - ', proceso.nombreProceso) AS nombreCompleto")
+            )
+            ->get();
 
-        $reportes = BuscadorProc::with('proceso') 
-            ->whereYear('fechaElaboracion', $anio)
-            ->orderBy('fechaElaboracion', 'desc')
+        // Reportes
+        $query = BuscadorProc::with(['proceso.usuario.roles'])
+            ->whereYear('fechaElaboracion', $anio);
+
+        if ($lider) {
+            $query->whereHas('proceso.usuario', function ($q) use ($lider) {
+                $q->where('idUsuario', $lider);
+            });
+        }
+
+        $reportes = $query->orderBy('fechaElaboracion', 'desc')
             ->get([
                 'idReporteProceso as id',
                 'idProceso',
@@ -37,16 +55,28 @@ class BuscadorProcController extends Controller
             return [
                 'id' => $reporte->id,
                 'idProceso' => $reporte->idProceso,
-                'nombreProceso' => $reporte->proceso->nombre ?? 'Proceso no encontrado',
+                'nombreProceso' => $reporte->proceso->nombreProceso ?? 'Proceso no encontrado',
+                'liderProceso' => $reporte->proceso->usuario->nombre ?? 'Líder no asignado',
                 'nombre' => $reporte->nombre,
-                'fecha' => Carbon::parse($reporte->fechaElaboracion)->format('d/m/Y'),
+                'fecha' => Carbon::parse($reporte->fechaElaboracion)->toDateString(),
             ];
         });
+
+        // Líderes
+        $leaders = Usuario::with(['roles'])
+            ->whereHas('roles', function ($q) {
+                $q->where('nombreRol', 'Líder');
+            })
+            ->get([
+                'idUsuario',
+                DB::raw("CONCAT(nombre, ' ', apellidoPat, ' ', apellidoMat) as nombreCompleto")
+            ]);
 
         return response()->json([
             'success' => true,
             'anio' => $anio,
             'procesos' => $procesos,
+             'leaders' => $leaders,
             'total' => $reportes->count(),
             'data' => $reportes
         ]);
