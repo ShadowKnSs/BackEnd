@@ -106,6 +106,7 @@ Route::get('/entidades', [EntidadDependenciaController::class, 'index']);
 Route::put('/entidades/{id}', [EntidadDependenciaController::class, 'update']);
 Route::delete('/entidades/{id}', [EntidadDependenciaController::class, 'destroy']);
 Route::get('/procesos-por-nombre-entidad', [EntidadDependenciaController::class, 'obtenerProcesosPorNombreEntidad']);
+Route::post('/entidades/{id}/toggleProcesos', [EntidadDependenciaController::class, 'toggleProcesos']);
 
 
 //*********************************************************/
