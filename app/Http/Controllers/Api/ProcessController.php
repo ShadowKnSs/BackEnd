@@ -196,11 +196,16 @@ class ProcessController extends Controller
 
 
 
-    public function index()
+    /*public function index()
     {
         $procesos = Proceso::all();
         return response()->json(['procesos' => $procesos], 200);
-    }
+    }*/
+    public function index()
+{
+    $procesos = Proceso::all(); // devuelve todos los procesos
+    return response()->json($procesos);
+}
 
     public function show($id)
     {
@@ -216,10 +221,21 @@ class ProcessController extends Controller
         return response()->json(['proceso' => $proceso], 200);
     }
 
+    /* public function destroy($id)
+     {
+         $proceso = Proceso::findOrFail($id);
+         $proceso->delete();
+         return response()->json(['proceso' => $proceso], 200);
+     }*/
+
     public function destroy($id)
     {
         $proceso = Proceso::findOrFail($id);
-        $proceso->delete();
+
+        // Cambiar el estado a "Inactivo"
+        $proceso->estado = 'Inactivo';
+        $proceso->save();
+
         return response()->json(['proceso' => $proceso], 200);
     }
 
@@ -231,17 +247,31 @@ class ProcessController extends Controller
     }
 
 
-    public function obtenerProcesosPorEntidad($idEntidad)
+    /*public function obtenerProcesosPorEntidad($idEntidad)
     {
         // Obtener todos los procesos de la entidad específica
-        $procesos = Proceso::where('idEntidad', $idEntidad)->get();
+        $procesos = Proceso::where('idEntidad', $idEntidad )->get();
 
         if ($procesos->isEmpty()) {
             return response()->json(['message' => 'No se encontraron procesos para esta entidad'], 404);
         }
 
         return response()->json($procesos);
+    }*/
+    public function obtenerProcesosPorEntidad($idEntidad)
+{
+    // Obtener solo los procesos activos de la entidad específica
+    $procesos = Proceso::where('idEntidad', $idEntidad)
+                        ->where('estado', 'Activo')
+                        ->get();
+
+    if ($procesos->isEmpty()) {
+        return response()->json(['message' => 'No se encontraron procesos activos para esta entidad'], 404);
     }
+
+    return response()->json($procesos);
+}
+
 
     public function obtenerProcesoPorUsuario($idUsuario)
     {
