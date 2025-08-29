@@ -263,7 +263,7 @@
         @foreach($auditoria->puntosMejora as $pm)
             <tr>
                 <td>{{ $loop->iteration }}</td>
-                <td>{{ $pm->reqISO ?? 'N/A' }}</td> <!-- <-- Asegúrate de usar el nombre correcto -->
+                <td>{{ $pm->reqISO ?? 'N/A' }}</td>
                 <td>{{ $pm->descripcion }}</td>
                 <td>{{ $pm->evidencia }}</td>
             </tr>
@@ -300,6 +300,80 @@
         </tr>
         @endforeach
     </table>
+
+    <!-- FILA SUPERIOR: ELABORA y REVISA -->
+    <div style="width: 100%; margin-top: 20px; font-family: Arial, sans-serif;">
+
+        <!-- ELABORA -->
+        <div style="display: inline-block; width: 49%; vertical-align: top; text-align: center; box-sizing: border-box;">
+            <div style="font-weight: bold; text-transform: uppercase; color: #000; margin-bottom: 5px;">
+                ELABORA
+            </div>
+            <table style="width: 100%; border: 1px solid #000; border-collapse: collapse; box-sizing: border-box;">
+                <tr>
+                    <td style="width: 50%; text-align: center; font-weight: bold; color: #0B3D91; background-color: #d9d9d9; padding: 3px; font-size: 10px;">
+                        20/05/2024
+                    </td>
+                    <td style="width: 50%; background-color: #a0c44c; text-align: center; padding: 3px; font-size: 10px; white-space: nowrap;">
+                        INFORME CONCLUIDO Y REVISADO
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2" style="text-align: center; padding: 5px; height: 18px; font-size: 10px;">
+                        {{ $auditoria->auditorLider }}
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2" style="text-align: center; font-weight: bold; padding: 5px; height: 18px; font-size: 9px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        LÍDER DEL EQUIPO AUDITOR O AUDITOR INTERNO ÚNICO ASIGNADO
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- REVISA -->
+        <div style="display: inline-block; width: 49%; vertical-align: top; text-align: center; box-sizing: border-box;">
+            <div style="font-weight: bold; text-transform: uppercase; color: #000; margin-bottom: 5px;">
+                REVISA
+            </div>
+            <table style="width: 100%; border: 1px solid #000; border-collapse: collapse; box-sizing: border-box;">
+                <tr>
+                    <td style="width: 50%; text-align: center; font-weight: bold; color: #0B3D91; background-color: #d9d9d9; padding: 3px; font-size: 10px;"></td>
+                    <td style="width: 50%; background-color: #50a44c; text-align: center; padding: 3px; font-size: 10px; white-space: nowrap;">
+                        APROBACION DIGC
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="2" style="text-align: center; padding: 5px; height: 18px; font-size: 10px;"></td>
+                </tr>
+                <tr>
+                    <td colspan="2" style="text-align: center; font-weight: bold; padding: 5px; height: 18px; font-size: 10px;"></td>
+                </tr>
+            </table>
+        </div>
+
+    </div>
+
+    <!-- FILA INFERIOR: ACEPTACIÓN DEL AUDITADO -->
+    <div style="width: 100%; margin-top: 20px; text-align: center;">
+        <div style="font-weight: bold; text-transform: uppercase; color: #000; margin-bottom: 5px;">
+            ACEPTACIÓN DEL AUDITADO
+        </div>
+        <table style="width: 48%; margin: 0 auto; border: 1px solid #000; border-collapse: collapse;">
+            <tr>
+                <td style="width: 50%; text-align: center; font-weight: bold; color: #0B3D91; background-color: #d9d9d9; padding: 3px; font-size: 10px;"></td>
+                <td style="width: 50%; background-color: #50a44c; text-align: center; padding: 3px; font-size: 10px; white-space: nowrap;">
+                    ACEPTO DE CONFORMIDAD
+                </td>
+            </tr>
+            <tr>
+                <td colspan="2" style="text-align: center; padding: 5px; height: 18px; font-size: 10px;"></td>
+            </tr>
+            <tr>
+                <td colspan="2" style="text-align: center; font-weight: bold; padding: 5px; height: 18px; font-size: 10px;"></td>
+            </tr>
+        </table>
+    </div>
 
 </body>
 </html>

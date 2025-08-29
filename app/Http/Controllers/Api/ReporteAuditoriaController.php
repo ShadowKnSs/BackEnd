@@ -129,4 +129,20 @@ class ReporteAuditoriaController extends Controller
         
         abort(404, 'Archivo no encontrado');
     }
+
+    public function generarPdf($id)
+    {
+        $auditoria = AuditoriaInterna::with([
+            'equipoAuditor',
+            'personalAuditado',
+            'verificacionRuta',
+            'puntosMejora',
+            'criterios',
+            'conclusiones',
+            'plazos'
+        ])->findOrFail($id);
+
+        $pdf = Pdf::loadView('pdf.reporteAud', compact('auditoria'));
+        return $pdf->stream("auditoria_{$id}.pdf"); // devuelve inline para iframe
+    }
 }
