@@ -19,7 +19,7 @@ class AuditoriaInterna extends Model
         'gradoConformidad', 'gradoCumplimiento', 'mantenimientos', 'opinion',
         'fechaElabora', 'fechaRevisa', 'fechaAceptacion',
         'estadoElabora', 'estadoRevisa', 'estadoAceptacion',
-        'conclusionesGenerales', 'observaciones', 'plazosConsideraciones', 'auditorLider'
+        'conclusionesGenerales', 'observaciones', 'plazosConsideraciones', 'auditorLider', 'idAuditor'
     ];
 
     public function equipoAuditor()
