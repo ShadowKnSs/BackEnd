@@ -232,18 +232,18 @@ class ProcessController extends Controller
 
 
     public function getInfoPorProceso($idProceso)
-{
-    $proceso = Proceso::with('entidad')->find($idProceso);
+    {
+        $proceso = Proceso::with('entidad')->find($idProceso);
 
-    if (!$proceso || !$proceso->entidad) {
-        return response()->json(['error' => 'Datos incompletos'], 404);
+        if (!$proceso || !$proceso->entidad) {
+            return response()->json(['error' => 'Datos incompletos'], 404);
+        }
+
+        return response()->json([
+            'proceso' => $proceso->nombreProceso,
+            'entidad' => $proceso->entidad->nombreEntidad,
+        ]);
     }
-
-    return response()->json([
-        'proceso' => $proceso->nombreProceso,
-        'entidad' => $proceso->entidad->nombreEntidad,
-    ]);
-}
 
 
     public function procesosConEntidad()
@@ -260,6 +260,24 @@ class ProcessController extends Controller
         return response()->json(['procesos' => $procesos]);
     }
 
+    public function obtenerProcesoConLider($idProceso)
+    {
+        $proceso = Proceso::with(['usuario', 'entidad'])->find($idProceso);
+
+        if (!$proceso) {
+            return response()->json(['error' => 'Proceso no encontrado'], 404);
+        }
+
+        $liderProceso = $proceso->usuario 
+            ? $proceso->usuario->nombre . ' ' . $proceso->usuario->apellidoPat . ' ' . $proceso->usuario->apellidoMat
+            : null;
+
+        return response()->json([
+            'proceso' => $proceso->nombreProceso,
+            'entidad' => $proceso->entidad->nombreEntidad ?? null,
+            'liderProceso' => $liderProceso
+        ]);
+    }
 
 }
 
