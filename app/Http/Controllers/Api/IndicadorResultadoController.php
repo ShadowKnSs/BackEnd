@@ -207,7 +207,7 @@ class IndicadorResultadoController extends Controller
         }
 
         $resultados = DB::table('IndicadoresConsolidados AS ic')
-            ->join('ResultadoIndi            AS ri', 'ic.idIndicador', '=', 'ri.idIndicador')
+            ->join('ResultadoIndi as ri', 'ic.idIndicador', '=', 'ri.idIndicador')
             ->where('ic.origenIndicador', 'MapaProceso')
             ->where('ic.idProceso', $idProceso)
             ->select([
@@ -222,16 +222,16 @@ class IndicadorResultadoController extends Controller
 
     public function getResultadosRiesgos($idRegistro)
     {
-        // 1️⃣ Obtener idProceso desde Registros
+        // 1️Obtener idProceso desde Registros
         $registro = Registros::select('idProceso')->find($idRegistro);
         if (!$registro) {
             return response()->json(['message' => 'Registro no encontrado'], 404);
         }
         $idProceso = $registro->idProceso;
 
-        // 2️⃣ Un único query: indicadores + resultados
+        // 2️ Un único query: indicadores + resultados
         $resultados = DB::table('IndicadoresConsolidados AS ic')
-            ->join('ResultadoIndi            AS ri', 'ic.idIndicador', '=', 'ri.idIndicador')
+            ->join('ResultadoIndi as ri', 'ic.idIndicador', '=', 'ri.idIndicador')
             ->where('ic.origenIndicador', 'GestionRiesgo')
             ->where('ic.idProceso', $idProceso)
             ->select([

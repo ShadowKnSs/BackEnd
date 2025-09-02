@@ -290,7 +290,7 @@ Route::post('/plan-correctivos', [PlanCorrectivoController::class,'store']);
 //Ruta para actualizar un plan
 Route::put('/plan-correctivos/{id}', [PlanCorrectivoController::class,'update']);
 //Ruta para eliminar un plan
-Route::delete('/plan-correctivos/{id}', [PlanCorrectivoController::class,'destroy']);
+Route::delete('/plan-correctivo/{id}', [PlanCorrectivoController::class,'destroy']);
 
 //Rutas para el manejo de las actividades
 Route::post('/actividades', [PlanCorrectivoController::class,'createActividad']);

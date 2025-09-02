@@ -49,8 +49,8 @@ class PlanTrabajoController extends Controller
         'fuentes.*.estado'          => 'nullable|in:En proceso,Cerrado',
         'fuentes.*.nombreFuente'    => 'nullable|string|max:255',
         'fuentes.*.elementoEntrada' => 'required_with:fuentes|string',
-        'fuentes.*.descripcion'     => 'required_with:fuentes|string',     // TEXT: sin max
-        'fuentes.*.entregable'      => 'required_with:fuentes|string',     // TEXT: sin max
+        'fuentes.*.descripcion'     => 'nullable|string',     // TEXT: sin max
+        'fuentes.*.entregable'      => 'nullable|string',     // TEXT: sin max
         // 'fuentes.*.numero'        => 'nullable|integer|min:1',
         // 'fuentes.*.noActividad'   => 'nullable|integer|min:1',
     ]);

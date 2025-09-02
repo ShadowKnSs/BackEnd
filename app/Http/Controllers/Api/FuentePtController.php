@@ -146,52 +146,54 @@ class FuentePtController extends Controller
 
    public function update(Request $request, $id)
 {
+    Log::info('[FuentePt@update] Payload bruto', ['payload' => $request->all()]);
+
     $fuente = FuentePt::find($id);
     if (!$fuente) {
         return response()->json(['message' => 'Fuente no encontrada'], 404);
     }
 
-    Log::info("[FuentePt@update] Datos recibidos:", $request->all());
-
-    // 1) Normalizar: si viene como fuentes[0], aplanar a payload plano
+    // Aplana si vino como { fuentes: [ {...} ] }
     $payload = $request->all();
-    if (isset($payload['fuentes']) && is_array($payload['fuentes']) && isset($payload['fuentes'][0]) && is_array($payload['fuentes'][0])) {
+    if (isset($payload['fuentes'][0]) && is_array($payload['fuentes'][0])) {
         $payload = array_merge($payload, $payload['fuentes'][0]);
     }
 
-    // 2) Validación: textos largos con tope 512 (o sin tope si tus columnas son TEXT)
+    // Normalización defensiva
+    foreach (['elementoEntrada','descripcion','entregable'] as $k) {
+        if (array_key_exists($k, $payload)) {
+            if (is_array($payload[$k])) {
+                // Une chips/listas en una sola cadena
+                $payload[$k] = implode(' | ', array_map('trim', $payload[$k]));
+            }
+            if ($payload[$k] === null) {
+                $payload[$k] = '';
+            }
+            // fuerza string
+            $payload[$k] = (string) $payload[$k];
+        }
+    }
+
+
+    // Validación
     $validator = Validator::make($payload, [
         'responsable'     => 'sometimes|required|string|max:255',
         'fechaInicio'     => 'sometimes|required|date',
         'fechaTermino'    => 'sometimes|required|date|after_or_equal:fechaInicio',
         'estado'          => 'sometimes|required|in:En proceso,Cerrado',
         'nombreFuente'    => 'sometimes|required|string|max:255',
-        'elementoEntrada' => 'sometimes|required|string|max:512',
-        'descripcion'     => 'sometimes|required|string|max:512',
-        'entregable'      => 'sometimes|required|string|max:512',
+        'elementoEntrada' => 'sometimes|nullable|string',
+        'descripcion'     => 'sometimes|nullable|string',
+        'entregable'      => 'sometimes|nullable|string',
         'noActividad'     => 'required|integer|min:1',
     ]);
+
     if ($validator->fails()) {
+        Log::warning('[FuentePt@update] Falla validación', ['errors' => $validator->errors()]);
         return response()->json($validator->errors(), 422);
     }
 
-    // 3) Actualizar Fuente (evita cambiar noActividad si no corresponde)
     $fuente->update(collect($payload)->except('noActividad','fuentes')->toArray());
-
-    // 4) PT-XX y sincronía con RIESGOS
-    $ptCode = 'PT-' . str_pad($payload['noActividad'], 2, '0', STR_PAD_LEFT);
-
-    $riesgo = Riesgo::where('idFuente', $fuente->idFuente)->first();
-    if ($riesgo) {
-        $riesgo->update([
-            'descripcion'  => $payload['elementoEntrada'] ?? $riesgo->descripcion,
-            'actividades'  => $payload['descripcion']     ?? $riesgo->actividades,
-            'responsable'  => $payload['responsable']     ?? $riesgo->responsable,
-            'accionMejora' => $ptCode,
-            'fechaImp'     => $payload['fechaInicio']     ?? $riesgo->fechaImp,
-            'fechaEva'     => $payload['fechaTermino']    ?? $riesgo->fechaEva,
-        ]);
-    }
 
     return response()->json([
         'message' => 'Fuente actualizada exitosamente',

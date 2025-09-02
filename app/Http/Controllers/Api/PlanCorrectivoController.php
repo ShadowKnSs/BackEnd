@@ -36,12 +36,30 @@ class PlanCorrectivoController extends Controller
             return response()->json(['error' => 'No se encontró ActividadMejora asociada'], 422);
         }
 
-        // ✅ Agregar manualmente el campo
-        $data = $request->all();
-        $data['idActividadMejora'] = $actividad->idActividadMejora;
+        // Obtener el último número de secuencia para este año
+    $year = date('y');
+    $lastPlan = PlanCorrectivo::where('codigo', 'like', "PAC-%-$year")
+        ->orderBy('codigo', 'desc')
+        ->first();
 
-        $plan = PlanCorrectivo::create($data);
-        
+    $nextNumber = 1;
+    if ($lastPlan) {
+        // Extraer el número del código (ej: PAC-03-25 → 03)
+        preg_match('/PAC-(\d{2})-\d{2}/', $lastPlan->codigo, $matches);
+        if (isset($matches[1])) {
+            $nextNumber = (int)$matches[1] + 1;
+        }
+    }
+
+    $codigo = "PAC-" . str_pad($nextNumber, 2, '0', STR_PAD_LEFT) . "-" . $year;
+
+    // ✅ Agregar manualmente el campo
+    $data = $request->all();
+    $data['idActividadMejora'] = $actividad->idActividadMejora;
+    $data['codigo'] = $codigo;
+
+    $plan = PlanCorrectivo::create($data);
+    
 
         // Si se envían actividades de reacción, guardarlas
         if ($request->has('reaccion')) {
