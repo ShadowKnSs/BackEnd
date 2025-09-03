@@ -31,8 +31,9 @@ use App\Models\Objetivo;
 use App\Models\IndicadoresExito;
 use App\Models\ResponsableInv;
 use App\Models\ReporteProceso;
-
 use App\Models\EvaluaProveedores;
+use App\Models\FuentePt;
+use App\Models\PlanTrabajo;
 
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Log;
@@ -188,7 +189,10 @@ class ReporteProcesoController extends Controller
         $interpretacionMP = $interpretacion;
         $necesidadMP = $necesidad;
         $evaluacionProveedores = $this->getEvaluacionProveedoresData($idProceso, $anio);
-
+        $proyectoMejoraData = $this->getProyectoMejoraData($idProceso, $anio);
+        // Obtener datos del plan de trabajo
+// Obtener datos del plan de trabajo
+$planTrabajoData = $this->obtenerPlanTrabajoData($idProceso, $anio);
 
         $datos = [
             'nombreProceso' => $proceso->nombreProceso,
@@ -240,6 +244,9 @@ class ReporteProcesoController extends Controller
             'interpretacionMapaProceso' => $interpretacionMP,
             'necesidadMapaProceso' => $necesidadMP,
             'evaluacionProveedores' => $evaluacionProveedores,
+            'proyectoMejoraData' => $proyectoMejoraData,
+            'planTrabajoData' => $planTrabajoData,
+
         ];
 
         try {
@@ -780,4 +787,133 @@ class ReporteProcesoController extends Controller
         }
     }
 
+    private function getProyectoMejoraData($idProceso, $anio)
+    {
+        try {
+            $registroAcMejora = Registros::where('idProceso', $idProceso)
+                ->where('año', $anio)
+                ->where('apartado', 'Acciones de Mejora')
+                ->first();
+
+            if (!$registroAcMejora) {
+                return null;
+            }
+
+            $acMejora = ActividadMejora::where('idRegistro', $registroAcMejora->idRegistro)->get();
+            $idAccMejora = $acMejora->pluck('idActividadMejora')->toArray();
+            $proyectoMejora = ProyectoMejora::whereIn('idActividadMejora', $idAccMejora)->first();
+
+            if (!$proyectoMejora) {
+                return null;
+            }
+
+            $recursos = Recurso::where('idProyectoMejora', $proyectoMejora->idProyectoMejora)->get();
+            $actividadesPM = ActividadesPM::where('idProyectoMejora', $proyectoMejora->idProyectoMejora)->get();
+            $objetivos = Objetivo::where('idProyectoMejora', $proyectoMejora->idProyectoMejora)->get();
+            $responsables = ResponsableInv::where('idProyectoMejora', $proyectoMejora->idProyectoMejora)->get();
+            $indicadoresExito = IndicadoresExito::where('idProyectoMejora', $proyectoMejora->idProyectoMejora)->get();
+
+            return [
+                'acMejora' => $acMejora,
+                'proyectoMejora' => $proyectoMejora,
+                'recursos' => $recursos,
+                'actividadesPM' => $actividadesPM,
+                'objetivos' => $objetivos,
+                'responsables' => $responsables,
+                'indicadoresExito' => $indicadoresExito,
+            ];
+        } catch (\Exception $e) {
+            \Log::error("❌ Error en getProyectoMejoraData()", ['error' => $e->getMessage()]);
+            return null;
+        }
+    }
+
+    public function obtenerPlanTrabajo($idProceso, $anio)
+{
+    try {
+        // Buscar el registro de Acciones de Mejora
+        $registroAcMejora = Registros::where('idProceso', $idProceso)
+            ->where('año', $anio)
+            ->where('apartado', 'Acciones de Mejora')
+            ->first();
+
+        if (!$registroAcMejora) {
+            return response()->json(['error' => 'No se encontró el registro de Acciones de Mejora.'], 404);
+        }
+
+        // Obtener las actividades de mejora
+        $actividadesMejora = ActividadMejora::where('idRegistro', $registroAcMejora->idRegistro)->get();
+        
+        if ($actividadesMejora->isEmpty()) {
+            return response()->json(['error' => 'No se encontraron actividades de mejora.'], 404);
+        }
+        
+        $idActividadesMejora = $actividadesMejora->pluck('idActividadMejora')->toArray();
+
+        // Obtener el plan de trabajo (solo uno) - usar first() en lugar de get()
+        $planTrabajo = PlanTrabajo::whereIn('idActividadMejora', $idActividadesMejora)->first();
+
+        if (!$planTrabajo) {
+            return response()->json(['error' => 'No se encontró el plan de trabajo.'], 404);
+        }
+
+        // Obtener las fuentes para el plan de trabajo
+        $fuentes = FuentePt::where('idPlanTrabajo', $planTrabajo->idPlanTrabajo)->get();
+
+        $resultado = [
+            'planTrabajo' => $planTrabajo,
+            'fuentes' => $fuentes
+        ];
+
+        return response()->json($resultado);
+    } catch (\Exception $e) {
+        \Log::error("❌ Error en obtenerPlanTrabajo()", ['error' => $e->getMessage()]);
+        return response()->json(['error' => 'Error interno al obtener el plan de trabajo'], 500);
+    }
+}
+
+
+    private function obtenerPlanTrabajoData($idProceso, $anio)
+{
+    try {
+        // Buscar el registro de Acciones de Mejora
+        $registroAcMejora = Registros::where('idProceso', $idProceso)
+            ->where('año', $anio)
+            ->where('apartado', 'Acciones de Mejora')
+            ->first();
+
+        if (!$registroAcMejora) {
+            return null;
+        }
+
+        // Obtener las actividades de mejora
+        $actividadesMejora = ActividadMejora::where('idRegistro', $registroAcMejora->idRegistro)->get();
+        
+        if ($actividadesMejora->isEmpty()) {
+            return null;
+        }
+        
+        $idActividadesMejora = $actividadesMejora->pluck('idActividadMejora')->toArray();
+
+        // Obtener el plan de trabajo (solo uno) - usar first() en lugar de get()
+        $planTrabajo = PlanTrabajo::whereIn('idActividadMejora', $idActividadesMejora)->first();
+        
+        if (!$planTrabajo) {
+            return null;
+        }
+
+        // Obtener las fuentes para el plan de trabajo
+        $fuentes = FuentePt::where('idPlanTrabajo', $planTrabajo->idPlanTrabajo)->get();
+
+        $resultado = [
+            'planTrabajo' => $planTrabajo,
+            'fuentes' => $fuentes
+        ];
+
+        return $resultado;
+    } catch (\Exception $e) {
+        \Log::error("❌ Error en obtenerPlanTrabajoData()", ['error' => $e->getMessage()]);
+        return null;
+    }
+}
 }

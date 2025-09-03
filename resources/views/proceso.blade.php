@@ -956,6 +956,198 @@
         <p>{{ $planCorrectivo->causaRaiz }}</p>
     @endif
 
+    @if(isset($planTrabajoData) && $planTrabajoData['planTrabajo'])
+    <div style="margin-top: 40px; page-break-before: always;">
+        <h2 class="title">Plan de Trabajo</h2>
+        
+        <!-- Información general -->
+        <table width="100%" border="1" cellspacing="0" cellpadding="6" style="font-size: 11px; border-collapse: collapse; margin-bottom: 15px;">
+            <tr>
+                <td width="15%"><strong>Fecha de Elaboración:</strong></td>
+                <td width="35%">{{ $planTrabajoData['planTrabajo']->fechaElaboracion ?? 'No especificado' }}</td>
+                <td width="15%"><strong>Objetivo:</strong></td>
+                <td width="35%">{{ $planTrabajoData['planTrabajo']->objetivo ?? 'No especificado' }}</td>
+            </tr>
+            <tr>
+                <td><strong>Fecha de Revisión:</strong></td>
+                <td>{{ $planTrabajoData['planTrabajo']->fechaRevision ?? 'No especificado' }}</td>
+                <td><strong>Revisado Por:</strong></td>
+                <td>{{ $planTrabajoData['planTrabajo']->revisadoPor ?? 'No especificado' }}</td>
+            </tr>
+            <tr>
+                <td><strong>Responsable:</strong></td>
+                <td>{{ $planTrabajoData['planTrabajo']->responsable ?? 'No especificado' }}</td>
+                <td><strong>Estado:</strong></td>
+                <td>{{ $planTrabajoData['planTrabajo']->estado ?? 'No especificado' }}</td>
+            </tr>
+            <tr>
+                <td><strong>Fuente:</strong></td>
+                <td>{{ $planTrabajoData['planTrabajo']->fuente ?? 'No especificado' }}</td>
+                <td><strong>Entregable:</strong></td>
+                <td>{{ $planTrabajoData['planTrabajo']->entregable ?? 'No especificado' }}</td>
+            </tr>
+        </table>
+
+        <!-- Fuentes documentales -->
+        @if(isset($planTrabajoData['fuentes']) && count($planTrabajoData['fuentes']) > 0)
+            <h4>Fuentes Documentales</h4>
+            <table width="100%" border="1" cellspacing="0" cellpadding="6" style="font-size: 10px; border-collapse: collapse;">
+                <thead>
+                    <tr>
+                        <th>No. Actividad</th>
+                        <th>Responsable</th>
+                        <th>Fecha Inicio</th>
+                        <th>Fecha Término</th>
+                        <th>Estado</th>
+                        <th>Nombre Fuente</th>
+                        <th>Elemento Entrada</th>
+                        <th>Descripción</th>
+                        <th>Entregable</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($planTrabajoData['fuentes'] as $fuente)
+                        <tr>
+                            <td>{{ $fuente->noActividad ?? '-' }}</td>
+                            <td>{{ $fuente->responsable ?? '-' }}</td>
+                            <td>{{ $fuente->fechaInicio ?? '-' }}</td>
+                            <td>{{ $fuente->fechaTermino ?? '-' }}</td>
+                            <td>{{ $fuente->estado ?? '-' }}</td>
+                            <td>{{ $fuente->nombreFuente ?? '-' }}</td>
+                            <td>{{ $fuente->elementoEntrada ?? '-' }}</td>
+                            <td>{{ $fuente->descripcion ?? '-' }}</td>
+                            <td>{{ $fuente->entregable ?? '-' }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        @endif
+    </div>
+@endif
+
+    @if(isset($proyectoMejoraData) && $proyectoMejoraData['proyectoMejora'])
+        <div style="margin-top: 40px; page-break-before: always;">
+            <h2 class="title">Proyecto de Mejora</h2>
+
+            <!-- Información básica del proyecto -->
+            <table width="100%" border="1" cellspacing="0" cellpadding="6"
+                style="font-size: 11px; border-collapse: collapse; margin-bottom: 15px;">
+                <tr>
+                    <td width="15%"><strong>Fecha:</strong></td>
+                    <td width="35%">{{ $proyectoMejoraData['proyectoMejora']->fecha }}</td>
+                    <td width="15%"><strong>No. Mejora:</strong></td>
+                    <td width="35%">{{ $proyectoMejoraData['proyectoMejora']->noMejora }}</td>
+                </tr>
+                <tr>
+                    <td><strong>Descripción de la mejora:</strong></td>
+                    <td colspan="3">{{ $proyectoMejoraData['proyectoMejora']->descripcionMejora }}</td>
+                </tr>
+                <tr>
+                    <td><strong>Áreas de impacto/Personal beneficiado:</strong></td>
+                    <td colspan="3">{{ $proyectoMejoraData['proyectoMejora']->areaImpacto }}</td>
+                </tr>
+                <tr>
+                    <td><strong>Situación actual:</strong></td>
+                    <td colspan="3">{{ $proyectoMejoraData['proyectoMejora']->situacionActual }}</td>
+                </tr>
+                <tr>
+                    <td><strong>Aprobación Nombre:</strong></td>
+                    <td>{{ $proyectoMejoraData['proyectoMejora']->aprobacionNombre }}</td>
+                    <td><strong>Aprobación Puesto:</strong></td>
+                    <td>{{ $proyectoMejoraData['proyectoMejora']->aprobacionPuesto }}</td>
+                </tr>
+            </table>
+
+            <!-- Objetivos/Beneficios de la mejora -->
+            <h3 style="margin-top: 20px;">Objetivos/Beneficio de la mejora:</h3>
+            @if(count($proyectoMejoraData['objetivos']) > 0)
+                <ul>
+                    @foreach($proyectoMejoraData['objetivos'] as $objetivo)
+                        <li>{{ $objetivo->descripcionObj }}</li>
+                    @endforeach
+                </ul>
+            @else
+                <p>No se registraron objetivos.</p>
+            @endif
+
+            <!-- Responsables involucrados -->
+            <h3 style="margin-top: 20px;">Responsables involucrados:</h3>
+            @if(count($proyectoMejoraData['responsables']) > 0)
+                <ul>
+                    @foreach($proyectoMejoraData['responsables'] as $responsable)
+                        <li>{{ $responsable->nombre }}</li>
+                    @endforeach
+                </ul>
+            @else
+                <p>No hay responsables registrados.</p>
+            @endif
+
+            <!-- Indicadores de Éxito -->
+            <h3 style="margin-top: 20px;">Indicadores de Éxito:</h3>
+            @if(count($proyectoMejoraData['indicadoresExito']) > 0)
+                <ul>
+                    @foreach($proyectoMejoraData['indicadoresExito'] as $indicador)
+                        <li>{{ $indicador->nombreInd }} - Meta: {{ $indicador->meta }}</li>
+                    @endforeach
+                </ul>
+            @else
+                <p>No se definieron indicadores.</p>
+            @endif
+
+            <!-- Recursos -->
+            <h3 style="margin-top: 20px;">Recursos:</h3>
+            @if(count($proyectoMejoraData['recursos']) > 0)
+                <table width="100%" border="1" cellspacing="0" cellpadding="6"
+                    style="font-size: 11px; border-collapse: collapse;">
+                    <thead>
+                        <tr>
+                            <th>Tiempo</th>
+                            <th>Recursos Materiales y Humanos</th>
+                            <th>Costo estimado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($proyectoMejoraData['recursos'] as $recurso)
+                            <tr>
+                                <td>{{ $recurso->tiempoEstimado }}</td>
+                                <td>{{ $recurso->recursosMatHum }}</td>
+                                <td>{{ $recurso->costo }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            @else
+                <p>No se registraron recursos.</p>
+            @endif
+
+            <!-- Actividades -->
+            <h3 style="margin-top: 20px;">Actividades:</h3>
+            @if(count($proyectoMejoraData['actividadesPM']) > 0)
+                <table width="100%" border="1" cellspacing="0" cellpadding="6"
+                    style="font-size: 11px; border-collapse: collapse;">
+                    <thead>
+                        <tr>
+                            <th>Descripción</th>
+                            <th>Responsable</th>
+                            <th>Fecha</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($proyectoMejoraData['actividadesPM'] as $actividad)
+                            <tr>
+                                <td>{{ $actividad->descripcionAct }}</td>
+                                <td>{{ $actividad->responsable }}</td>
+                                <td>{{ $actividad->fecha }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            @else
+                <p>No se registraron actividades.</p>
+            @endif
+        </div>
+    @endif
+
 
 </body>
 
