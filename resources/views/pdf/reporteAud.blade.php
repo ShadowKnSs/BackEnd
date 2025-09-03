@@ -108,7 +108,7 @@
         <tr>
             <td>{{ $auditoria->registro->proceso->entidad->nombreEntidad ?? '---' }}</td>
             <td>{{ $auditoria->registro->proceso->nombreProceso ?? '---' }}</td>
-            <td>{{ $auditoria->auditorLider ?? '---' }}</td>
+            <td>{{ $auditoria->registro->proceso->usuario ? $auditoria->registro->proceso->usuario->nombre . ' ' . $auditoria->registro->proceso->usuario->apellidoPat . ' ' . $auditoria->registro->proceso->usuario->apellidoMat: '---' }}</td>
             <td>{{ \Carbon\Carbon::parse($auditoria->fecha)->format('d/m/Y') }}</td>
         </tr>
     </table>

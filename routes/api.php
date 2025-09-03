@@ -32,6 +32,7 @@ use App\Http\Controllers\Api\IndMapaProcesoController;
 use App\Http\Controllers\Api\ActividadControlController;
 use App\Http\Controllers\Api\AuditoriaInternaController;
 use App\Http\Controllers\Api\ReporteAuditoriaController;
+use App\Http\Controllers\Api\AuditorController;
 
 use App\Http\Controllers\Api\GestionRiesgoController;
 use App\Http\Controllers\Api\RiesgoController;
@@ -121,6 +122,8 @@ Route::get('/proceso-usuario/{idUsuario}', [ProcessController::class, 'obtenerPr
 Route::get('/proceso-entidad/{idProceso}', [ProcessController::class, 'getInfoPorProceso']);
 Route::get('/procesos-con-entidad', [ProcessController::class, 'procesosConEntidad']);
 Route::get('procesos-nombres', [ProcessController::class, 'getNombres']);
+Route::get('/procesos/{id}/lider', [ProcessController::class, 'obtenerProcesoConLider']);
+
 Route::get('procesos', [ProcessController::class, 'index']);
 
 //*********************************************************/
@@ -231,7 +234,7 @@ Route::prefix('documentos')->group(function () {
 Route::apiResource('reportesauditoria', ReporteAuditoriaController::class)->only([ 'index', 'store', 'destroy' ]);
 Route::get('/reporte-pdf/{id}', [ReporteAuditoriaController::class, 'descargarPDF']);
 Route::get('/reportesauditoria/{id}/pdf', [ReporteAuditoriaController::class, 'generarPdf']);
-
+Route::get('/auditores/{id}/auditorias', [AuditorController::class, 'auditorias']);
 
 
 //**************************************************/
