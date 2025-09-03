@@ -187,6 +187,8 @@ class ReporteProcesoController extends Controller
 
         $interpretacionMP = $interpretacion;
         $necesidadMP = $necesidad;
+        $evaluacionProveedores = $this->getEvaluacionProveedoresData($idProceso, $anio);
+
 
         $datos = [
             'nombreProceso' => $proceso->nombreProceso,
@@ -237,6 +239,7 @@ class ReporteProcesoController extends Controller
             'mapaProcesoIndicadores' => $resultadoMP,
             'interpretacionMapaProceso' => $interpretacionMP,
             'necesidadMapaProceso' => $necesidadMP,
+            'evaluacionProveedores' => $evaluacionProveedores,
         ];
 
         try {
@@ -448,7 +451,6 @@ class ReporteProcesoController extends Controller
         }
     }
 
-
     public function obtenerSeguimiento($idProceso, $anio)
     {
         try {
@@ -524,7 +526,6 @@ class ReporteProcesoController extends Controller
             return response()->json(['error' => 'Error al obtener', 'detalle' => $e->getMessage()], 500);
         }
     }
-
 
     public function obtenerPlanCorrectivo($idProceso, $anio)
     {
@@ -710,6 +711,72 @@ class ReporteProcesoController extends Controller
         } catch (\Exception $e) {
             \Log::error("❌ Error en evaluacionProveedores()", ['error' => $e->getMessage()]);
             return response()->json(['error' => 'Error interno al obtener evaluación de proveedores'], 500);
+        }
+    }
+
+    private function getEvaluacionProveedoresData($idProceso, $anio)
+    {
+        try {
+            $registro = Registros::where('idProceso', $idProceso)
+                ->where('año', $anio)
+                ->where('apartado', 'Análisis de Datos')
+                ->first();
+
+            if (!$registro) {
+                return null;
+            }
+
+            $analisis = AnalisisDatos::where('idRegistro', $registro->idRegistro)->first();
+            $neceInter = null;
+
+            if ($analisis) {
+                $neceInter = NeceInter::where('idAnalisisDatos', $analisis->idAnalisisDatos)
+                    ->where('seccion', 'Desempeño Proveedores')
+                    ->first();
+            }
+
+            $interpretacion = $neceInter->Interpretacion ?? 'No disponible';
+            $necesidad = $neceInter->Necesidad ?? 'No disponible';
+
+            $indicadores = IndicadorConsolidado::where('idRegistro', $registro->idRegistro)
+                ->where('origenIndicador', 'EvaluaProveedores')
+                ->get();
+
+            $categorias = [];
+
+            foreach ($indicadores as $indicador) {
+                $eval = EvaluaProveedores::where('idIndicador', $indicador->idIndicador)->first();
+
+                if ($eval) {
+                    $categorias[] = [
+                        'categoria' => 'Confiable',
+                        'meta' => $eval->metaConfiable ?? 0,
+                        'resultado1' => $eval->resultadoConfiableSem1 ?? 0,
+                        'resultado2' => $eval->resultadoConfiableSem2 ?? 0,
+                    ];
+                    $categorias[] = [
+                        'categoria' => 'Condicionado',
+                        'meta' => $eval->metaCondicionado ?? 0,
+                        'resultado1' => $eval->resultadoCondicionadoSem1 ?? 0,
+                        'resultado2' => $eval->resultadoCondicionadoSem2 ?? 0,
+                    ];
+                    $categorias[] = [
+                        'categoria' => 'No Confiable',
+                        'meta' => $eval->metaNoConfiable ?? 0,
+                        'resultado1' => $eval->resultadoNoConfiableSem1 ?? 0,
+                        'resultado2' => $eval->resultadoNoConfiableSem2 ?? 0,
+                    ];
+                }
+            }
+
+            return [
+                'indicadores' => $categorias,
+                'interpretacion' => $interpretacion,
+                'necesidad' => $necesidad
+            ];
+        } catch (\Exception $e) {
+            \Log::error("❌ Error en getEvaluacionProveedoresData()", ['error' => $e->getMessage()]);
+            return null;
         }
     }
 

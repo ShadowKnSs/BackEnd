@@ -435,57 +435,6 @@
         @endif
     @endif
 
-
-    @if($planCorrectivo)
-        <!-- Información básica del Plan Correctivo -->
-        <table class="table table-bordered">
-            <tr>
-                <th>Coordinador:</th>
-                <td>{{ $planCorrectivo->coordinadorPlan }}</td>
-                <th>Código:</th>
-                <td>{{ $planCorrectivo->codigo }}</td>
-            </tr>
-            <tr>
-                <th>Fecha:</th>
-                <td>{{ $planCorrectivo->fechaInicio }}</td>
-            </tr>
-        </table>
-
-        <h4>Origen de la no conformidad:</h4>
-        <p>{{ $planCorrectivo->origenConformidad }}</p>
-
-        <h4>Equipo de mejora:</h4>
-        <p>{{ $planCorrectivo->equipoMejora }}</p>
-
-        <h4>Actividades de reacción:</h4>
-        <table border="1" cellspacing="0" cellpadding="6" style="font-size: 12px;">
-            <thead>
-                <tr>
-                    <th>Actividad</th>
-                    <th>Responsable</th>
-                    <th>Fecha Programada</th>
-                    <th>Tipo</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach ($actividadesPlan->where('idPlanCorrectivo', $planCorrectivo->idPlanCorrectivo) as $act)
-                    <tr>
-                        <td>{{ $act->descripcionAct }}</td>
-                        <td>{{ $act->responsable }}</td>
-                        <td>{{ $act->fechaProgramada }}</td>
-                        <td>{{ $act->tipo }}</td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
-
-        <h4>Revisión y análisis:</h4>
-        <p>{{ $planCorrectivo->revisionAnalisis }}</p>
-
-        <h4>Determinación de causa raíz:</h4>
-        <p>{{ $planCorrectivo->causaRaiz }}</p>
-    @endif
-
     <!-- Gestión de Riesgos -->
     @if(!empty($riesgos) && count($riesgos) > 0)
         <div style="margin-top: 40px;">
@@ -907,8 +856,8 @@
     @endif
 
 
-    @if(!empty($evaluacionProveedores) && count($evaluacionProveedores['indicadores']) > 0)
-        <div style="margin-top: 40px;">
+    @if(isset($evaluacionProveedores) && !empty($evaluacionProveedores['indicadores']) && count($evaluacionProveedores['indicadores']) > 0)
+        <div style="margin-top: 40px; page-break-before: always;">
             <h2 class="title">Análisis de Datos - Desempeño de Proveedores Externos</h2>
 
             <table width="100%" border="1" cellspacing="0" cellpadding="6"
@@ -927,9 +876,9 @@
                         <tr>
                             <td>{{ $index + 1 }}</td>
                             <td>{{ $item['categoria'] }}</td>
-                            <td>{{ $item['meta'] ?? 'No disponible' }}</td>
-                            <td>{{ $item['resultado1'] ?? '-' }}</td>
-                            <td>{{ $item['resultado2'] ?? '-' }}</td>
+                            <td>{{ $item['meta'] ?? 'No disponible' }}%</td>
+                            <td>{{ $item['resultado1'] ?? '-' }}%</td>
+                            <td>{{ $item['resultado2'] ?? '-' }}%</td>
                         </tr>
                     @endforeach
 
@@ -955,6 +904,56 @@
             <img src="{{ $graficaEvaluacion }}" style="width: 100%; max-height: 400px;"
                 alt="Gráfica de Evaluación de Proveedores">
         </div>
+    @endif
+
+    @if($planCorrectivo)
+        <!-- Información básica del Plan Correctivo -->
+        <table class="table table-bordered">
+            <tr>
+                <th>Coordinador:</th>
+                <td>{{ $planCorrectivo->coordinadorPlan }}</td>
+                <th>Código:</th>
+                <td>{{ $planCorrectivo->codigo }}</td>
+            </tr>
+            <tr>
+                <th>Fecha:</th>
+                <td>{{ $planCorrectivo->fechaInicio }}</td>
+            </tr>
+        </table>
+
+        <h4>Origen de la no conformidad:</h4>
+        <p>{{ $planCorrectivo->origenConformidad }}</p>
+
+        <h4>Equipo de mejora:</h4>
+        <p>{{ $planCorrectivo->equipoMejora }}</p>
+
+        <h4>Actividades de reacción:</h4>
+        <table border="1" cellspacing="0" cellpadding="6" style="font-size: 12px;">
+            <thead>
+                <tr>
+                    <th>Actividad</th>
+                    <th>Responsable</th>
+                    <th>Fecha Programada</th>
+                    <th>Tipo</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($actividadesPlan->where('idPlanCorrectivo', $planCorrectivo->idPlanCorrectivo) as $act)
+                    <tr>
+                        <td>{{ $act->descripcionAct }}</td>
+                        <td>{{ $act->responsable }}</td>
+                        <td>{{ $act->fechaProgramada }}</td>
+                        <td>{{ $act->tipo }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+
+        <h4>Revisión y análisis:</h4>
+        <p>{{ $planCorrectivo->revisionAnalisis }}</p>
+
+        <h4>Determinación de causa raíz:</h4>
+        <p>{{ $planCorrectivo->causaRaiz }}</p>
     @endif
 
 
