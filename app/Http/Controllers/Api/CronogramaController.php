@@ -7,6 +7,7 @@ use App\Models\SupervisorProceso;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\Proceso;
+use App\Models\EntidadDependencia;
 use App\Notifications\AuditoriaNotificacion;
 use App\Models\Usuario;
 use Illuminate\Support\Facades\Notification;
@@ -132,23 +133,47 @@ class CronogramaController extends Controller
                 'tipoAuditoria' => 'required|in:interna,externa',
                 'estado' => 'required|in:Pendiente,Finalizada,Cancelada',
                 'descripcion' => 'required|string',
-                'idProceso' => 'required|integer|exists:proceso,idProceso', 
                 'nombreProceso' => 'required|string|max:255',
                 'nombreEntidad' => 'required|string|max:255',
-                'auditorLider' => 'nullable|integer|exists:usuario,idUsuario' 
+                'auditorLider' => 'nullable|integer|exists:usuario,idUsuario'
             ]);
 
-            Log::info('Datos validados:', $validatedData);
+            // Buscar el proceso para obtener idProceso
+            // Buscar la entidad por nombre
+            $entidad = EntidadDependencia::where('nombreEntidad', $validatedData['nombreEntidad'])
+                ->where('activo', 1)
+                ->first();
 
-            $proceso = Proceso::find($validatedData['idProceso']);
-            
-            if (!$proceso) {
-                Log::error('Proceso no encontrado con ID:', ['idProceso' => $validatedData['idProceso']]);
+            if (!$entidad) {
+                Log::error('Entidad no encontrada:', ['nombreEntidad' => $validatedData['nombreEntidad']]);
                 return response()->json([
                     'success' => false,
-                    'message' => 'El proceso especificado no existe'
+                    'message' => 'La entidad especificada no existe o no está activa'
                 ], 404);
             }
+
+            // Buscar el proceso por nombre y entidad
+            $proceso = Proceso::where('nombreProceso', $validatedData['nombreProceso'])
+                ->where('idEntidad', $entidad->idEntidadDependencia)
+                ->first();
+
+            if (!$proceso) {
+                Log::error('Proceso no encontrado:', [
+                    'nombreProceso' => $validatedData['nombreProceso'],
+                    'idEntidad' => $entidad->idEntidadDependencia
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'El proceso especificado no existe para esta entidad'
+                ], 404);
+            }
+
+            // Agregar los IDs necesarios a los datos validados
+            $validatedData['idProceso'] = $proceso->idProceso;
+            $validatedData['idEntidad'] = $entidad->idEntidadDependencia;
+            $validatedData['idUsuario'] = $proceso->idUsuario;
+
+            Log::info('Datos validados con IDs:', $validatedData);
 
             $auditoria = Cronograma::create([
                 'fechaProgramada' => $validatedData['fechaProgramada'],
@@ -160,7 +185,7 @@ class CronogramaController extends Controller
                 'nombreProceso' => $validatedData['nombreProceso'],
                 'nombreEntidad' => $validatedData['nombreEntidad'],
                 'auditorLider' => $validatedData['auditorLider'] ?? null,
-                'idUsuario' => $proceso->idUsuario
+                'idUsuario' => $validatedData['idUsuario']
             ]);
 
             Log::info('Auditoría creada:', $auditoria->toArray());
@@ -191,7 +216,7 @@ class CronogramaController extends Controller
                 'nombreProceso' => $validatedData['nombreProceso'],
                 'nombreEntidad' => $validatedData['nombreEntidad'],
                 'idProceso' => $validatedData['idProceso'],
-                'idAuditoria' => $auditoria->id 
+                'idAuditoria' => $auditoria->id
             ];
 
             foreach ($emails as $email) {
@@ -402,7 +427,8 @@ class CronogramaController extends Controller
         return response()->json($auditorias);
     }
 
-    public function porSupervisor($idUsuario){
+    public function porSupervisor($idUsuario)
+    {
         //1. Obtener los procesos supervisados por el usuarios
         $procesosIds = SupervisorProceso::where('idUsuario', $idUsuario)->pluck('idProceso');
 
