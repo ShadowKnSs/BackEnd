@@ -10,60 +10,88 @@ use Illuminate\Support\Facades\DB;
 
 class AuditoresAsignadosController extends Controller
 {
+
+
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'idAuditoria' => 'required|exists:auditorias,idAuditoria',
-            'auditores' => 'required|array',
+        $request->validate([
+            'idAuditoria' => 'required|integer|exists:auditorias,idAuditoria',
+            'auditores' => 'array',
             'auditores.*' => 'integer|exists:usuario,idUsuario',
+            'auditorLider' => 'nullable|integer|exists:usuario,idUsuario', // opcional
         ]);
 
-        $idAuditoria = $validated['idAuditoria'];
-        $auditores = $validated['auditores'];
+        $idAuditoria = (int) $request->idAuditoria;
 
-        try {
-            DB::transaction(function () use ($idAuditoria, $auditores) {
-                // Eliminar antiguos
-                AuditoresAsignados::where('idAuditoria', $idAuditoria)->delete();
+        // Traer líder actual de la auditoría si no llega en el request
+        $lider = $request->input('auditorLider');
+        if (!$lider) {
+            $lider = \DB::table('auditorias')->where('idAuditoria', $idAuditoria)->value('auditorLider');
+        }
 
-                // Obtener todos los auditores en una sola consulta
-                $usuarios = Usuario::whereIn('idUsuario', $auditores)
-                    ->select('idUsuario', 'nombre', 'apellidoPat')
-                    ->get()
+        $ids = collect($request->auditores ?? [])
+            ->filter(fn($v) => is_numeric($v))
+            ->map(fn($v) => (int) $v)
+            ->when($lider, fn($c) => $c->push((int) $lider)) // incluir líder
+            ->unique()
+            ->values();
+
+        \DB::transaction(function () use ($idAuditoria, $ids, $lider) {
+
+            \DB::table('auditoresasignados')->where('idAuditoria', $idAuditoria)->delete();
+
+            if ($ids->isNotEmpty()) {
+                $usuarios = \DB::table('usuario')
+                    ->whereIn('idUsuario', $ids)
+                    ->get(['idUsuario', 'nombre', 'apellidoPat', 'apellidoMat'])
                     ->keyBy('idUsuario');
 
-                // Insertar todos en batch
-                $asignaciones = [];
-                foreach ($auditores as $idAuditor) {
-                    $usuario = $usuarios[$idAuditor];
-                    $asignaciones[] = [
+                $rows = $ids->map(function ($idUsuario) use ($idAuditoria, $usuarios, $lider) {
+                    $u = $usuarios->get($idUsuario);
+                    $nombre = $u ? trim(preg_replace('/\s+/', ' ', ($u->nombre ?? '') . ' ' . ($u->apellidoPat ?? '') . ' ' . ($u->apellidoMat ?? ''))) : 'Nombre no disponible';
+                    return [
                         'idAuditoria' => $idAuditoria,
-                        'idAuditor' => $idAuditor,
-                        'nombreAuditor' => $usuario->nombre . ' ' . $usuario->apellidoPat,
+                        'idUsuario' => $idUsuario,
+                        'idAuditor' => $idUsuario,              // idAuditor≡idUsuario en tu esquema actual
+                        'rol' => ($lider && (int) $lider === (int) $idUsuario) ? 'Lider' : 'Auditor'
                     ];
-                }
+                })->all();
 
-                AuditoresAsignados::insert($asignaciones);
-            });
+                \DB::table('auditoresasignados')->insert($rows);
+            }
+        });
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Auditores asignados correctamente'
-            ]);
-        } catch (\Throwable $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al asignar auditores: ' . $e->getMessage()
-            ], 500);
-        }
+        return response()->json(['ok' => true]);
     }
-
 
     public function show($idAuditoria)
     {
-        return AuditoresAsignados::where('idAuditoria', $idAuditoria)
-            ->select('idAuditor as id', 'nombreAuditor as nombre')
-            ->get();
+        $id = (int) $idAuditoria;
+
+        $rows = \DB::table('auditoresasignados as aa')
+            ->leftJoin('usuario as u', 'u.idUsuario', '=', 'aa.idUsuario')
+            ->where('aa.idAuditoria', $id)
+            ->get([
+                'aa.idUsuario',
+                'aa.idAuditor',
+                'aa.rol',
+                \DB::raw("TRIM(CONCAT(
+                COALESCE(u.nombre,''),' ',
+                COALESCE(u.apellidoPat,''),' ',
+                COALESCE(u.apellidoMat,'')
+            )) as nombreCompleto")
+            ]);
+
+        $data = $rows->map(fn($r) => [
+            'idUsuario' => (int) $r->idUsuario,
+            'idAuditor' => (int) $r->idAuditor,
+            'rol' => $r->rol ?? 'Auditor',
+            'nombreCompleto' => $r->nombreCompleto !== '' ? $r->nombreCompleto : 'Nombre no disponible',
+        ]);
+
+        return response()->json($data);
     }
+
+
 
 }

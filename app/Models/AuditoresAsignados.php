@@ -17,7 +17,9 @@ class AuditoresAsignados extends Model
 
     protected $fillable = [
         'idAuditoria',
-        'nombreAuditor'
+        'idAuditor',   // ≡ idUsuario en tu diseño actual
+        'idUsuario',
+        'rol',         // enum('Lider','Auditor')
     ];
 
     public function auditoria()

@@ -22,18 +22,17 @@ class Cronograma extends Model
         'tipoAuditoria',
         'estado',
         'descripcion',
-        'nombreProceso',
-        'nombreEntidad',
-        'auditorLider'
     ];
 
-    public function proceso()
+     public function auditoresAsignados()
     {
-        return $this->belongsTo(Proceso::class, 'idProceso', 'idProceso');
+        // especifica también la local key porque tu PK no es 'id'
+        return $this->hasMany(AuditoresAsignados::class, 'idAuditoria', 'idAuditoria');
     }
 
-    public function auditoresAsignados()
+    // Alias para no romper donde ya llamas ->asignados()
+    public function asignados()
     {
-        return $this->hasMany(AuditoresAsignados::class, 'idAuditoria');
+        return $this->auditoresAsignados();
     }
 }
