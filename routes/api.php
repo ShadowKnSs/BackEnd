@@ -413,6 +413,7 @@ Route::get('/procesos-buscar', [BuscadorProcController::class, 'buscarPorAnio'])
 
 Route::post('/formatos', [FormatosController::class, 'store']);
 Route::get('/formatos', [FormatosController::class, 'index']);
+Route::delete('/formatos/{id}', [FormatosController::class, 'destroy']);
 
 Route::post('/generar-pdf', [ReporteSemestralController::class, 'generarPDF']); // generar archivo pdf reporte semestral
 Route::get('/get-riesgos-sem', [dataSemController::class, 'obtenerData']); //obtener lista data semestral

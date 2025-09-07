@@ -38,4 +38,21 @@ class FormatosController extends Controller
 
         return response()->json($formatos);
     }
+
+    public function destroy($id)
+    {
+        $formato = Formatos::findOrFail($id);
+
+        // Eliminar el archivo físico
+        if (\Storage::disk('public')->exists($formato->ruta)) {
+            \Storage::disk('public')->delete($formato->ruta);
+        }
+
+        // Eliminar el registro en la base de datos
+        $formato->delete();
+
+        return response()->json([
+            'message' => 'Formato eliminado correctamente'
+        ], 200);
+    }
 }
