@@ -57,27 +57,27 @@ class EntidadDependenciaController extends Controller
 
     public function toggleProcesos($id)
     {
-    $entidad = EntidadDependencia::find($id);
+        $entidad = EntidadDependencia::find($id);
 
-    if (!$entidad) {
-        return response()->json(['error' => 'Entidad no encontrada'], 404);
+        if (!$entidad) {
+            return response()->json(['error' => 'Entidad no encontrada'], 404);
+        }
+
+        $idEntidad = $entidad->idEntidadDependencia;
+        $procesos = Proceso::where('idEntidad', $idEntidad)->get();
+
+        foreach ($procesos as $proceso) {
+            // Si está en "Activo" lo cambia a "Inactivo", y viceversa
+            $proceso->estado = ($proceso->estado === 'Activo') ? 'Inactivo' : 'Activo';
+            $proceso->save();
+        }
+
+
+        return response()->json([
+            'message' => 'Estado de los procesos actualizado',
+            'procesos' => $procesos
+        ], 200);
     }
-
-    $idEntidad = $entidad->idEntidadDependencia;
-    $procesos = Proceso::where('idEntidad', $idEntidad)->get();
-
-    foreach ($procesos as $proceso) {
-        // Si está en "Activo" lo cambia a "Inactivo", y viceversa
-        $proceso->estado = ($proceso->estado === 'Activo') ? 'Inactivo' : 'Activo';
-        $proceso->save();
-    }
-
-
-    return response()->json([
-        'message' => 'Estado de los procesos actualizado',
-        'procesos' => $procesos
-    ], 200);
-}
 
 
     public function show($id)
@@ -92,73 +92,74 @@ class EntidadDependenciaController extends Controller
     }
 
     public function entidadesPorUsuario(Request $request)
-{
-    \Log::info('📥 Petición a entidadesPorUsuario');
-    \Log::info('🔐 ID Usuario:', [$request->input('idUsuario')]);
-    \Log::info('🎭 Rol Activo:', [$request->input('rolActivo')]);
+    {
+        \Log::info('📥 Petición a entidadesPorUsuario');
+        \Log::info('🔐 ID Usuario:', [$request->input('idUsuario')]);
+        \Log::info('🎭 Rol Activo:', [$request->input('rolActivo')]);
 
-    $idUsuario = $request->input('idUsuario');
-    $rolActivo = $request->input('rolActivo');
+        $idUsuario = $request->input('idUsuario');
+        $rolActivo = $request->input('rolActivo');
 
-    // Si es Admin u otro con acceso total
-    if (in_array($rolActivo, ['Admin', 'Coordinador', 'Auditor', 'Supervisor'])) {
-        $entidades = EntidadDependencia::select('idEntidadDependencia', 'nombreEntidad', 'icono')
-            ->where('activo', 1) // ✅ Solo activas
-            ->orderBy('nombreEntidad')
-            ->get();
-    }
-    // Si es Líder de Proceso, solo su entidad (desde proceso)
-    elseif ($rolActivo === 'Líder') {
-        $entidades = EntidadDependencia::whereIn('idEntidadDependencia', function ($query) use ($idUsuario) {
+        // Si es Admin u otro con acceso total
+        if (in_array($rolActivo, ['Admin', 'Coordinador', 'Auditor', 'Supervisor'])) {
+            $entidades = EntidadDependencia::select('idEntidadDependencia', 'nombreEntidad', 'icono', 'tipo')
+                ->where('activo', 1) // ✅ Solo activas
+                ->orderBy('nombreEntidad')
+                ->get();
+        }
+        // Si es Líder de Proceso, solo su entidad (desde proceso)
+        elseif ($rolActivo === 'Líder') {
+            $entidades = EntidadDependencia::whereIn('idEntidadDependencia', function ($query) use ($idUsuario) {
                 $query->select('idEntidad')
                     ->from('proceso')
                     ->where('idUsuario', $idUsuario);
             })
-            ->where('activo', 1) // ✅ Solo activas
-            ->get();
-    } else {
-        // Si no tiene acceso, regresa vacío o 403
-        return response()->json(['message' => 'Sin permisos para ver entidades.'], 403);
-    }
+                ->where('activo', 1) // ✅ Solo activas
+                ->get();
+        } else {
+            // Si no tiene acceso, regresa vacío o 403
+            return response()->json(['message' => 'Sin permisos para ver entidades.'], 403);
+        }
 
-    return response()->json(['entidades' => $entidades]);
-}
+        return response()->json(['entidades' => $entidades]);
+    }
 
     //actualizar una entidad/dependecia
-   public function update(Request $request, $id){
-    $request->validate([
-        'ubicacion' => 'sometimes|string|nullable',
-        'nombreEntidad' => 'sometimes|string|nullable',
-        'tipo' => 'sometimes|string|nullable',
-        'icono' => 'sometimes|string|nullable',
-        'activo' => 'sometimes|boolean',
-    ]);
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'ubicacion' => 'sometimes|string|nullable',
+            'nombreEntidad' => 'sometimes|string|nullable',
+            'tipo' => 'sometimes|string|nullable',
+            'icono' => 'sometimes|string|nullable',
+            'activo' => 'sometimes|boolean',
+        ]);
 
-    $entidad = EntidadDependencia::find($id);
+        $entidad = EntidadDependencia::find($id);
 
-    if (!$entidad) {
-        return response()->json(['error' => 'Entidad/dependencia no encontrada'], 404);
-    }
-
-    // Validación extra: solo verificar duplicados si se manda nombreEntidad
-    if ($request->filled('nombreEntidad')) {
-        $existeOtra = EntidadDependencia::whereRaw('LOWER(nombreEntidad) = ?', [strtolower($request->nombreEntidad)])
-            ->where('idEntidadDependencia', '!=', $id)
-            ->exists();
-
-        if ($existeOtra) {
-            return response()->json(['error' => 'Ya existe otra entidad/dependencia con ese nombre'], 409);
+        if (!$entidad) {
+            return response()->json(['error' => 'Entidad/dependencia no encontrada'], 404);
         }
+
+        // Validación extra: solo verificar duplicados si se manda nombreEntidad
+        if ($request->filled('nombreEntidad')) {
+            $existeOtra = EntidadDependencia::whereRaw('LOWER(nombreEntidad) = ?', [strtolower($request->nombreEntidad)])
+                ->where('idEntidadDependencia', '!=', $id)
+                ->exists();
+
+            if ($existeOtra) {
+                return response()->json(['error' => 'Ya existe otra entidad/dependencia con ese nombre'], 409);
+            }
+        }
+
+        // Actualizar solo los campos recibidos
+        $entidad->update($request->all());
+
+        return response()->json([
+            'message' => 'Entidad/dependencia actualizada con éxito',
+            'entidad' => $entidad
+        ], 200);
     }
-
-    // Actualizar solo los campos recibidos
-    $entidad->update($request->all());
-
-    return response()->json([
-        'message' => 'Entidad/dependencia actualizada con éxito',
-        'entidad' => $entidad
-    ], 200);
-}
 
     //eliminar una entidad/dependecia
     public function destroy($id)
