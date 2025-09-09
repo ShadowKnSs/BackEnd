@@ -146,7 +146,6 @@ class EntidadDependenciaController extends Controller
             $existeOtra = EntidadDependencia::whereRaw('LOWER(nombreEntidad) = ?', [strtolower($request->nombreEntidad)])
                 ->where('idEntidadDependencia', '!=', $id)
                 ->exists();
-
             if ($existeOtra) {
                 return response()->json(['error' => 'Ya existe otra entidad/dependencia con ese nombre'], 409);
             }

@@ -16,6 +16,7 @@ use App\Models\ActividadMejora;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
 
 
 class RegistrosController extends Controller

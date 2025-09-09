@@ -2,154 +2,391 @@
 <html lang="es">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
     <title>Reporte de Proceso</title>
+
     <style>
-        table {
-            word-break: break-word;
-            table-layout: fixed;
+        /* ---------- Página / tipografía ---------- */
+        @page {
+            margin: 28mm 18mm 20mm 18mm;
         }
 
-        th,
-        td {
-            word-wrap: break-word;
-            word-break: break-word;
+        /* top right bottom left */
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            font-family: Arial, sans-serif;
+            color: #0f172a;
         }
 
         body {
-            font-family: Arial, sans-serif;
-            margin: 40px;
-            padding: 0;
+            font-size: 12px;
         }
 
+        /* ---------- Paleta ---------- */
+        /* Primario = azul institucional */
+        .c-primary {
+            color: #0e75cb;
+        }
+
+        .bg-primary {
+            background: #0e75cb;
+            color: #fff;
+        }
+
+        .bg-soft {
+            background: #eef6fe;
+        }
+
+        .border-soft {
+            border-color: #d9e6f2;
+        }
+
+        /* ---------- Header / Footer fijos ---------- */
+        header {
+            position: fixed;
+            top: -22mm;
+            left: 0;
+            right: 0;
+            height: 22mm;
+        }
+
+        footer {
+            position: fixed;
+            bottom: -14mm;
+            left: 0;
+            right: 0;
+            height: 14mm;
+            font-size: 10px;
+            color: #64748b;
+        }
+
+        .page-number:after {
+            content: counter(page);
+        }
+
+        .page-count:after {
+            content: counter(pages);
+        }
+
+        /* ---------- Utilidades ---------- */
+        .mt-0 {
+            margin-top: 0
+        }
+
+        .mt-6 {
+            margin-top: 6px
+        }
+
+        .mt-10 {
+            margin-top: 10px
+        }
+
+        .mt-16 {
+            margin-top: 16px
+        }
+
+        .mt-20 {
+            margin-top: 20px
+        }
+
+        .mt-28 {
+            margin-top: 28px
+        }
+
+        .mt-32 {
+            margin-top: 32px
+        }
+
+        .mt-40 {
+            margin-top: 40px
+        }
+
+        .mb-0 {
+            margin-bottom: 0
+        }
+
+        .mb-6 {
+            margin-bottom: 6px
+        }
+
+        .mb-10 {
+            margin-bottom: 10px
+        }
+
+        .mb-16 {
+            margin-bottom: 16px
+        }
+
+        .mb-20 {
+            margin-bottom: 20px
+        }
+
+        .mb-28 {
+            margin-bottom: 28px
+        }
+
+        .mb-32 {
+            margin-bottom: 32px
+        }
+
+        .mb-40 {
+            margin-bottom: 40px
+        }
+
+        .py-6 {
+            padding-top: 6px;
+            padding-bottom: 6px
+        }
+
+        .py-8 {
+            padding-top: 8px;
+            padding-bottom: 8px
+        }
+
+        .py-10 {
+            padding-top: 10px;
+            padding-bottom: 10px
+        }
+
+        .px-10 {
+            padding-left: 10px;
+            padding-right: 10px
+        }
+
+        .text-center {
+            text-align: center
+        }
+
+        .text-right {
+            text-align: right
+        }
+
+        .text-muted {
+            color: #64748b
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .chip {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            background: #eef6fe;
+            color: #0e75cb;
+            font-weight: bold;
+            font-size: 10px;
+            border: 1px solid #d9e6f2;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-weight: bold;
+            font-size: 11px;
+        }
+
+        .badge-success {
+            background: #22c55e;
+            color: #fff;
+        }
+
+        .badge-danger {
+            background: #ef4444;
+            color: #fff;
+        }
+
+        .badge-neutral {
+            background: #e2e8f0;
+            color: #0f172a;
+        }
+
+        /* ---------- Secciones tipo "card" ---------- */
+        .section-card {
+            margin-top: 24px;
+            border: 1px solid #d9e6f2;
+            border-left: 6px solid #0e75cb;
+            padding: 14px 14px 10px 14px;
+            border-radius: 6px;
+            background: #fff;
+        }
+
+        .section-title {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            color: #0e75cb;
+            letter-spacing: .2px;
+        }
+
+        .section-subtitle {
+            margin: 6px 0 8px;
+            font-weight: bold;
+            color: #0f172a;
+        }
+
+        /* ---------- Tablas ---------- */
         table {
-            word-break: break-word;
-            table-layout: fixed;
             width: 100%;
             border-collapse: collapse;
+            table-layout: fixed;
         }
 
         th,
         td {
-            word-wrap: break-word;
-            padding: 8px;
-            text-align: center;
+            padding: 6px 8px;
+            border: 1px solid #d9e6f2;
+            word-break: break-word;
         }
 
-        .title {
-            text-align: center;
-            font-size: 24px;
+        thead th {
             font-weight: bold;
-            margin-bottom: 20px;
-            position: relative;
-            display: inline-block;
+        }
+
+        .table {
+            font-size: 11px;
+        }
+
+        .thead-primary th {
+            background: #0e75cb;
+            color: #fff;
+        }
+
+        tbody tr:nth-child(even) {
+            background: #f8fafc;
+        }
+
+        .no-border th,
+        .no-border td {
+            border: none;
+        }
+
+        /* ---------- Imágenes ---------- */
+        .img-contained {
+            max-width: 100%;
+            max-height: 520px;
+        }
+
+        /* ---------- Cortes de página ---------- */
+        .page-break {
+            page-break-before: always;
+        }
+
+        .avoid-break {
+            page-break-inside: avoid;
+        }
+
+        /* ---------- Encabezado del título ---------- */
+        .doc-title {
+            text-align: center;
+            font-size: 22px;
+            font-weight: bold;
             color: #0e75cb;
+            margin: 6mm 0 2mm;
         }
 
-
-        .section {
-            margin-bottom: 15px;
-            padding: 10px;
-        }
-
-        .bold {
-            font-weight: bold;
-        }
-
-        .status {
-            padding: 8px;
-            font-weight: bold;
-            text-align: center;
-            display: inline-block;
-            border-radius: 5px;
-            font-size: 14px;
-        }
-
-        .status-activo {
-            background-color: #4CAF50;
-            color: white;
-        }
-
-        .status-inactivo {
-            background-color: #F44336;
-            color: white;
-        }
-
-        .encabezado {
-            background-color: #0e75cb;
-            font-weight: bold;
-            color: white;
+        .small {
+            font-size: 10px;
         }
     </style>
 </head>
 
 <body>
-    <!-- Header del reporte con logos -->
+
+    {{-- Header fijo --}}
     <header>
-        <table style="width: 100%; margin-bottom: 10px;">
+        <table class="no-border" style="width:100%;">
             <tr>
-                <td style="width: 25%; text-align: left;">
-                    <img src="{{ public_path('images/logo3.png') }}" alt="Logo 3" width="160">
+                <td style="width:25%; text-align:left;">
+                    <img src="{{ public_path('images/logo3.png') }}" alt="Logo 3" width="150">
                 </td>
-                <td style="width: 50%; text-align: center;">
-                    <h2 style="margin: 0;">Sistema de Gestión de Calidad</h2>
+                <td style="width:50%; text-align:center;">
+                    <div style="font-weight:bold; font-size:14px; color:#0e75cb;">Sistema de Gestión de la Calidad</div>
+                    <div class="small text-muted">Reporte generado el {{ date('d/m/Y') }}</div>
                 </td>
-                <td style="width: 25%; text-align: right;">
-                    <img src="{{ public_path('images/logo4.jpg') }}" alt="Logo 4" width="160">
+                <td style="width:25%; text-align:right;">
+                    <img src="{{ public_path('images/logo4.jpg') }}" alt="Logo 4" width="150">
                 </td>
             </tr>
         </table>
-        <p style="text-align: center; margin: 0;">Reporte generado el {{ date('d/m/Y') }}</p>
     </header>
 
-    <!-- Título del Reporte -->
-    <h1 class="title">Reporte del Proceso</h1>
-    {{-- Mostrar mensaje si el reporte contiene datos parciales --}}
+    {{-- Footer fijo con numeración --}}
+    <footer>
+        <table class="no-border" style="width:100%;">
+            <tr>
+                <td class="small">Entidad: <strong>{{ $entidad }}</strong></td>
+                <td class="small text-right">Página <span class="page-number"></span> de <span
+                        class="page-count"></span></td>
+            </tr>
+        </table>
+    </footer>
+
+    {{-- Título --}}
+    <h1 class="doc-title">Reporte del Proceso</h1>
+
+    {{-- Aviso de parcial --}}
     @if(isset($reporteParcial) && $reporteParcial)
-        <p style="color: red; text-align: center; font-weight: bold;">
+        <p class="text-center" style="color:#b91c1c; font-weight:bold; margin-top:2mm;">
             Atención: Este reporte contiene datos parciales.
         </p>
     @endif
 
-    <!-- Norma y Año de Certificación en la misma línea -->
-    <div class="section">
-        <span class="bold">Norma:</span> {{ $norma }} |
-        <span class="bold">Año de Certificación:</span> {{ $anioCertificacion }}
+    {{-- Resumen / Metadata --}}
+    <div class="section-card avoid-break">
+        <h2 class="section-title">Resumen del Proceso</h2>
+
+        <table class="table">
+            <thead class="thead-primary">
+                <tr>
+                    <th>Entidad / Dependencia</th>
+                    <th>Nombre del Proceso</th>
+                    <th>Líder del Proceso</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>{{ $entidad }}</td>
+                    <td>{{ $nombreProceso }}</td>
+                    <td>{{ $liderProceso }}</td>
+                    <td class="text-center">
+                        @if ($estado === 'Activo')
+                            <span class="badge badge-success">Activo</span>
+                        @elseif ($estado === 'Inactivo')
+                            <span class="badge badge-danger">Inactivo</span>
+                        @else
+                            <span class="badge badge-neutral">{{ $estado }}</span>
+                        @endif
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="grid-3 mt-10">
+            <div><span class="chip">Norma</span> &nbsp; <strong>{{ $norma }}</strong></div>
+            <div><span class="chip">Año Certificación</span> &nbsp; <strong>{{ $anioCertificacion }}</strong></div>
+            <div><span class="chip">Fecha de Emisión</span> &nbsp; <strong>{{ date('d/m/Y') }}</strong></div>
+        </div>
+
+        <div class="mt-10"><strong>Objetivo:</strong> {{ $objetivo }}</div>
+        <div class="mt-6"><strong>Alcance:</strong> {{ $alcance }}</div>
     </div>
 
-    <!-- Entidad y Nombre del Proceso en el mismo renglón -->
-    <div class="section">
-        <span class="bold">Entidad/Dependencia:</span> {{ $entidad }} |
-        <span class="bold">Nombre del Proceso:</span> {{ $nombreProceso }}
-    </div>
-
-    <!-- Líder del Proceso -->
-    <div class="section">
-        <span class="bold">Líder del Proceso:</span> {{ $liderProceso }}
-    </div>
-
-    <!-- Objetivo -->
-    <div class="section">
-        <span class="bold">Objetivo:</span> {{ $objetivo }}
-    </div>
-
-    <!-- Alcance -->
-    <div class="section">
-        <span class="bold">Alcance:</span> {{ $alcance }}
-    </div>
-
-    <!-- Estado con color -->
-    <div class="section">
-        @if ($estado == 'Activo')
-            <span class="status status-activo">Activo</span>
-        @elseif ($estado == 'Inactivo')
-            <span class="status status-inactivo">Inactivo</span>
-        @else
-            <span class="status">{{ $estado }}</span>
-        @endif
-    </div>
-
+    {{-- Mapa de Proceso (si hay datos) --}}
     @if(
             ($documentos && $documentos !== 'No disponible') ||
             ($puestosInvolucrados && $puestosInvolucrados !== 'No disponible') ||
@@ -159,24 +396,20 @@
             ($salidas && $salidas !== 'No disponible') ||
             ($receptores && $receptores !== 'No disponible')
         )
-        <!-- Mapa de Proceso -->
-        <div style="margin-bottom: 30px;">
-            <h2 class="title">Mapa de Proceso</h2>
+        <div class="section-card">
+            <h2 class="section-title">Mapa de Proceso</h2>
 
-            <p><strong>Documentos Relacionados:</strong> {{ $documentos ?? 'No disponible' }}</p>
-            <p><strong>Puestos Involucrados:</strong> {{ $puestosInvolucrados ?? 'No disponible' }}</p>
+            <div class="grid-2">
+                <div><strong>Documentos relacionados:</strong> {{ $documentos ?? 'No disponible' }}</div>
+                <div><strong>Puestos involucrados:</strong> {{ $puestosInvolucrados ?? 'No disponible' }}</div>
+            </div>
 
-            <!-- Tabla 1: Fuente de Entrada y Entradas -->
-            <table border="1" cellspacing="0" cellpadding="8" style="margin-top: 20px;">
-                <thead>
-                    <tr class="encabezado">
-                        <th>Fuente de Entrada</th>
-                        <th colspan="2">Entradas</th>
-                    </tr>
-                    <tr class="encabezado">
-                        <th></th>
-                        <th>Material y/o Información</th>
-                        <th>Requisito de Entrada</th>
+            <table class="table mt-10">
+                <thead class="thead-primary">
+                    <tr>
+                        <th style="width:28%;">Fuente de entrada</th>
+                        <th style="width:36%;">Material y/o Información</th>
+                        <th style="width:36%;">Requisito de entrada</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -188,12 +421,11 @@
                 </tbody>
             </table>
 
-            <!-- Tabla 2: Salidas y Receptores -->
-            <table border="1" cellspacing="0" cellpadding="8" style="margin-top: 20px;">
-                <thead>
-                    <tr class="encabezado">
-                        <th>Salidas</th>
-                        <th>Receptores de Salidas / Cliente</th>
+            <table class="table mt-10">
+                <thead class="thead-primary">
+                    <tr>
+                        <th style="width:50%;">Salidas</th>
+                        <th style="width:50%;">Receptores de salida / Cliente</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -205,34 +437,32 @@
             </table>
         </div>
     @endif
-    <!-- Diagrama de flujo -->
+
+    {{-- Diagrama de Flujo --}}
     @php
         $rutaFlujo = !empty($diagramaFlujo) ? public_path(str_replace('/storage/', 'storage/', parse_url($diagramaFlujo, PHP_URL_PATH))) : null;
-    @endphp
-
+      @endphp
     @if(!empty($diagramaFlujo) && $rutaFlujo && file_exists($rutaFlujo))
-        <div style="margin-top: 40px;">
-            <h2 class="title">Diagrama de Flujo</h2>
-            <div style="margin-top: 15px; text-align: center;">
-                <img src="{{ $rutaFlujo }}" alt="Diagrama de Flujo" style="max-width: 100%; max-height: 600px;">
-            </div>
+        <div class="section-card text-center">
+            <h2 class="section-title">Diagrama de Flujo</h2>
+            <img src="{{ $rutaFlujo }}" alt="Diagrama de Flujo" class="img-contained" />
         </div>
     @endif
 
-    <!-- Plan de control  -->
+    {{-- Plan de Control (tabla + gráfica) --}}
     @if($planControl && count($planControl) > 0)
-        <div style="margin-top: 40px;">
-            <h2 class="title">Plan de Control</h2>
-            <table border="1" cellspacing="0" cellpadding="6" style="font-size: 12px;">
-                <thead class="encabezado">
+        <div class="section-card avoid-break">
+            <h2 class="section-title">Plan de Control</h2>
+            <table class="table">
+                <thead class="thead-primary">
                     <tr>
                         <th>Actividad</th>
                         <th>Procedimiento</th>
-                        <th>Características a Verificar</th>
-                        <th>Criterio de Aceptación</th>
+                        <th>Características a verificar</th>
+                        <th>Criterio de aceptación</th>
                         <th>Frecuencia</th>
-                        <th>Identificación de la Salida</th>
-                        <th>Registro de la Salida</th>
+                        <th>Identificación de la salida</th>
+                        <th>Registro de la salida</th>
                         <th>Tratamiento</th>
                         <th>Responsable</th>
                     </tr>
@@ -255,15 +485,695 @@
             </table>
         </div>
     @endif
-    <!-- Auditorías -->
-    @if($auditorias && count($auditorias) > 0)
-        <div style="margin-top: 40px;">
-            <h2 class="title">Auditorías del Proceso</h2>
-            <table border="1" cellspacing="0" cellpadding="6" style="font-size: 12px;">
-                <thead class="encabezado">
+
+    @if(isset($graficaPlanControl) && file_exists($graficaPlanControl))
+        <div class="section-card text-center">
+            <h3 class="section-subtitle">Gráfica de Plan de Control</h3>
+            <img src="{{ $graficaPlanControl }}" class="img-contained" alt="Gráfica Plan de Control">
+        </div>
+    @endif
+
+
+    {{-- Gestión de Riesgos (matrices) --}}
+    @if(!empty($riesgos) && count($riesgos) > 0)
+        <div class="section-card page-break">
+            <h2 class="section-title">Gestión de Riesgos</h2>
+
+            <div class="section-subtitle">1) Identificación</div>
+            <table class="table">
+                <thead class="thead-primary">
                     <tr>
-                        <th>Fecha Programada</th>
-                        <th>Hora Programada</th>
+                        <th>No</th>
+                        <th>Fuente</th>
+                        <th>Tipo</th>
+                        <th>Descripción de Riesgo/Oportunidad</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($riesgos as $index => $r)
+                        <tr>
+                            <td style="width:40px; text-align:center;">{{ $index + 1 }}</td>
+                            <td>{{ $r->fuente }}</td>
+                            <td>{{ $r->tipoRiesgo }}</td>
+                            <td>{{ $r->descripcion }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+
+            <div class="section-subtitle mt-16">2) Análisis</div>
+            <table class="table">
+                <thead class="thead-primary">
+                    <tr>
+                        <th>Consecuencias</th>
+                        <th>Severidad</th>
+                        <th>Ocurrencia</th>
+                        <th>NRP</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($riesgos as $r)
+                        <tr>
+                            <td>{{ $r->consecuencias }}</td>
+                            <td>{{ $r->valorSeveridad }}</td>
+                            <td>{{ $r->valorOcurrencia }}</td>
+                            <td>{{ $r->valorNRP }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+
+            <div class="section-subtitle mt-16">3) Tratamiento</div>
+            <table class="table">
+                <thead class="thead-primary">
+                    <tr>
+                        <th>Actividades</th>
+                        <th>Acciones de mejora</th>
+                        <th>Responsable</th>
+                        <th>Fecha implementación</th>
+                        <th>Fecha evaluación</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($riesgos as $r)
+                        <tr>
+                            <td>{{ $r->actividades }}</td>
+                            <td>{{ $r->accionMejora }}</td>
+                            <td>{{ $r->responsable }}</td>
+                            <td>{{ \Carbon\Carbon::parse($r->fechaImp)->format('d/m/Y') }}</td>
+                            <td>{{ \Carbon\Carbon::parse($r->fechaEva)->format('d/m/Y') }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+
+            <div class="section-subtitle mt-16">4) Evaluación de la Efectividad</div>
+            <table class="table">
+                <thead class="thead-primary">
+                    <tr>
+                        <th>Reeval. Severidad</th>
+                        <th>Reeval. Ocurrencia</th>
+                        <th>NRP</th>
+                        <th>Efectividad</th>
+                        <th>Análisis</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($riesgos as $r)
+                        @php
+                            $efectivo = $r->valorNRP >= $r->reevaluacionNRP;
+                            $label = $efectivo ? 'Efectivo' : 'No efectivo';
+                        @endphp
+                        <tr>
+                            <td>{{ $r->reevaluacionSeveridad }}</td>
+                            <td>{{ $r->reevaluacionOcurrencia }}</td>
+                            <td>{{ $r->reevaluacionNRP }}</td>
+                            <td class="text-center">
+                                <span class="badge {{ $efectivo ? 'badge-success' : 'badge-danger' }}">{{ $label }}</span>
+                            </td>
+                            <td>{{ $r->analisisEfectividad }}</td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    @endif
+
+    @if(isset($graficaRiesgos) && file_exists($graficaRiesgos))
+        <div class="section-card text-center">
+            <h3 class="section-subtitle">Gráfica de Riesgos</h3>
+            <img src="{{ $graficaRiesgos }}" class="img-contained" alt="Gráfica de Riesgos">
+        </div>
+    @endif
+
+    {{-- Análisis de Datos – Plan de Control (indicadores) --}}
+    @if(!empty($planControlIndicadores) && count($planControlIndicadores) > 0)
+        <div class="section-card avoid-break">
+            <h2 class="section-title">Análisis de Datos – Conformidad del producto/servicio (9.1.3 a)</h2>
+            <table class="table">
+                <thead class="thead-primary">
+                    <tr>
+                        <th>No</th>
+                        <th>Descripción de Indicador</th>
+                        <th>Meta</th>
+                        <th>Ene–Jun</th>
+                        <th>Jul–Dic</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @php $totalMeta = 0;
+                        $totalSem1 = 0;
+                        $totalSem2 = 0;
+                    $count = count($planControlIndicadores); @endphp
+                    @foreach ($planControlIndicadores as $i => $indicador)
+                        @php
+                            $totalMeta += $indicador->meta ?? 0;
+                            $totalSem1 += $indicador->resultadoSemestral1 ?? 0;
+                            $totalSem2 += $indicador->resultadoSemestral2 ?? 0;
+                        @endphp
+                        <tr>
+                            <td style="width:40px; text-align:center;">{{ $i + 1 }}</td>
+                            <td>{{ $indicador->nombreIndicador }}</td>
+                            <td class="text-center">{{ $indicador->meta }}</td>
+                            <td class="text-center">{{ $indicador->resultadoSemestral1 }}</td>
+                            <td class="text-center">{{ $indicador->resultadoSemestral2 }}</td>
+                        </tr>
+                    @endforeach
+                    <tr style="background:#f1f5f9; font-weight:bold;">
+                        <td colspan="2">Promedio</td>
+                        <td class="text-center">{{ number_format($totalMeta / max($count, 1), 2) }}</td>
+                        <td class="text-center">{{ number_format($totalSem1 / max($count, 1), 2) }}</td>
+                        <td class="text-center">{{ number_format($totalSem2 / max($count, 1), 2) }}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="2"><strong>Interpretación</strong></td>
+                        <td colspan="3">{{ $interpretacionPlanControl ?? 'No disponible' }}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="2"><strong>Necesidad de mejora</strong></td>
+                        <td colspan="3">{{ $necesidadPlanControl ?? 'No disponible' }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    @endif
+
+    {{-- Satisfacción del Cliente (encuesta + retro) --}}
+    @php
+        $encuestas = collect($indicadoresSatisfaccion ?? [])->where('origen', 'Encuesta')->values();
+        $retroalimentaciones = collect($indicadoresSatisfaccion ?? [])->where('origen', 'Retroalimentacion')->values();
+        $firstEncuesta = $encuestas->first();
+        $noEncuestas = data_get($firstEncuesta, 'noEncuestas', 0);
+        $totalFelicitaciones = $retroalimentaciones->sum('felicitaciones') ?: 0;
+        $totalSugerencias = $retroalimentaciones->sum('sugerencias') ?: 0;
+        $totalQuejas = $retroalimentaciones->sum('quejas') ?: 0;
+        $totalRetro = $totalFelicitaciones + $totalSugerencias + $totalQuejas;
+        $sumRowTotals = $retroalimentaciones->sum('total') ?: 0;
+        $interpretacionGeneral = data_get($firstEncuesta, 'interpretacion', 'No hay interpretación');
+        $necesidadGeneral = data_get($firstEncuesta, 'necesidad', 'No hay necesidad');
+      @endphp
+
+    @if($encuestas->count() > 0 || $retroalimentaciones->count() > 0)
+        <div class="section-card avoid-break">
+            <h2 class="section-title">Satisfacción del Cliente (9.1.3 b)</h2>
+
+            @if($encuestas->count() > 0)
+                <div class="section-subtitle">Encuesta de Satisfacción</div>
+                <table class="table">
+                    <thead class="thead-primary">
+                        <tr>
+                            <th>No</th>
+                            <th>Descripción del indicador</th>
+                            <th>No. Encuestas</th>
+                            <th>E+B (%)</th>
+                            <th>R (%)</th>
+                            <th>M (%)</th>
+                            <th>Meta (%)</th>
+                            <th>Anual (%)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($encuestas as $idx => $item)
+                            @php
+                                $noEnc = (int) data_get($item, 'noEncuestas', 0);
+                                $reg = (float) data_get($item, 'regular', 0);
+                                $malo = (float) data_get($item, 'malo', 0);
+                                $eb = (float) data_get($item, 'porcentajeEB', 0);
+                                $meta = data_get($item, 'meta', null);
+                              @endphp
+                            <tr>
+                                <td class="text-center">{{ $idx + 1 }}</td>
+                                <td>{{ $item['nombreIndicador'] ?? 'Encuesta' }}</td>
+                                <td class="text-center">{{ $noEnc }}</td>
+                                <td class="text-center">{{ $eb }}%</td>
+                                <td class="text-center">{{ $noEnc > 0 ? round($reg * 100 / $noEnc, 2) : '-' }}%</td>
+                                <td class="text-center">{{ $noEnc > 0 ? round($malo * 100 / $noEnc, 2) : '-' }}%</td>
+                                <td class="text-center">{{ isset($meta) ? $meta : '-' }}%</td>
+                                <td class="text-center">{{ $eb }}%</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            @endif
+
+            @if($retroalimentaciones->count() > 0)
+                <div class="section-subtitle mt-16">Retroalimentación</div>
+                <table class="table">
+                    <thead class="thead-primary">
+                        <tr>
+                            <th>No</th>
+                            <th>Descripción del Indicador</th>
+                            <th>F</th>
+                            <th>S</th>
+                            <th>Q</th>
+                            <th>Total</th>
+                            <th colspan="2"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($retroalimentaciones as $idx => $item)
+                            <tr>
+                                <td class="text-center">{{ $idx + 1 }}</td>
+                                <td>{{ $item['nombreIndicador'] }}</td>
+                                <td class="text-center">{{ $item['felicitaciones'] }}</td>
+                                <td class="text-center">{{ $item['sugerencias'] }}</td>
+                                <td class="text-center">{{ $item['quejas'] }}</td>
+                                <td class="text-center">{{ $item['total'] }}</td>
+                                <td colspan="2"></td>
+                            </tr>
+                        @endforeach
+                        <tr style="font-weight:bold; background:#f1f5f9;">
+                            <td colspan="2">Total retroalimentación</td>
+                            <td class="text-center">{{ $totalFelicitaciones }}</td>
+                            <td class="text-center">{{ $totalSugerencias }}</td>
+                            <td class="text-center">{{ $totalQuejas }}</td>
+                            <td class="text-center">{{ $totalRetro }}</td>
+                            <td colspan="2"></td>
+                        </tr>
+                        <tr>
+                            <td colspan="2">Suma totales retroalimentación</td>
+                            <td class="text-center">{{ $sumRowTotals }}</td>
+                            <td colspan="5"></td>
+                        </tr>
+                        <tr>
+                            <td colspan="4"><strong>Interpretación:</strong> {{ $interpretacionGeneral }}</td>
+                            <td colspan="4"><strong>Necesidad:</strong> {{ $necesidadGeneral }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            @endif
+        </div>
+    @endif
+
+    @if(isset($graficaEncuesta) && file_exists($graficaEncuesta))
+        <div class="section-card text-center">
+            <h3 class="section-subtitle">Gráfica de Encuesta</h3>
+            <img src="{{ $graficaEncuesta }}" class="img-contained" alt="Gráfica Encuesta">
+        </div>
+    @endif
+
+    @if(isset($graficaRetroalimentacion) && file_exists($graficaRetroalimentacion))
+        <div class="section-card text-center">
+            <h3 class="section-subtitle">Gráfica de Retroalimentación</h3>
+            <img src="{{ $graficaRetroalimentacion }}" class="img-contained" alt="Gráfica Retroalimentación">
+        </div>
+    @endif
+
+    {{-- Desempeño del Proceso (Mapa de Proceso) --}}
+    @if(!empty($mapaProcesoIndicadores) && count($mapaProcesoIndicadores) > 0)
+        <div class="section-card avoid-break">
+            <h2 class="section-title">Análisis de Datos – Desempeño del Proceso</h2>
+            <table class="table">
+                <thead class="thead-primary">
+                    <tr>
+                        <th>No</th>
+                        <th>Descripción de los Indicadores</th>
+                        <th>Meta</th>
+                        <th>Ene–Jun</th>
+                        <th>Jul–Dic</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @php $totalMeta = 0;
+                        $totalSem1 = 0;
+                        $totalSem2 = 0;
+                    $count = count($mapaProcesoIndicadores); @endphp
+                    @foreach ($mapaProcesoIndicadores as $index => $item)
+                        @php
+                            $totalMeta += $item->meta ?? 0;
+                            $totalSem1 += $item->resultadoSemestral1 ?? 0;
+                            $totalSem2 += $item->resultadoSemestral2 ?? 0;
+                        @endphp
+                        <tr>
+                            <td style="width:40px; text-align:center;">{{ $index + 1 }}</td>
+                            <td>{{ $item->nombreIndicador }}</td>
+                            <td class="text-center">{{ $item->meta }}</td>
+                            <td class="text-center">{{ $item->resultadoSemestral1 }}</td>
+                            <td class="text-center">{{ $item->resultadoSemestral2 }}</td>
+                        </tr>
+                    @endforeach
+                    <tr style="background:#f1f5f9; font-weight:bold;">
+                        <td colspan="2">Promedio</td>
+                        <td class="text-center">{{ number_format($totalMeta / max($count, 1), 2) }}</td>
+                        <td class="text-center">{{ number_format($totalSem1 / max($count, 1), 2) }}</td>
+                        <td class="text-center">{{ number_format($totalSem2 / max($count, 1), 2) }}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="2"><strong>Interpretación:</strong> {{ $interpretacionMapaProceso ?? 'No disponible' }}
+                        </td>
+                        <td colspan="3"><strong>Necesidad de mejora:</strong> {{ $necesidadMapaProceso ?? 'No disponible' }}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    @endif
+
+    @if(isset($graficaMP) && file_exists($graficaMP))
+        <div class="section-card text-center">
+            <h3 class="section-subtitle">Gráfica de Mapa de Proceso</h3>
+            <img src="{{ $graficaMP }}" class="img-contained" alt="Gráfica Mapa de Proceso">
+        </div>
+    @endif
+
+    {{-- Eficacia de Riesgos y Oportunidades (tabla + gráfica) --}}
+    @if(isset($eficaciaRiesgos) && !empty($eficaciaRiesgos) && count($eficaciaRiesgos) > 0)
+        <div class="section-card avoid-break">
+            <h2 class="section-title">Análisis de Datos – Eficacia de los Riesgos y Oportunidades</h2>
+            <table class="table">
+                <thead class="thead-primary">
+                    <tr>
+                        <th>No</th>
+                        <th>Nombre del Indicador</th>
+                        <th>Meta</th>
+                        <th>Resultado Anual</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($eficaciaRiesgos as $index => $indi)
+                        <tr>
+                            <td style="width:40px; text-align:center;">{{ $index + 1 }}</td>
+                            <td>{{ $indi->nombreIndicador }}</td>
+                            <td class="text-center">{{ $indi->meta ?? 'No asignada' }}</td>
+                            <td class="text-center">{{ $indi->resultadoAnual ?? '-' }}</td>
+                        </tr>
+                    @endforeach
+                    <tr style="background:#f1f5f9;">
+                        <td colspan="2"><strong>Interpretación del comportamiento</strong></td>
+                        <td colspan="2">{{ $eficaciaRiesgos[0]->interpretacion ?? 'No disponible' }}</td>
+                    </tr>
+                    <tr style="background:#f1f5f9;">
+                        <td colspan="2"><strong>Necesidad de mejora en el SGC</strong></td>
+                        <td colspan="2">{{ $eficaciaRiesgos[0]->necesidad ?? 'No disponible' }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    @endif
+
+    @if(isset($graficaRiesgos) && file_exists($graficaRiesgos))
+        <div class="section-card text-center">
+            <h3 class="section-subtitle">Gráfica de Eficacia</h3>
+            <img src="{{ $graficaRiesgos }}" class="img-contained" alt="Gráfica de Eficacia">
+        </div>
+    @endif
+
+    {{-- Evaluación de Proveedores --}}
+    @if(isset($evaluacionProveedores) && !empty($evaluacionProveedores['indicadores']) && count($evaluacionProveedores['indicadores']) > 0)
+        <div class="section-card page-break">
+            <h2 class="section-title">Análisis de Datos – Desempeño de Proveedores Externos</h2>
+            <table class="table">
+                <thead class="thead-primary">
+                    <tr>
+                        <th>No</th>
+                        <th>Nombre del Indicador</th>
+                        <th>Meta</th>
+                        <th>Ene–Jun</th>
+                        <th>Jul–Dic</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach ($evaluacionProveedores['indicadores'] as $index => $item)
+                        <tr>
+                            <td class="text-center">{{ $index + 1 }}</td>
+                            <td>{{ $item['categoria'] }}</td>
+                            <td class="text-center">{{ $item['meta'] ?? 'No disponible' }}%</td>
+                            <td class="text-center">{{ $item['resultado1'] ?? '-' }}%</td>
+                            <td class="text-center">{{ $item['resultado2'] ?? '-' }}%</td>
+                        </tr>
+                    @endforeach
+                    <tr style="background:#f1f5f9;">
+                        <td colspan="2"><strong>Interpretación:</strong></td>
+                        <td colspan="3">{{ $evaluacionProveedores['interpretacion'] ?? 'No disponible' }}</td>
+                    </tr>
+                    <tr style="background:#f1f5f9;">
+                        <td colspan="2"><strong>Necesidad de mejora:</strong></td>
+                        <td colspan="3">{{ $evaluacionProveedores['necesidad'] ?? 'No disponible' }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    @endif
+
+    @if(isset($graficaEvaluacion) && file_exists($graficaEvaluacion))
+        <div class="section-card text-center">
+            <h3 class="section-subtitle">Gráfica de Evaluación de Proveedores</h3>
+            <img src="{{ $graficaEvaluacion }}" class="img-contained" alt="Gráfica de Evaluación de Proveedores">
+        </div>
+    @endif
+
+    {{-- Plan Correctivo --}}
+    @if($planCorrectivo)
+        <div class="section-card">
+            <h2 class="section-title">Plan Correctivo</h2>
+
+            <table class="table">
+                <tbody>
+                    <tr>
+                        <th style="width:20%;">Coordinador</th>
+                        <td style="width:30%;">{{ $planCorrectivo->coordinadorPlan }}</td>
+                        <th style="width:20%;">Código</th>
+                        <td style="width:30%;">{{ $planCorrectivo->codigo }}</td>
+                    </tr>
+                    <tr>
+                        <th>Fecha</th>
+                        <td>{{ $planCorrectivo->fechaInicio }}</td>
+                        <th></th>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="mt-10"><strong>Origen de la no conformidad:</strong> {{ $planCorrectivo->origenConformidad }}</div>
+            <div class="mt-6"><strong>Equipo de mejora:</strong> {{ $planCorrectivo->equipoMejora }}</div>
+
+            @if(isset($actividadesPlan) && $actividadesPlan->where('idPlanCorrectivo', $planCorrectivo->idPlanCorrectivo)->count() > 0)
+                <div class="section-subtitle mt-16">Actividades de reacción</div>
+                <table class="table">
+                    <thead class="thead-primary">
+                        <tr>
+                            <th>Actividad</th>
+                            <th>Responsable</th>
+                            <th>Fecha programada</th>
+                            <th>Tipo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($actividadesPlan->where('idPlanCorrectivo', $planCorrectivo->idPlanCorrectivo) as $act)
+                            <tr>
+                                <td>{{ $act->descripcionAct }}</td>
+                                <td>{{ $act->responsable }}</td>
+                                <td>{{ $act->fechaProgramada }}</td>
+                                <td>{{ $act->tipo }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            @endif
+
+            <div class="mt-10"><strong>Revisión y análisis:</strong> {{ $planCorrectivo->revisionAnalisis }}</div>
+            <div class="mt-6"><strong>Determinación de causa raíz:</strong> {{ $planCorrectivo->causaRaiz }}</div>
+        </div>
+    @endif
+
+    {{-- Plan de Trabajo --}}
+    @if(isset($planTrabajoData) && $planTrabajoData['planTrabajo'])
+        <div class="section-card page-break">
+            <h2 class="section-title">Plan de Trabajo</h2>
+
+            <table class="table">
+                <tbody>
+                    <tr>
+                        <th style="width:22%;">Fecha de elaboración</th>
+                        <td style="width:28%;">{{ $planTrabajoData['planTrabajo']->fechaElaboracion ?? 'No especificado' }}
+                        </td>
+                        <th style="width:22%;">Objetivo</th>
+                        <td style="width:28%;">{{ $planTrabajoData['planTrabajo']->objetivo ?? 'No especificado' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Fecha de revisión</th>
+                        <td>{{ $planTrabajoData['planTrabajo']->fechaRevision ?? 'No especificado' }}</td>
+                        <th>Revisado por</th>
+                        <td>{{ $planTrabajoData['planTrabajo']->revisadoPor ?? 'No especificado' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Responsable</th>
+                        <td>{{ $planTrabajoData['planTrabajo']->responsable ?? 'No especificado' }}</td>
+                        <th>Estado</th>
+                        <td>{{ $planTrabajoData['planTrabajo']->estado ?? 'No especificado' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Fuente</th>
+                        <td>{{ $planTrabajoData['planTrabajo']->fuente ?? 'No especificado' }}</td>
+                        <th>Entregable</th>
+                        <td>{{ $planTrabajoData['planTrabajo']->entregable ?? 'No especificado' }}</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            @if(isset($planTrabajoData['fuentes']) && count($planTrabajoData['fuentes']) > 0)
+                <div class="section-subtitle mt-16">Fuentes documentales</div>
+                <table class="table">
+                    <thead class="thead-primary">
+                        <tr>
+                            <th>No. Actividad</th>
+                            <th>Responsable</th>
+                            <th>Fecha Inicio</th>
+                            <th>Fecha Término</th>
+                            <th>Estado</th>
+                            <th>Nombre Fuente</th>
+                            <th>Elemento Entrada</th>
+                            <th>Descripción</th>
+                            <th>Entregable</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($planTrabajoData['fuentes'] as $fuente)
+                            <tr>
+                                <td class="text-center">{{ $fuente->noActividad ?? '-' }}</td>
+                                <td>{{ $fuente->responsable ?? '-' }}</td>
+                                <td class="text-center">{{ $fuente->fechaInicio ?? '-' }}</td>
+                                <td class="text-center">{{ $fuente->fechaTermino ?? '-' }}</td>
+                                <td class="text-center">{{ $fuente->estado ?? '-' }}</td>
+                                <td>{{ $fuente->nombreFuente ?? '-' }}</td>
+                                <td>{{ $fuente->elementoEntrada ?? '-' }}</td>
+                                <td>{{ $fuente->descripcion ?? '-' }}</td>
+                                <td>{{ $fuente->entregable ?? '-' }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            @endif
+        </div>
+    @endif
+
+    {{-- Proyecto de Mejora --}}
+    @if(isset($proyectoMejoraData) && $proyectoMejoraData['proyectoMejora'])
+        <div class="section-card page-break">
+            <h2 class="section-title">Proyecto de Mejora</h2>
+
+            <table class="table">
+                <tbody>
+                    <tr>
+                        <th style="width:20%;">Fecha</th>
+                        <td style="width:30%;">{{ $proyectoMejoraData['proyectoMejora']->fecha }}</td>
+                        <th style="width:20%;">No. Mejora</th>
+                        <td style="width:30%;">{{ $proyectoMejoraData['proyectoMejora']->noMejora }}</td>
+                    </tr>
+                    <tr>
+                        <th>Descripción de la mejora</th>
+                        <td colspan="3">{{ $proyectoMejoraData['proyectoMejora']->descripcionMejora }}</td>
+                    </tr>
+                    <tr>
+                        <th>Áreas de impacto / Personal beneficiado</th>
+                        <td colspan="3">{{ $proyectoMejoraData['proyectoMejora']->areaImpacto }}</td>
+                    </tr>
+                    <tr>
+                        <th>Situación actual</th>
+                        <td colspan="3">{{ $proyectoMejoraData['proyectoMejora']->situacionActual }}</td>
+                    </tr>
+                    <tr>
+                        <th>Aprobación (Nombre)</th>
+                        <td>{{ $proyectoMejoraData['proyectoMejora']->aprobacionNombre }}</td>
+                        <th>Aprobación (Puesto)</th>
+                        <td>{{ $proyectoMejoraData['proyectoMejora']->aprobacionPuesto }}</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="section-subtitle mt-16">Objetivos / Beneficios</div>
+            @if(count($proyectoMejoraData['objetivos']) > 0)
+                <ul class="mt-6">
+                    @foreach($proyectoMejoraData['objetivos'] as $objetivo)
+                        <li>{{ $objetivo->descripcionObj }}</li>
+                    @endforeach
+                </ul>
+            @else
+                <p class="text-muted">No se registraron objetivos.</p>
+            @endif
+
+            <div class="section-subtitle mt-16">Responsables involucrados</div>
+            @if(count($proyectoMejoraData['responsables']) > 0)
+                <ul class="mt-6">
+                    @foreach($proyectoMejoraData['responsables'] as $responsable)
+                        <li>{{ $responsable->nombre }}</li>
+                    @endforeach
+                </ul>
+            @else
+                <p class="text-muted">No hay responsables registrados.</p>
+            @endif
+
+            <div class="section-subtitle mt-16">Indicadores de Éxito</div>
+            @if(count($proyectoMejoraData['indicadoresExito']) > 0)
+                <ul class="mt-6">
+                    @foreach($proyectoMejoraData['indicadoresExito'] as $indicador)
+                        <li>{{ $indicador->nombreInd }} — Meta: {{ $indicador->meta }}</li>
+                    @endforeach
+                </ul>
+            @else
+                <p class="text-muted">No se definieron indicadores.</p>
+            @endif
+
+            <div class="section-subtitle mt-16">Recursos</div>
+            @if(count($proyectoMejoraData['recursos']) > 0)
+                <table class="table">
+                    <thead class="thead-primary">
+                        <tr>
+                            <th>Tiempo</th>
+                            <th>Recursos materiales y humanos</th>
+                            <th>Costo estimado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($proyectoMejoraData['recursos'] as $recurso)
+                            <tr>
+                                <td>{{ $recurso->tiempoEstimado }}</td>
+                                <td>{{ $recurso->recursosMatHum }}</td>
+                                <td>{{ $recurso->costo }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            @else
+                <p class="text-muted">No se registraron recursos.</p>
+            @endif
+
+            <div class="section-subtitle mt-16">Actividades</div>
+            @if(count($proyectoMejoraData['actividadesPM']) > 0)
+                <table class="table">
+                    <thead class="thead-primary">
+                        <tr>
+                            <th>Descripción</th>
+                            <th>Responsable</th>
+                            <th>Fecha</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($proyectoMejoraData['actividadesPM'] as $actividad)
+                            <tr>
+                                <td>{{ $actividad->descripcionAct }}</td>
+                                <td>{{ $actividad->responsable }}</td>
+                                <td>{{ $actividad->fecha }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            @else
+                <p class="text-muted">No se registraron actividades.</p>
+            @endif
+        </div>
+    @endif
+
+
+    {{-- Auditorías --}}
+    @if($auditorias && count($auditorias) > 0)
+        <div class="section-card avoid-break">
+            <h2 class="section-title">Auditorías del Proceso</h2>
+            <table class="table">
+                <thead class="thead-primary">
+                    <tr>
+                        <th>Fecha programada</th>
+                        <th>Hora programada</th>
                         <th>Tipo</th>
                         <th>Estado</th>
                         <th>Descripción</th>
@@ -284,870 +1194,87 @@
         </div>
     @endif
 
-    <!-- Seguimientos -->
+    {{-- Seguimiento --}}
     @if($seguimientos && count($seguimientos) > 0)
-        <div style="margin-top: 40px;">
-            <h2 class="title">Seguimiento</h2>
+        <div class="section-card page-break">
+            <h2 class="section-title">Seguimiento</h2>
             @foreach ($seguimientos as $seguimiento)
-                <h3>Minuta</h3>
+                <div class="mt-10">
+                    <div class="section-subtitle">Minuta</div>
 
-                @if($asistentes->where('idSeguimiento', $seguimiento->idSeguimiento)->count() > 0)
-                    <h4>Asistentes:</h4>
-                    <table border="1" cellspacing="0" cellpadding="6" style="font-size: 12px;">
-                        <thead>
-                            <tr>
-                                <th>Nombre</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach ($asistentes->where('idSeguimiento', $seguimiento->idSeguimiento) as $asistente)
+                    @if($asistentes->where('idSeguimiento', $seguimiento->idSeguimiento)->count() > 0)
+                        <div class="mb-6"><strong>Asistentes</strong></div>
+                        <table class="table">
+                            <thead class="thead-primary">
                                 <tr>
-                                    <td>{{ $asistente->nombre }}</td>
+                                    <th>Nombre</th>
                                 </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                @endif
+                            </thead>
+                            <tbody>
+                                @foreach ($asistentes->where('idSeguimiento', $seguimiento->idSeguimiento) as $asistente)
+                                    <tr>
+                                        <td>{{ $asistente->nombre }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    @endif
 
-                <p><strong>Lugar:</strong> {{ $seguimiento->lugar }}</p>
-                <p><strong>Fecha:</strong> {{ $seguimiento->fecha }}</p>
-                <p><strong>Duración:</strong> {{ $seguimiento->duracion }}</p>
+                    <div class="grid-3 mt-10">
+                        <div><span class="chip">Lugar</span> &nbsp; {{ $seguimiento->lugar }}</div>
+                        <div><span class="chip">Fecha</span> &nbsp; {{ $seguimiento->fecha }}</div>
+                        <div><span class="chip">Duración</span> &nbsp; {{ $seguimiento->duracion }}</div>
+                    </div>
 
-                @if($actividadesSeg->where('idSeguimiento', $seguimiento->idSeguimiento)->count() > 0)
-                    <h4>Actividades:</h4>
-                    <table border="1" cellspacing="0" cellpadding="6" style="font-size: 12px;">
-                        <thead>
-                            <tr>
-                                <th>No</th>
-                                <th>Actividades Realizadas</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach ($actividadesSeg->where('idSeguimiento', $seguimiento->idSeguimiento) as $actividad)
+                    @if($actividadesSeg->where('idSeguimiento', $seguimiento->idSeguimiento)->count() > 0)
+                        <div class="section-subtitle mt-16">Actividades</div>
+                        <table class="table">
+                            <thead class="thead-primary">
                                 <tr>
-                                    <td>{{ $loop->iteration }}</td>
-                                    <td>{{ $actividad->descripcion }}</td>
+                                    <th>No</th>
+                                    <th>Actividad realizada</th>
                                 </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                @endif
+                            </thead>
+                            <tbody>
+                                @foreach ($actividadesSeg->where('idSeguimiento', $seguimiento->idSeguimiento) as $actividad)
+                                    <tr>
+                                        <td style="width:40px; text-align:center;">{{ $loop->iteration }}</td>
+                                        <td>{{ $actividad->descripcion }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    @endif
 
-                @if($compromisosSeg->where('idSeguimiento', $seguimiento->idSeguimiento)->count() > 0)
-                    <h4>Compromisos:</h4>
-                    <table border="1" cellspacing="0" cellpadding="6" style="font-size: 12px;">
-                        <thead>
-                            <tr>
-                                <th>No</th>
-                                <th>Compromisos</th>
-                                <th>Responsable</th>
-                                <th>Fecha</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach ($compromisosSeg->where('idSeguimiento', $seguimiento->idSeguimiento) as $compromiso)
+                    @if($compromisosSeg->where('idSeguimiento', $seguimiento->idSeguimiento)->count() > 0)
+                        <div class="section-subtitle mt-16">Compromisos</div>
+                        <table class="table">
+                            <thead class="thead-primary">
                                 <tr>
-                                    <td>{{ $loop->iteration }}</td>
-                                    <td>{{ $compromiso->descripcion }}</td>
-                                    <td>{{ $compromiso->responsables }}</td>
-                                    <td>{{ $compromiso->fecha }}</td>
+                                    <th>No</th>
+                                    <th>Compromiso</th>
+                                    <th>Responsable</th>
+                                    <th>Fecha</th>
                                 </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                @endif
+                            </thead>
+                            <tbody>
+                                @foreach ($compromisosSeg->where('idSeguimiento', $seguimiento->idSeguimiento) as $compromiso)
+                                    <tr>
+                                        <td style="width:40px; text-align:center;">{{ $loop->iteration }}</td>
+                                        <td>{{ $compromiso->descripcion }}</td>
+                                        <td>{{ $compromiso->responsables }}</td>
+                                        <td>{{ $compromiso->fecha }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    @endif
 
-                <hr style="margin-top: 20px; margin-bottom: 20px;">
+                    <div style="height:8px;"></div>
+                </div>
             @endforeach
         </div>
     @endif
-
-
-    @if($proyectoMejora)
-        <!-- Información básica del proyecto -->
-        <table class="table table-bordered">
-            <tr>
-                <th>Fecha:</th>
-                <td>{{ $proyectoMejora->fecha }}</td>
-                <th>No. Mejora:</th>
-                <td>{{ $proyectoMejora->noMejora }}</td>
-            </tr>
-            <tr>
-                <th>Descripción de la mejora:</th>
-                <td colspan="3">{{ $proyectoMejora->descripcionMejora }}</td>
-            </tr>
-        </table>
-
-        <!-- Objetivos/Beneficios de la mejora -->
-        <h4>Objetivos/Beneficios de la mejora:</h4>
-        @if(isset($proyectoObjetivos) && count($proyectoObjetivos) > 0)
-            <ul>
-                @foreach($proyectoObjetivos as $obj)
-                    <li>{{ $obj->descripcionObj }}</li>
-                @endforeach
-            </ul>
-        @else
-            <p>No se registraron objetivos.</p>
-        @endif
-
-        <!-- Áreas de impacto/Personal beneficiado -->
-        <h4>Áreas de impacto/Personal beneficiado:</h4>
-        <p>{{ $proyectoMejora->areaImpacto }}</p>
-        <p><strong>Personal beneficiado:</strong> {{ $proyectoMejora->personalBeneficiado }}</p>
-
-        <!-- Responsables involucrados -->
-        <h4>Responsables involucrados:</h4>
-        @if(isset($proyectoResponsables) && count($proyectoResponsables) > 0)
-            <ul>
-                @foreach($proyectoResponsables as $resp)
-                    <li>{{ $resp->nombre }}</li>
-                @endforeach
-            </ul>
-        @else
-            <p>No se registraron responsables.</p>
-        @endif
-
-        <!-- Situación actual -->
-        <h4>Situación actual:</h4>
-        <p>{{ $proyectoMejora->situacionActual }}</p>
-
-        <!-- Indicadores de Éxito -->
-        <h4>Indicadores de Éxito:</h4>
-        @if(isset($proyectoIndicadoresExito) && count($proyectoIndicadoresExito) > 0)
-            <table class="table table-bordered">
-                <thead>
-                    <tr>
-                        <th>Nombre del Indicador</th>
-                        <th>Meta</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($proyectoIndicadoresExito as $indicador)
-                        <tr>
-                            <td>{{ $indicador->nombreInd }}</td>
-                            <td>{{ $indicador->meta }}</td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        @else
-            <p>No se registraron indicadores de éxito.</p>
-        @endif
-    @endif
-
-    <!-- Gestión de Riesgos -->
-    @if(!empty($riesgos) && count($riesgos) > 0)
-        <div style="margin-top: 40px;">
-            <h2 class="title">Gestión de Riesgos</h2>
-
-            <!-- Identificación de Riesgos -->
-            <h3>1. Identificación</h3>
-            <table border="1" cellspacing="0" cellpadding="6" style="font-size: 10px;">
-                <thead class="encabezado">
-                    <tr>
-                        <th>No</th>
-                        <th>Fuente</th>
-                        <th>Tipo</th>
-                        <th>Descripción de Riesgo/Oportunidad</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach ($riesgos as $index => $r)
-                        <tr>
-                            <td>{{ $index + 1 }}</td>
-                            <td>{{ $r->fuente }}</td>
-                            <td>{{ $r->tipoRiesgo }}</td>
-                            <td>{{ $r->descripcion }}</td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-
-            <!-- Análisis de Riesgos -->
-            <h3>2. Análisis</h3>
-            <table border="1" cellspacing="0" cellpadding="6" style="font-size: 10px;">
-                <thead class="encabezado">
-                    <tr>
-                        <th>Consecuencias</th>
-                        <th>Severidad</th>
-                        <th>Ocurrencia</th>
-                        <th>NRP</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach ($riesgos as $r)
-                        <tr>
-                            <td>{{ $r->consecuencias }}</td>
-                            <td>{{ $r->valorSeveridad }}</td>
-                            <td>{{ $r->valorOcurrencia }}</td>
-                            <td>{{ $r->valorNRP }}</td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-
-            <!-- Tratamiento de Riesgos -->
-            <h3>3. Tratamiento</h3>
-            <table border="1" cellspacing="0" cellpadding="6" style="font-size: 10px;">
-                <thead class="encabezado">
-                    <tr>
-                        <th>Actividades</th>
-                        <th>Acciones de Mejora</th>
-                        <th>Responsable</th>
-                        <th>Fecha Implementación</th>
-                        <th>Fecha Evaluación</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach ($riesgos as $r)
-                        <tr>
-                            <td>{{ $r->actividades }}</td>
-                            <td>{{ $r->accionMejora }}</td>
-                            <td>{{ $r->responsable }}</td>
-                            <td>{{ \Carbon\Carbon::parse($r->fechaImp)->format('d/m/Y') }}</td>
-                            <td>{{ \Carbon\Carbon::parse($r->fechaEva)->format('d/m/Y') }}</td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-
-            <!-- Evaluación de la Efectividad -->
-            <h3 style="margin-top: 20px;">4. Evaluación de la Efectividad</h3>
-            <table width="100%" border="1" cellspacing="0" cellpadding="6"
-                style="font-size: 10px; border-collapse: collapse;">
-                <thead class="encabezado">
-                    <tr>
-                        <th>Reevaluación Severidad</th>
-                        <th>Reevaluación Ocurrencia</th>
-                        <th>NRP</th>
-                        <th style="text-align: center;">Efectividad</th>
-                        <th>Análisis de la Efectividad del Tratamiento</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach ($riesgos as $r)
-                        @php
-                            $efectivo = $r->valorNRP >= $r->reevaluacionNRP;
-                            $color = $efectivo ? '#28a745' : '#dc3545';
-                        @endphp
-                        <tr>
-                            <td>{{ $r->reevaluacionSeveridad }}</td>
-                            <td>{{ $r->reevaluacionOcurrencia }}</td>
-                            <td>{{ $r->reevaluacionNRP }}</td>
-                            <td style="background-color: {{ $color }}; color: #fff; text-align: center; font-weight: bold;">
-                            </td>
-                            <td>{{ $r->analisisEfectividad }}</td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-    @endif
-
-    @if(!empty($planControlIndicadores) && count($planControlIndicadores) > 0)
-        <div style="margin-top: 40px;">
-            <h2 class="title">Análisis de Datos</h2>
-            <h3>9.1.3 a) conformidad del prodcuto o servicio</h3>
-
-            <table width="100%" border="1" cellspacing="0" cellpadding="6"
-                style="font-size: 11px; border-collapse: collapse;">
-                <thead class="encabezado">
-                    <tr>
-                        <th>No</th>
-                        <th>Descripción de Indicador</th>
-                        <th>Meta</th>
-                        <th>Ene-Jun</th>
-                        <th>Jul-Dic</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @php
-                        $totalMeta = 0;
-                        $totalSem1 = 0;
-                        $totalSem2 = 0;
-                        $count = count($planControlIndicadores);
-                    @endphp
-
-                    @foreach ($planControlIndicadores as $i => $indicador)
-                        @php
-                            $totalMeta += $indicador->meta ?? 0;
-                            $totalSem1 += $indicador->resultadoSemestral1 ?? 0;
-                            $totalSem2 += $indicador->resultadoSemestral2 ?? 0;
-                        @endphp
-                        <tr>
-                            <td>{{ $i + 1 }}</td>
-                            <td>{{ $indicador->nombreIndicador }}</td>
-                            <td align="center">{{ $indicador->meta }}</td>
-                            <td align="center">{{ $indicador->resultadoSemestral1 }}</td>
-                            <td align="center">{{ $indicador->resultadoSemestral2 }}</td>
-                        </tr>
-                    @endforeach
-
-                    {{-- Fila de Promedios --}}
-                    <tr style="background-color: #f0f0f0; font-weight: bold;">
-                        <td colspan="2">Promedio</td>
-                        <td align="center">{{ number_format($totalMeta / $count, 2) }}</td>
-                        <td align="center">{{ number_format($totalSem1 / $count, 2) }}</td>
-                        <td align="center">{{ number_format($totalSem2 / $count, 2) }}</td>
-                    </tr>
-
-                    {{-- Fila de interpretación y necesidad --}}
-                    <tr>
-                        <td colspan="2"><strong>Interpretación</strong></td>
-                        <td colspan="3">{{ $interpretacionPlanControl ?? 'No disponible' }}</td>
-                    </tr>
-                    <tr>
-                        <td colspan="2"><strong>Necesidad de mejora</strong></td>
-                        <td colspan="3">{{ $necesidadPlanControl ?? 'No disponible' }}</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    @endif
-
-
-    <!-- Gráficas -->
-    @if(file_exists($graficaPlanControl))
-        <div style="margin-top: 40px; text-align: center;">
-            <h3 style="font-size: 18px; font-weight: bold; margin-bottom: 15px;">Gráfica de Plan de Control</h3>
-            <img src="{{ $graficaPlanControl }}" style="width: 100%; max-height: 400px;" alt="Gráfica Plan de Control">
-        </div>
-    @endif
-
-    @php
-        $encuestas = collect($indicadoresSatisfaccion)->where('origen', 'Encuesta');
-        $retroalimentaciones = collect($indicadoresSatisfaccion)->where('origen', 'Retroalimentacion');
-        $noEncuestas = $encuestas->first()['noEncuestas'] ?? 0;
-        $totalFelicitaciones = $retroalimentaciones->sum('felicitaciones');
-        $totalSugerencias = $retroalimentaciones->sum('sugerencias');
-        $totalQuejas = $retroalimentaciones->sum('quejas');
-        $totalRetro = $totalFelicitaciones + $totalSugerencias + $totalQuejas;
-        $sumRowTotals = $retroalimentaciones->sum('total');
-        $interpretacionGeneral = $encuestas->first()['interpretacion'] ?? 'No hay interpretación';
-        $necesidadGeneral = $encuestas->first()['necesidad'] ?? 'No hay necesidad';
-    @endphp
-
-    @if($encuestas->count() > 0 || $retroalimentaciones->count() > 0)
-        <div style="margin-top: 40px;">
-            <h2 class="title">9.1.3 b) Satisfacción del Cliente</h2>
-            <table border="1" cellspacing="0" cellpadding="6"
-                style="font-size: 11px; border-collapse: collapse; width: 100%;">
-                <thead class="encabezado">
-                    <tr>
-                        <th colspan="8" class="text-center">Encuesta de Satisfacción</th>
-                    </tr>
-                    <tr>
-                        <th>No</th>
-                        <th>Descripción del Indicador</th>
-                        <th>No. Encuestas</th>
-                        <th>E+B (%)</th>
-                        <th>R (%)</th>
-                        <th>M (%)</th>
-                        <th>Meta (%)</th>
-                        <th>Anual (%)</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($encuestas as $idx => $item)
-                        <tr>
-                            <td>{{ $idx + 1 }}</td>
-                            <td>{{ $item['nombreIndicador'] }}</td>
-                            <td>{{ $item['noEncuestas'] }}</td>
-                            <td>{{ $item['porcentajeEB'] }}%</td>
-                            <td>{{ $noEncuestas > 0 ? round($item['regular'] * 100 / $noEncuestas, 2) : '-' }}%</td>
-                            <td>{{ $noEncuestas > 0 ? round($item['malo'] * 100 / $noEncuestas, 2) : '-' }}%</td>
-                            <td>{{ $item['meta'] ?? '-' }}%</td>
-                            <td>{{ $item['porcentajeEB'] }}%</td>
-                        </tr>
-                    @endforeach
-                    <tr class="encabezado">
-                        <th colspan="8">Retroalimentación</th>
-                    </tr>
-                    <tr>
-                        <th>No</th>
-                        <th>Descripción del Indicador</th>
-                        <th>F</th>
-                        <th>S</th>
-                        <th>Q</th>
-                        <th>Total</th>
-                        <th colspan="2"></th>
-                    </tr>
-                    @foreach($retroalimentaciones as $idx => $item)
-                        <tr>
-                            <td>{{ $idx + 1 }}</td>
-                            <td>{{ $item['nombreIndicador'] }}</td>
-                            <td>{{ $item['felicitaciones'] }}</td>
-                            <td>{{ $item['sugerencias'] }}</td>
-                            <td>{{ $item['quejas'] }}</td>
-                            <td>{{ $item['total'] }}</td>
-                            <td colspan="2"></td>
-                        </tr>
-                    @endforeach
-                    <tr style="font-weight: bold; background-color: #f0f0f0">
-                        <td colspan="2">Total Retroalimentación</td>
-                        <td>{{ $totalFelicitaciones }}</td>
-                        <td>{{ $totalSugerencias }}</td>
-                        <td>{{ $totalQuejas }}</td>
-                        <td>{{ $totalRetro }}</td>
-                        <td colspan="2"></td>
-                    </tr>
-                    <tr>
-                        <td colspan="2">Suma Totales Retroalimentación</td>
-                        <td>{{ $sumRowTotals }}</td>
-                        <td colspan="5"></td>
-                    </tr>
-                    <tr>
-                        <td colspan="4"><strong>Interpretación:</strong> {{ $interpretacionGeneral }}</td>
-                        <td colspan="4"><strong>Necesidad:</strong> {{ $necesidadGeneral }}</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    @endif
-
-
-
-
-    @if(file_exists($graficaEncuesta))
-        <div style="margin-top: 40px; text-align: center;">
-            <h3 style="font-size: 18px; font-weight: bold; margin-bottom: 15px;">Gráfica de Encuesta</h3>
-            <img src="{{ $graficaEncuesta }}" style="width: 100%; max-height: 400px;" alt="Gráfica Encuesta">
-        </div>
-    @endif
-
-
-    @if(file_exists($graficaRetroalimentacion))
-        <div style="margin-top: 40px; text-align: center;">
-            <h3 style="font-size: 18px; font-weight: bold; margin-bottom: 15px;">Gráfica de Retroalimentación</h3>
-            <img src="{{ $graficaRetroalimentacion }}" style="width: 100%; max-height: 400px;"
-                alt="Gráfica Retroalimentación">
-        </div>
-    @endif
-
-
-    {{-- Tabla: Desempeño del Proceso --}}
-    @if(!empty($mapaProcesoIndicadores) && count($mapaProcesoIndicadores) > 0)
-        <div style="margin-top: 40px;">
-            <h2 class="title">Análisis de Datos - Desempeño del Proceso</h2>
-
-            <table width="100%" border="1" cellspacing="0" cellpadding="6"
-                style="font-size: 11px; border-collapse: collapse;">
-                <thead class="encabezado">
-                    <tr>
-                        <th>No</th>
-                        <th>Descripción de los Indicadores</th>
-                        <th>Meta</th>
-                        <th>Ene-Jun</th>
-                        <th>Jul-Dic</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @php
-                        $totalMeta = 0;
-                        $totalSem1 = 0;
-                        $totalSem2 = 0;
-                        $count = count($mapaProcesoIndicadores);
-                    @endphp
-
-                    @foreach ($mapaProcesoIndicadores as $index => $item)
-                        @php
-                            $totalMeta += $item->meta ?? 0;
-                            $totalSem1 += $item->resultadoSemestral1 ?? 0;
-                            $totalSem2 += $item->resultadoSemestral2 ?? 0;
-                        @endphp
-                        <tr>
-                            <td>{{ $index + 1 }}</td>
-                            <td>{{ $item->nombreIndicador }}</td>
-                            <td align="center">{{ $item->meta }}</td>
-                            <td align="center">{{ $item->resultadoSemestral1 }}</td>
-                            <td align="center">{{ $item->resultadoSemestral2 }}</td>
-                        </tr>
-                    @endforeach
-
-                    {{-- Fila de Promedios --}}
-                    <tr style="background-color: #f0f0f0; font-weight: bold;">
-                        <td colspan="2">Promedio</td>
-                        <td align="center">{{ number_format($totalMeta / $count, 2) }}</td>
-                        <td align="center">{{ number_format($totalSem1 / $count, 2) }}</td>
-                        <td align="center">{{ number_format($totalSem2 / $count, 2) }}</td>
-                    </tr>
-
-                    {{-- Interpretación y Necesidad --}}
-                    <tr>
-                        <td colspan="2"><strong>Interpretación:</strong> {{ $interpretacionMapaProceso ?? 'No disponible' }}
-                        </td>
-                        <td colspan="3"><strong>Necesidad de mejora:</strong> {{ $necesidadMapaProceso ?? 'No disponible' }}
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    @endif
-
-
-    @if(file_exists($graficaMP))
-        <div style="margin-top: 40px; text-align: center;">
-            <h3 style="font-size: 18px; font-weight: bold; margin-bottom: 15px;">Gráfica de Mapa de Proceso</h3>
-            <img src="{{ $graficaMP }}" style="width: 100%; max-height: 400px;" alt="Gráfica Mapa de Proceso">
-        </div>
-    @endif
-
-
-    @if(!empty($eficaciaRiesgos) && count($eficaciaRiesgos) > 0)
-        <div style="margin-top: 40px;">
-            <h2 class="title">Análisis de Datos - Eficacia de los Riesgos y Oportunidades</h2>
-
-            <table width="100%" border="1" cellspacing="0" cellpadding="6"
-                style="font-size: 11px; border-collapse: collapse;">
-                <thead class="encabezado">
-                    <tr>
-                        <th>No</th>
-                        <th>Nombre del Indicador</th>
-                        <th>Meta</th>
-                        <th>Resultado Anual</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @php
-                        $totalMeta = 0;
-                        $totalSem1 = 0;
-                        $totalSem2 = 0;
-                        $count = count($eficaciaRiesgos);
-                    @endphp
-
-                    @foreach ($eficaciaRiesgos as $index => $indi)
-                        @php
-                            $totalMeta += $indi->meta ?? 0;
-                            $totalSem1 += $indi->resultadoSemestral1 ?? 0;
-                            $totalSem2 += $indi->resultadoAnual ?? 0;
-                        @endphp
-                        <tr>
-                            <td>{{ $index + 1 }}</td>
-                            <td>{{ $indi->nombreIndicador }}</td>
-                            <td @if (is_null($indi->meta)) style="background-color: #ffe0e0; color: #b00020;" @endif>
-                                {{ $indi->meta ?? 'No asignada' }}
-                            </td>
-                            <td style="text-align: center;">{{ $indi->resultadoAnual ?? '-' }}</td>
-                        </tr>
-                    @endforeach
-
-                    {{-- Fila interpretación --}}
-                    <tr style="background-color: #f0f0f0;">
-                        <td colspan="2"><strong>Interpretación del comportamiento del proceso</strong></td>
-                        <td colspan="2">{{ $eficaciaRiesgos[0]->interpretacion ?? 'No disponible' }}</td>
-                    </tr>
-
-                    {{-- Fila necesidad --}}
-                    <tr style="background-color: #f0f0f0;">
-                        <td colspan="2"><strong>Necesidad de mejora del proceso en el SGC</strong></td>
-                        <td colspan="2">{{ $eficaciaRiesgos[0]->necesidad ?? 'No disponible' }}</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    @endif
-
-
-    @if(file_exists($graficaRiesgos))
-        <div style="margin-top: 40px; text-align: center;">
-            <h3 style="font-size: 18px; font-weight: bold; margin-bottom: 15px;">Gráfica de Riesgos</h3>
-            <img src="{{ $graficaRiesgos }}" style="width: 100%; max-height: 400px;" alt="Gráfica de Riesgos">
-        </div>
-    @endif
-
-
-    @if(isset($evaluacionProveedores) && !empty($evaluacionProveedores['indicadores']) && count($evaluacionProveedores['indicadores']) > 0)
-        <div style="margin-top: 40px; page-break-before: always;">
-            <h2 class="title">Análisis de Datos - Desempeño de Proveedores Externos</h2>
-
-            <table width="100%" border="1" cellspacing="0" cellpadding="6"
-                style="font-size: 11px; border-collapse: collapse;">
-                <thead class="encabezado">
-                    <tr>
-                        <th>No</th>
-                        <th>Nombre del Indicador</th>
-                        <th>Meta</th>
-                        <th>Ene-Jun</th>
-                        <th>Jul-Dic</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach ($evaluacionProveedores['indicadores'] as $index => $item)
-                        <tr>
-                            <td>{{ $index + 1 }}</td>
-                            <td>{{ $item['categoria'] }}</td>
-                            <td>{{ $item['meta'] ?? 'No disponible' }}%</td>
-                            <td>{{ $item['resultado1'] ?? '-' }}%</td>
-                            <td>{{ $item['resultado2'] ?? '-' }}%</td>
-                        </tr>
-                    @endforeach
-
-                    {{-- Interpretación --}}
-                    <tr style="background-color: #f0f0f0;">
-                        <td colspan="2"><strong>Interpretación:</strong></td>
-                        <td colspan="3">{{ $evaluacionProveedores['interpretacion'] ?? 'No disponible' }}</td>
-                    </tr>
-
-                    {{-- Necesidad --}}
-                    <tr style="background-color: #f0f0f0;">
-                        <td colspan="2"><strong>Necesidad de Mejora:</strong></td>
-                        <td colspan="3">{{ $evaluacionProveedores['necesidad'] ?? 'No disponible' }}</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-    @endif
-
-    @if(file_exists($graficaEvaluacion))
-        <div style="margin-top: 40px; text-align: center;">
-            <h3 style="font-size: 18px; font-weight: bold; margin-bottom: 15px;">Gráfica de Evaluación de Proveedores</h3>
-            <img src="{{ $graficaEvaluacion }}" style="width: 100%; max-height: 400px;"
-                alt="Gráfica de Evaluación de Proveedores">
-        </div>
-    @endif
-
-    @if($planCorrectivo)
-        <!-- Información básica del Plan Correctivo -->
-        <table class="table table-bordered">
-            <tr>
-                <th>Coordinador:</th>
-                <td>{{ $planCorrectivo->coordinadorPlan }}</td>
-                <th>Código:</th>
-                <td>{{ $planCorrectivo->codigo }}</td>
-            </tr>
-            <tr>
-                <th>Fecha:</th>
-                <td>{{ $planCorrectivo->fechaInicio }}</td>
-            </tr>
-        </table>
-
-        <h4>Origen de la no conformidad:</h4>
-        <p>{{ $planCorrectivo->origenConformidad }}</p>
-
-        <h4>Equipo de mejora:</h4>
-        <p>{{ $planCorrectivo->equipoMejora }}</p>
-
-        <h4>Actividades de reacción:</h4>
-        <table border="1" cellspacing="0" cellpadding="6" style="font-size: 12px;">
-            <thead>
-                <tr>
-                    <th>Actividad</th>
-                    <th>Responsable</th>
-                    <th>Fecha Programada</th>
-                    <th>Tipo</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach ($actividadesPlan->where('idPlanCorrectivo', $planCorrectivo->idPlanCorrectivo) as $act)
-                    <tr>
-                        <td>{{ $act->descripcionAct }}</td>
-                        <td>{{ $act->responsable }}</td>
-                        <td>{{ $act->fechaProgramada }}</td>
-                        <td>{{ $act->tipo }}</td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
-
-        <h4>Revisión y análisis:</h4>
-        <p>{{ $planCorrectivo->revisionAnalisis }}</p>
-
-        <h4>Determinación de causa raíz:</h4>
-        <p>{{ $planCorrectivo->causaRaiz }}</p>
-    @endif
-
-    @if(isset($planTrabajoData) && $planTrabajoData['planTrabajo'])
-    <div style="margin-top: 40px; page-break-before: always;">
-        <h2 class="title">Plan de Trabajo</h2>
-        
-        <!-- Información general -->
-        <table width="100%" border="1" cellspacing="0" cellpadding="6" style="font-size: 11px; border-collapse: collapse; margin-bottom: 15px;">
-            <tr>
-                <td width="15%"><strong>Fecha de Elaboración:</strong></td>
-                <td width="35%">{{ $planTrabajoData['planTrabajo']->fechaElaboracion ?? 'No especificado' }}</td>
-                <td width="15%"><strong>Objetivo:</strong></td>
-                <td width="35%">{{ $planTrabajoData['planTrabajo']->objetivo ?? 'No especificado' }}</td>
-            </tr>
-            <tr>
-                <td><strong>Fecha de Revisión:</strong></td>
-                <td>{{ $planTrabajoData['planTrabajo']->fechaRevision ?? 'No especificado' }}</td>
-                <td><strong>Revisado Por:</strong></td>
-                <td>{{ $planTrabajoData['planTrabajo']->revisadoPor ?? 'No especificado' }}</td>
-            </tr>
-            <tr>
-                <td><strong>Responsable:</strong></td>
-                <td>{{ $planTrabajoData['planTrabajo']->responsable ?? 'No especificado' }}</td>
-                <td><strong>Estado:</strong></td>
-                <td>{{ $planTrabajoData['planTrabajo']->estado ?? 'No especificado' }}</td>
-            </tr>
-            <tr>
-                <td><strong>Fuente:</strong></td>
-                <td>{{ $planTrabajoData['planTrabajo']->fuente ?? 'No especificado' }}</td>
-                <td><strong>Entregable:</strong></td>
-                <td>{{ $planTrabajoData['planTrabajo']->entregable ?? 'No especificado' }}</td>
-            </tr>
-        </table>
-
-        <!-- Fuentes documentales -->
-        @if(isset($planTrabajoData['fuentes']) && count($planTrabajoData['fuentes']) > 0)
-            <h4>Fuentes Documentales</h4>
-            <table width="100%" border="1" cellspacing="0" cellpadding="6" style="font-size: 10px; border-collapse: collapse;">
-                <thead>
-                    <tr>
-                        <th>No. Actividad</th>
-                        <th>Responsable</th>
-                        <th>Fecha Inicio</th>
-                        <th>Fecha Término</th>
-                        <th>Estado</th>
-                        <th>Nombre Fuente</th>
-                        <th>Elemento Entrada</th>
-                        <th>Descripción</th>
-                        <th>Entregable</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($planTrabajoData['fuentes'] as $fuente)
-                        <tr>
-                            <td>{{ $fuente->noActividad ?? '-' }}</td>
-                            <td>{{ $fuente->responsable ?? '-' }}</td>
-                            <td>{{ $fuente->fechaInicio ?? '-' }}</td>
-                            <td>{{ $fuente->fechaTermino ?? '-' }}</td>
-                            <td>{{ $fuente->estado ?? '-' }}</td>
-                            <td>{{ $fuente->nombreFuente ?? '-' }}</td>
-                            <td>{{ $fuente->elementoEntrada ?? '-' }}</td>
-                            <td>{{ $fuente->descripcion ?? '-' }}</td>
-                            <td>{{ $fuente->entregable ?? '-' }}</td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        @endif
-    </div>
-@endif
-
-    @if(isset($proyectoMejoraData) && $proyectoMejoraData['proyectoMejora'])
-        <div style="margin-top: 40px; page-break-before: always;">
-            <h2 class="title">Proyecto de Mejora</h2>
-
-            <!-- Información básica del proyecto -->
-            <table width="100%" border="1" cellspacing="0" cellpadding="6"
-                style="font-size: 11px; border-collapse: collapse; margin-bottom: 15px;">
-                <tr>
-                    <td width="15%"><strong>Fecha:</strong></td>
-                    <td width="35%">{{ $proyectoMejoraData['proyectoMejora']->fecha }}</td>
-                    <td width="15%"><strong>No. Mejora:</strong></td>
-                    <td width="35%">{{ $proyectoMejoraData['proyectoMejora']->noMejora }}</td>
-                </tr>
-                <tr>
-                    <td><strong>Descripción de la mejora:</strong></td>
-                    <td colspan="3">{{ $proyectoMejoraData['proyectoMejora']->descripcionMejora }}</td>
-                </tr>
-                <tr>
-                    <td><strong>Áreas de impacto/Personal beneficiado:</strong></td>
-                    <td colspan="3">{{ $proyectoMejoraData['proyectoMejora']->areaImpacto }}</td>
-                </tr>
-                <tr>
-                    <td><strong>Situación actual:</strong></td>
-                    <td colspan="3">{{ $proyectoMejoraData['proyectoMejora']->situacionActual }}</td>
-                </tr>
-                <tr>
-                    <td><strong>Aprobación Nombre:</strong></td>
-                    <td>{{ $proyectoMejoraData['proyectoMejora']->aprobacionNombre }}</td>
-                    <td><strong>Aprobación Puesto:</strong></td>
-                    <td>{{ $proyectoMejoraData['proyectoMejora']->aprobacionPuesto }}</td>
-                </tr>
-            </table>
-
-            <!-- Objetivos/Beneficios de la mejora -->
-            <h3 style="margin-top: 20px;">Objetivos/Beneficio de la mejora:</h3>
-            @if(count($proyectoMejoraData['objetivos']) > 0)
-                <ul>
-                    @foreach($proyectoMejoraData['objetivos'] as $objetivo)
-                        <li>{{ $objetivo->descripcionObj }}</li>
-                    @endforeach
-                </ul>
-            @else
-                <p>No se registraron objetivos.</p>
-            @endif
-
-            <!-- Responsables involucrados -->
-            <h3 style="margin-top: 20px;">Responsables involucrados:</h3>
-            @if(count($proyectoMejoraData['responsables']) > 0)
-                <ul>
-                    @foreach($proyectoMejoraData['responsables'] as $responsable)
-                        <li>{{ $responsable->nombre }}</li>
-                    @endforeach
-                </ul>
-            @else
-                <p>No hay responsables registrados.</p>
-            @endif
-
-            <!-- Indicadores de Éxito -->
-            <h3 style="margin-top: 20px;">Indicadores de Éxito:</h3>
-            @if(count($proyectoMejoraData['indicadoresExito']) > 0)
-                <ul>
-                    @foreach($proyectoMejoraData['indicadoresExito'] as $indicador)
-                        <li>{{ $indicador->nombreInd }} - Meta: {{ $indicador->meta }}</li>
-                    @endforeach
-                </ul>
-            @else
-                <p>No se definieron indicadores.</p>
-            @endif
-
-            <!-- Recursos -->
-            <h3 style="margin-top: 20px;">Recursos:</h3>
-            @if(count($proyectoMejoraData['recursos']) > 0)
-                <table width="100%" border="1" cellspacing="0" cellpadding="6"
-                    style="font-size: 11px; border-collapse: collapse;">
-                    <thead>
-                        <tr>
-                            <th>Tiempo</th>
-                            <th>Recursos Materiales y Humanos</th>
-                            <th>Costo estimado</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($proyectoMejoraData['recursos'] as $recurso)
-                            <tr>
-                                <td>{{ $recurso->tiempoEstimado }}</td>
-                                <td>{{ $recurso->recursosMatHum }}</td>
-                                <td>{{ $recurso->costo }}</td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            @else
-                <p>No se registraron recursos.</p>
-            @endif
-
-            <!-- Actividades -->
-            <h3 style="margin-top: 20px;">Actividades:</h3>
-            @if(count($proyectoMejoraData['actividadesPM']) > 0)
-                <table width="100%" border="1" cellspacing="0" cellpadding="6"
-                    style="font-size: 11px; border-collapse: collapse;">
-                    <thead>
-                        <tr>
-                            <th>Descripción</th>
-                            <th>Responsable</th>
-                            <th>Fecha</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($proyectoMejoraData['actividadesPM'] as $actividad)
-                            <tr>
-                                <td>{{ $actividad->descripcionAct }}</td>
-                                <td>{{ $actividad->responsable }}</td>
-                                <td>{{ $actividad->fecha }}</td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            @else
-                <p>No se registraron actividades.</p>
-            @endif
-        </div>
-    @endif
-
 
 </body>
 

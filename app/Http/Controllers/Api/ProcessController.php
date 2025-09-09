@@ -322,6 +322,7 @@ class ProcessController extends Controller
         return response()->json(['procesos' => $procesos]);
     }
 
+
     public function obtenerProcesoConLider($idProceso)
     {
         $proceso = Proceso::with(['usuario', 'entidad'])->find($idProceso);

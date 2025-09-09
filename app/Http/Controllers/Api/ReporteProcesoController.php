@@ -37,34 +37,91 @@ use App\Models\PlanTrabajo;
 
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
+
 
 class ReporteProcesoController extends Controller
 {
+
+    public function destroy($id)
+    {
+        try {
+            $reporte = ReporteProceso::where('idReporteProceso', $id)->first();
+            if (!$reporte)
+                return response()->json(['error' => 'Reporte no encontrado'], 404);
+
+            // Si tenemos ruta en BD, borra a partir de ella
+            if (!empty($reporte->ruta)) {
+                // ruta pública: http://host/storage/reportes/xxx.pdf
+                $prefix = url('/storage') . '/';
+                $relative = str_starts_with($reporte->ruta, $prefix)
+                    ? substr($reporte->ruta, strlen($prefix))  // reportes/xxx.pdf
+                    : ltrim($reporte->ruta, '/');              // fallback
+                Storage::disk('public')->delete($relative);
+            } else {
+                // Fallback legacy
+                $path = "reportes/reporte_proceso_{$reporte->anio}.pdf";
+                Storage::disk('public')->delete($path);
+            }
+
+            $reporte->delete();
+            return response()->json(['message' => 'Reporte eliminado correctamente', 'id' => $id], 200);
+        } catch (\Exception $e) {
+            \Log::error("Error al eliminar reporte", ['error' => $e->getMessage(), 'id' => $id]);
+            return response()->json(['error' => 'Error interno al eliminar el reporte'], 500);
+        }
+    }
+
+
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'idProceso' => 'required|integer',
+            'idProceso' => 'required|integer|exists:proceso,idProceso',
             'nombreReporte' => 'required|string|max:255',
-            'anio' => 'required|string|max:4'
+            'anio' => ['required', 'regex:/^\d{4}$/'],
+            'ruta' => 'nullable|url|max:2048',     
         ]);
 
         try {
+            // (Opcional) proteger duplicado por proceso+año desde app (además del índice único)
+            $existe = ReporteProceso::where('idProceso', (int) $validated['idProceso'])
+                ->where('anio', (int) $validated['anio'])
+                ->exists();
+
+            if ($existe) {
+                return response()->json([
+                    'error' => 'Ya existe un reporte para ese Proceso y Año.'
+                ], 409);
+            }
+
             $reporte = new ReporteProceso();
-            $reporte->idProceso = $validated['idProceso'];
+            $reporte->idProceso = (int) $validated['idProceso'];
             $reporte->nombreReporte = $validated['nombreReporte'];
-            $reporte->anio = $validated['anio'];
-            $reporte->fechaElaboracion = now();
+            $reporte->anio = (int) $validated['anio'];
+            $reporte->fechaElaboracion = now()->toDateString(); // la columna es DATE
+            $reporte->ruta = $validated['ruta'] ?? null; // <- guardar URL si viene
             $reporte->save();
 
             return response()->json([
                 'message' => 'Reporte guardado correctamente',
                 'reporte' => $reporte,
             ], 201);
-        } catch (\Exception $e) {
+
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Si pegó en la unique key, devolver 409
+            if ((int) ($e->errorInfo[1] ?? 0) === 1062) { // MySQL duplicate entry
+                return response()->json([
+                    'error' => 'Ya existe un reporte para ese Proceso y Año.'
+                ], 409);
+            }
+            \Log::error("Error SQL al guardar reporte", ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Error al guardar el reporte'], 500);
+        } catch (\Throwable $e) {
             \Log::error("Error al guardar reporte", ['error' => $e->getMessage()]);
             return response()->json(['error' => 'Error al guardar el reporte'], 500);
         }
     }
+
 
 
     public function index()
@@ -125,12 +182,12 @@ class ReporteProcesoController extends Controller
 
         }
 
-        $graficaPlanControl = $this->verificaGrafica("planControl_{$idProceso}_{$anio}.png");
-        $graficaEncuesta = $this->verificaGrafica("encuesta_{$idProceso}_{$anio}.png");
-        $graficaRetroalimentacion = $this->verificaGrafica("retroalimentacion_{$idProceso}_{$anio}.png");
-        $graficaMP = $this->verificaGrafica("mapaProceso_{$idProceso}_{$anio}.png");
-        $graficaRiesgos = $this->verificaGrafica("riesgos_{$idProceso}_{$anio}.png");
-        $graficaEvaluacion = $this->verificaGrafica("evaluacionProveedores_{$idProceso}_{$anio}.png");
+        $graficaPlanControl = $this->verificaGrafica("planControl_{$idProceso}_{$anio}");
+        $graficaEncuesta = $this->verificaGrafica("encuesta_{$idProceso}_{$anio}");
+        $graficaRetroalimentacion = $this->verificaGrafica("retroalimentacion_{$idProceso}_{$anio}");
+        $graficaMP = $this->verificaGrafica("mapaProceso_{$idProceso}_{$anio}");
+        $graficaRiesgos = $this->verificaGrafica("riesgos_{$idProceso}_{$anio}");
+        $graficaEvaluacion = $this->verificaGrafica("evaluacionProveedores_{$idProceso}_{$anio}");
 
         $registroSeg = $this->getRegistro($idProceso, $anio, 'Seguimiento');
         $seguimientos = $registroSeg ? SeguimientoMinuta::where('idRegistro', $registroSeg->idRegistro)->get() : collect();
@@ -147,9 +204,6 @@ class ReporteProcesoController extends Controller
         if (!$registroAcMejora) {
             return response()->json(['error' => 'No se encontró el registro.'], 404);
         }
-
-
-
 
         $acMejora = ActividadMejora::where('idRegistro', $registroAcMejora->idRegistro)->get();
         $idAccMejora = $acMejora->pluck('idActividadMejora')->toArray();
@@ -192,7 +246,7 @@ class ReporteProcesoController extends Controller
         $proyectoMejoraData = $this->getProyectoMejoraData($idProceso, $anio);
         // Obtener datos del plan de trabajo
 // Obtener datos del plan de trabajo
-$planTrabajoData = $this->obtenerPlanTrabajoData($idProceso, $anio);
+        $planTrabajoData = $this->obtenerPlanTrabajoData($idProceso, $anio);
 
         $datos = [
             'nombreProceso' => $proceso->nombreProceso,
@@ -251,11 +305,34 @@ $planTrabajoData = $this->obtenerPlanTrabajoData($idProceso, $anio);
 
         try {
             $pdf = Pdf::loadView('proceso', $datos);
-            return $pdf->download("reporte_proceso_{$anio}.pdf");
-        } catch (\Exception $e) {
+
+            // Nombre de archivo: Entidad_Proceso_Año.pdf
+            $entidadNombre = $proceso->entidad->nombreEntidad ?? 'Entidad';
+            $procesoNombre = $proceso->nombreProceso ?? 'Proceso';
+            $filename = Str::slug($entidadNombre, '_') . '_' . Str::slug($procesoNombre, '_') . '_' . $anio . '.pdf';
+
+            // Guardar en storage/app/public/reportes (sin subcarpetas por id/año)
+            $dir = 'reportes';
+            $path = "{$dir}/{$filename}";
+            // Opcional, por claridad (Storage::put crea el dir si no existe)
+            Storage::disk('public')->makeDirectory($dir);
+            Storage::disk('public')->put($path, $pdf->output());
+            $publicUrl = Storage::disk('public')->url($path);
+
+            // Devolver el PDF como adjunto (el front ya usa responseType:"blob")
+            return response($pdf->output(), 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+                'X-Report-URL' => $publicUrl,            // <- header con la URL
+                'Cache-Control' => 'no-store, no-cache, must-revalidate',
+                'Pragma' => 'no-cache',
+            ]);
+            ;
+        } catch (\Throwable $e) {
             Log::error("Error al generar PDF", ['error' => $e->getMessage()]);
             return response()->json(['error' => 'Error al generar el PDF'], 500);
         }
+
     }
 
     private function getRegistro($idProceso, $anio, $apartado)
@@ -268,8 +345,12 @@ $planTrabajoData = $this->obtenerPlanTrabajoData($idProceso, $anio);
 
     private function verificaGrafica($filename)
     {
-        $path = public_path("storage/graficas/$filename");
-        return file_exists($path) ? $path : null;
+        foreach (['png', 'jpg', 'jpeg', 'gif'] as $ext) {
+            $path = public_path("storage/graficas/{$filename}.{$ext}");
+            if (file_exists($path))
+                return $path;
+        }
+        return null;
     }
 
 
@@ -419,33 +500,35 @@ $planTrabajoData = $this->obtenerPlanTrabajoData($idProceso, $anio);
                 if ($indicador->origenIndicador === 'Encuesta') {
                     $encuesta = \App\Models\Encuesta::where('idIndicador', $indicador->idIndicador)->first();
 
-                    if ($encuesta) {
-                        $total = $encuesta->noEncuestas ?? 0;
-                        $excelenteBueno = ($encuesta->bueno + $encuesta->excelente);
-                        $porcentaje = $total > 0 ? round(($excelenteBueno * 100) / $total, 2) : 0;
+                    $total = (int) ($encuesta->noEncuestas ?? 0);
+                    $malo = (int) ($encuesta->malo ?? 0);
+                    $reg = (int) ($encuesta->regular ?? 0);
+                    $bueno = (int) ($encuesta->bueno ?? 0);
+                    $excel = (int) ($encuesta->excelente ?? 0);
+                    $porc = $total > 0 ? round((($bueno + $excel) * 100) / $total, 2) : 0;
 
-                        $base += [
-                            'noEncuestas' => $total,
-                            'malo' => $encuesta->malo,
-                            'regular' => $encuesta->regular,
-                            'bueno' => $encuesta->bueno,
-                            'excelente' => $encuesta->excelente,
-                            'porcentajeEB' => $porcentaje,
-                        ];
-                    }
+                    $base += [
+                        'noEncuestas' => $total,
+                        'malo' => $malo,
+                        'regular' => $reg,
+                        'bueno' => $bueno,
+                        'excelente' => $excel,
+                        'porcentajeEB' => $porc,
+                    ];
                 } elseif ($indicador->origenIndicador === 'Retroalimentacion') {
                     $retro = \App\Models\Retroalimentacion::where('idIndicador', $indicador->idIndicador)->first();
 
-                    if ($retro) {
-                        $total = $retro->cantidadFelicitacion + $retro->cantidadSugerencia + $retro->cantidadQueja;
+                    $fel = (int) ($retro->cantidadFelicitacion ?? 0);
+                    $sug = (int) ($retro->cantidadSugerencia ?? 0);
+                    $que = (int) ($retro->cantidadQueja ?? 0);
+                    $tot = $fel + $sug + $que;
 
-                        $base += [
-                            'felicitaciones' => $retro->cantidadFelicitacion,
-                            'sugerencias' => $retro->cantidadSugerencia,
-                            'quejas' => $retro->cantidadQueja,
-                            'total' => $total
-                        ];
-                    }
+                    $base += [
+                        'felicitaciones' => $fel,
+                        'sugerencias' => $sug,
+                        'quejas' => $que,
+                        'total' => $tot,
+                    ];
                 }
 
                 $resultado[] = $base;
@@ -829,91 +912,91 @@ $planTrabajoData = $this->obtenerPlanTrabajoData($idProceso, $anio);
     }
 
     public function obtenerPlanTrabajo($idProceso, $anio)
-{
-    try {
-        // Buscar el registro de Acciones de Mejora
-        $registroAcMejora = Registros::where('idProceso', $idProceso)
-            ->where('año', $anio)
-            ->where('apartado', 'Acciones de Mejora')
-            ->first();
+    {
+        try {
+            // Buscar el registro de Acciones de Mejora
+            $registroAcMejora = Registros::where('idProceso', $idProceso)
+                ->where('año', $anio)
+                ->where('apartado', 'Acciones de Mejora')
+                ->first();
 
-        if (!$registroAcMejora) {
-            return response()->json(['error' => 'No se encontró el registro de Acciones de Mejora.'], 404);
+            if (!$registroAcMejora) {
+                return response()->json(['error' => 'No se encontró el registro de Acciones de Mejora.'], 404);
+            }
+
+            // Obtener las actividades de mejora
+            $actividadesMejora = ActividadMejora::where('idRegistro', $registroAcMejora->idRegistro)->get();
+
+            if ($actividadesMejora->isEmpty()) {
+                return response()->json(['error' => 'No se encontraron actividades de mejora.'], 404);
+            }
+
+            $idActividadesMejora = $actividadesMejora->pluck('idActividadMejora')->toArray();
+
+            // Obtener el plan de trabajo (solo uno) - usar first() en lugar de get()
+            $planTrabajo = PlanTrabajo::whereIn('idActividadMejora', $idActividadesMejora)->first();
+
+            if (!$planTrabajo) {
+                return response()->json(['error' => 'No se encontró el plan de trabajo.'], 404);
+            }
+
+            // Obtener las fuentes para el plan de trabajo
+            $fuentes = FuentePt::where('idPlanTrabajo', $planTrabajo->idPlanTrabajo)->get();
+
+            $resultado = [
+                'planTrabajo' => $planTrabajo,
+                'fuentes' => $fuentes
+            ];
+
+            return response()->json($resultado);
+        } catch (\Exception $e) {
+            \Log::error("❌ Error en obtenerPlanTrabajo()", ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Error interno al obtener el plan de trabajo'], 500);
         }
-
-        // Obtener las actividades de mejora
-        $actividadesMejora = ActividadMejora::where('idRegistro', $registroAcMejora->idRegistro)->get();
-        
-        if ($actividadesMejora->isEmpty()) {
-            return response()->json(['error' => 'No se encontraron actividades de mejora.'], 404);
-        }
-        
-        $idActividadesMejora = $actividadesMejora->pluck('idActividadMejora')->toArray();
-
-        // Obtener el plan de trabajo (solo uno) - usar first() en lugar de get()
-        $planTrabajo = PlanTrabajo::whereIn('idActividadMejora', $idActividadesMejora)->first();
-
-        if (!$planTrabajo) {
-            return response()->json(['error' => 'No se encontró el plan de trabajo.'], 404);
-        }
-
-        // Obtener las fuentes para el plan de trabajo
-        $fuentes = FuentePt::where('idPlanTrabajo', $planTrabajo->idPlanTrabajo)->get();
-
-        $resultado = [
-            'planTrabajo' => $planTrabajo,
-            'fuentes' => $fuentes
-        ];
-
-        return response()->json($resultado);
-    } catch (\Exception $e) {
-        \Log::error("❌ Error en obtenerPlanTrabajo()", ['error' => $e->getMessage()]);
-        return response()->json(['error' => 'Error interno al obtener el plan de trabajo'], 500);
     }
-}
 
 
     private function obtenerPlanTrabajoData($idProceso, $anio)
-{
-    try {
-        // Buscar el registro de Acciones de Mejora
-        $registroAcMejora = Registros::where('idProceso', $idProceso)
-            ->where('año', $anio)
-            ->where('apartado', 'Acciones de Mejora')
-            ->first();
+    {
+        try {
+            // Buscar el registro de Acciones de Mejora
+            $registroAcMejora = Registros::where('idProceso', $idProceso)
+                ->where('año', $anio)
+                ->where('apartado', 'Acciones de Mejora')
+                ->first();
 
-        if (!$registroAcMejora) {
+            if (!$registroAcMejora) {
+                return null;
+            }
+
+            // Obtener las actividades de mejora
+            $actividadesMejora = ActividadMejora::where('idRegistro', $registroAcMejora->idRegistro)->get();
+
+            if ($actividadesMejora->isEmpty()) {
+                return null;
+            }
+
+            $idActividadesMejora = $actividadesMejora->pluck('idActividadMejora')->toArray();
+
+            // Obtener el plan de trabajo (solo uno) - usar first() en lugar de get()
+            $planTrabajo = PlanTrabajo::whereIn('idActividadMejora', $idActividadesMejora)->first();
+
+            if (!$planTrabajo) {
+                return null;
+            }
+
+            // Obtener las fuentes para el plan de trabajo
+            $fuentes = FuentePt::where('idPlanTrabajo', $planTrabajo->idPlanTrabajo)->get();
+
+            $resultado = [
+                'planTrabajo' => $planTrabajo,
+                'fuentes' => $fuentes
+            ];
+
+            return $resultado;
+        } catch (\Exception $e) {
+            \Log::error("❌ Error en obtenerPlanTrabajoData()", ['error' => $e->getMessage()]);
             return null;
         }
-
-        // Obtener las actividades de mejora
-        $actividadesMejora = ActividadMejora::where('idRegistro', $registroAcMejora->idRegistro)->get();
-        
-        if ($actividadesMejora->isEmpty()) {
-            return null;
-        }
-        
-        $idActividadesMejora = $actividadesMejora->pluck('idActividadMejora')->toArray();
-
-        // Obtener el plan de trabajo (solo uno) - usar first() en lugar de get()
-        $planTrabajo = PlanTrabajo::whereIn('idActividadMejora', $idActividadesMejora)->first();
-        
-        if (!$planTrabajo) {
-            return null;
-        }
-
-        // Obtener las fuentes para el plan de trabajo
-        $fuentes = FuentePt::where('idPlanTrabajo', $planTrabajo->idPlanTrabajo)->get();
-
-        $resultado = [
-            'planTrabajo' => $planTrabajo,
-            'fuentes' => $fuentes
-        ];
-
-        return $resultado;
-    } catch (\Exception $e) {
-        \Log::error("❌ Error en obtenerPlanTrabajoData()", ['error' => $e->getMessage()]);
-        return null;
     }
-}
 }

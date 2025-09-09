@@ -29,6 +29,7 @@ class ReporteProceso extends Model
     protected $fillable = [
         'idProceso',
         'nombreReporte',
+        'ruta',
         'fechaElaboracion',
         'anio'
     ];
