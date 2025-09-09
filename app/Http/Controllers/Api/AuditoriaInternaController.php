@@ -147,13 +147,92 @@ class AuditoriaInternaController extends Controller
             return response()->json(['message' => 'Auditoría no encontrada'], 404);
         }
 
+        DB::beginTransaction();
+
         try {
+            // Actualizar campos principales
             $auditoria->update($request->all());
 
-            return response()->json(['message' => 'Auditoría actualizada correctamente', 'auditoria' => $auditoria]);
+            // Eliminar relaciones viejas
+            $auditoria->equipoAuditor()->delete();
+            $auditoria->personalAuditado()->delete();
+            $auditoria->verificacionRuta()->delete();
+            $auditoria->puntosMejora()->delete();
+            $auditoria->criterios()->delete();
+            \App\Models\ConclusionesGenerales::where('idAuditoriaInterna', $auditoria->idAuditorialInterna)->delete();
+            $auditoria->plazos()->delete();
+
+            // Insertar relaciones nuevas
+
+            if (!empty($request->equipoAuditor)) {
+                foreach ($request->equipoAuditor as $auditor) {
+                    $auditor['idAuditorialInterna'] = $auditoria->idAuditorialInterna;
+                    EquipoAuditor::create($auditor);
+                }
+            }
+
+            if (!empty($request->personalAuditado)) {
+                foreach ($request->personalAuditado as $persona) {
+                    $persona['idAuditorialInterna'] = $auditoria->idAuditorialInterna;
+                    PersonalAuditado::create($persona);
+                }
+            }
+
+            if (!empty($request->verificacionRuta)) {
+                foreach ($request->verificacionRuta as $verificacion) {
+                    $verificacion['idAuditorialInterna'] = $auditoria->idAuditorialInterna;
+                    VerificacionRuta::create($verificacion);
+                }
+            }
+
+            if (!empty($request->puntosMejora)) {
+                foreach ($request->puntosMejora as $punto) {
+                    $punto['idAuditorialInterna'] = $auditoria->idAuditorialInterna;
+                    PuntosMejora::create($punto);
+                }
+            }
+
+            if (!empty($request->criterios)) {
+                foreach ($request->criterios as $criterio) {
+                    CriteriosAuditoria::create([
+                        'idAuditorialInterna' => $auditoria->idAuditorialInterna,
+                        'criterio' => $criterio
+                    ]);
+                }
+            }
+
+            if (!empty($request->conclusiones)) {
+                foreach ($request->conclusiones as $conclusion) {
+                    \App\Models\ConclusionesGenerales::create([
+                        'idAuditoriaInterna' => $auditoria->idAuditorialInterna,
+                        'nombre' => $conclusion['nombre'],
+                        'descripcionConclusion' => $conclusion['observaciones']
+                    ]);
+                }
+            }
+
+            if (!empty($request->plazos)) {
+                foreach ($request->plazos as $descripcion) {
+                    Plazo::create([
+                        'idAuditorialInterna' => $auditoria->idAuditorialInterna,
+                        'descripcion' => $descripcion
+                    ]);
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Auditoría actualizada correctamente',
+                'auditoria' => $auditoria
+            ]);
 
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Error al actualizar auditoría', 'details' => $e->getMessage()], 500);
+            DB::rollback();
+            return response()->json([
+                'error' => 'Error al actualizar auditoría',
+                'details' => $e->getMessage()
+            ], 500);
         }
     }
 
