@@ -134,6 +134,10 @@ Route::post('cronograma', [CronogramaController::class, 'store']);
 Route::put('cronograma/{id}', [CronogramaController::class, 'update']);
 Route::delete('/cronograma/{id}', [CronogramaController::class, 'destroy']);
 Route::get('/auditorias/todas', [CronogramaController::class, 'todas']);
+Route::get('auditorias/lider/{idUsuario}', [CronogramaController::class, 'porLider']);
+Route::get('/auditorias/supervisor/{idUsuario}',[CronogramaController::class, 'porSupervisor']);
+Route::get('auditorias/auditor/{idUsuario}', [CronogramaController::class, 'porAuditor']);
+
 
 //**************************************************/
 //             Minutas Segumineto
@@ -469,7 +473,6 @@ Route::prefix('auditores-asignados')->group(function () {
 });
 
 Route::post('/asignar-auditores', [AuditoresAsignadosController::class, 'store']);
-Route::get('/auditorias/supervisor/{idUsuario}',[CronogramaController::class, 'porSupervisor']);
 
 // Ruta para procesos con entidad
 Route::get('/procesos-con-entidades', [ProcessController::class, 'getProcesosConEntidad']);
