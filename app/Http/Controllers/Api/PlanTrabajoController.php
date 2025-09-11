@@ -13,6 +13,7 @@ use App\Models\GestionRiesgos;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 
 class PlanTrabajoController extends Controller
@@ -38,8 +39,8 @@ class PlanTrabajoController extends Controller
         'planTrabajo.objetivo'         => 'required|string|max:255',
         'planTrabajo.revisadoPor'      => 'nullable|string|max:100',
         'planTrabajo.fechaRevision'    => 'nullable|date',
-        'planTrabajo.elaboradoPor'     => 'nullable|string|max:255',
-        // 'planTrabajo.responsable'   => 'nullable|string|max:255', // lo derivamos si no viene
+        //'planTrabajo.elaboradoPor'     => 'nullable|string|max:255',
+        'planTrabajo.responsable'   => 'nullable|string|max:255', // lo derivamos si no viene
 
         'fuentes' => 'nullable|array',
         'fuentes.*.responsable'     => 'required_with:fuentes|string|max:255',

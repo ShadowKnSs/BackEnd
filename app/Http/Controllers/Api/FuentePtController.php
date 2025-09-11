@@ -42,28 +42,27 @@ class FuentePtController extends Controller
 
         DB::transaction(function () use ($request, $id) {
             $plan = PlanTrabajo::findOrFail($id);
-
             // Si prefieres no borrar todo para no romper vínculos, quita esta línea.
             FuentePt::where('idPlanTrabajo', $plan->idPlanTrabajo)->delete();
 
             foreach ($request->fuentes as $f) {
                 // 1) NoActividad: tomar del payload o calcular secuencial
-                $siguiente = (int)(FuentePt::where('idPlanTrabajo', $plan->idPlanTrabajo)->max('noActividad') ?? 0) + 1;
+                $siguiente = (int) (FuentePt::where('idPlanTrabajo', $plan->idPlanTrabajo)->max('noActividad') ?? 0) + 1;
                 $noActividad = $f['noActividad'] ?? $f['numero'] ?? $siguiente;
                 $ptCode = 'PT-' . str_pad($noActividad, 2, '0', STR_PAD_LEFT);
 
                 // 2) Crear la fuente con noActividad siempre presente
                 $payload = [
-                    'idPlanTrabajo'   => $plan->idPlanTrabajo,
-                    'noActividad'     => $noActividad,
-                    'responsable'     => $f['responsable'],
-                    'fechaInicio'     => $f['fechaInicio'],
-                    'fechaTermino'    => $f['fechaTermino'],
-                    'estado'          => $f['estado'],
-                    'nombreFuente'    => $f['nombreFuente'],
+                    'idPlanTrabajo' => $plan->idPlanTrabajo,
+                    'noActividad' => $noActividad,
+                    'responsable' => $f['responsable'],
+                    'fechaInicio' => $f['fechaInicio'],
+                    'fechaTermino' => $f['fechaTermino'],
+                    'estado' => $f['estado'],
+                    'nombreFuente' => $f['nombreFuente'],
                     'elementoEntrada' => $f['elementoEntrada'],
-                    'descripcion'     => $f['descripcion'],
-                    'entregable'      => $f['entregable'],
+                    'descripcion' => $f['descripcion'],
+                    'entregable' => $f['entregable'],
                 ];
                 // (Opcional) si tu tabla también tiene columna 'numero':
                 if (\Schema::hasColumn('fuentept', 'numero')) {
@@ -75,19 +74,23 @@ class FuentePtController extends Controller
                 // === Vincular/propagar a RIESGOS ===
                 // Ubicar idGesRies para el mismo proceso/año del plan (actividadMejora -> registro -> proceso|año)
                 $actividad = ActividadMejora::find($plan->idActividadMejora);
-                if (!$actividad) continue;
+                if (!$actividad)
+                    continue;
 
                 $registroBase = Registros::find($actividad->idRegistro);
-                if (!$registroBase) continue;
+                if (!$registroBase)
+                    continue;
 
                 $registroGR = Registros::where('idProceso', $registroBase->idProceso)
                     ->where('año', $registroBase->año)
                     ->whereIn('Apartado', ['Gestión de Riesgo', 'Gestion de Riesgo'])
                     ->first();
-                if (!$registroGR) continue;
+                if (!$registroGR)
+                    continue;
 
                 $gestion = GestionRiesgos::where('idRegistro', $registroGR->idRegistro)->first();
-                if (!$gestion) continue;
+                if (!$gestion)
+                    continue;
 
                 $idGesRies = $gestion->idGesRies;
 
@@ -102,28 +105,28 @@ class FuentePtController extends Controller
                 if ($riesgo) {
                     // Actualizar riesgo existente
                     $riesgo->update([
-                        'idFuente'    => $nuevaFuente->idFuente,
+                        'idFuente' => $nuevaFuente->idFuente,
                         'actividades' => $f['descripcion'],
                         'responsable' => $f['responsable'],
-                        'accionMejora'=> $ptCode,
-                        'fechaImp'    => $f['fechaInicio'],
-                        'fechaEva'    => $f['fechaTermino'],
+                        'accionMejora' => $ptCode,
+                        'fechaImp' => $f['fechaInicio'],
+                        'fechaEva' => $f['fechaTermino'],
                     ]);
                 } else {
                     // Crear riesgo nuevo
                     Riesgo::create([
-                        'idGesRies'   => $idGesRies,
-                        'idFuente'    => $nuevaFuente->idFuente,
+                        'idGesRies' => $idGesRies,
+                        'idFuente' => $nuevaFuente->idFuente,
                         'descripcion' => $f['elementoEntrada'],
                         'actividades' => $f['descripcion'],
-                        'accionMejora'=> $ptCode,
+                        'accionMejora' => $ptCode,
                         'responsable' => $f['responsable'],
-                        'fechaImp'    => $f['fechaInicio'],
-                        'fechaEva'    => $f['fechaTermino'],
+                        'fechaImp' => $f['fechaInicio'],
+                        'fechaEva' => $f['fechaTermino'],
                         // Valores mínimos por si tu modelo exige enteros
-                        'valorSeveridad'   => 1,
-                        'valorOcurrencia'  => 1,
-                        'valorNRP'         => 1,
+                        'valorSeveridad' => 1,
+                        'valorOcurrencia' => 1,
+                        'valorNRP' => 1,
                     ]);
                 }
             }
@@ -144,62 +147,62 @@ class FuentePtController extends Controller
         return response()->json($fuente, 200);
     }
 
-   public function update(Request $request, $id)
-{
-    Log::info('[FuentePt@update] Payload bruto', ['payload' => $request->all()]);
+    public function update(Request $request, $id)
+    {
+        Log::info('[FuentePt@update] Payload bruto', ['payload' => $request->all()]);
 
-    $fuente = FuentePt::find($id);
-    if (!$fuente) {
-        return response()->json(['message' => 'Fuente no encontrada'], 404);
-    }
-
-    // Aplana si vino como { fuentes: [ {...} ] }
-    $payload = $request->all();
-    if (isset($payload['fuentes'][0]) && is_array($payload['fuentes'][0])) {
-        $payload = array_merge($payload, $payload['fuentes'][0]);
-    }
-
-    // Normalización defensiva
-    foreach (['elementoEntrada','descripcion','entregable'] as $k) {
-        if (array_key_exists($k, $payload)) {
-            if (is_array($payload[$k])) {
-                // Une chips/listas en una sola cadena
-                $payload[$k] = implode(' | ', array_map('trim', $payload[$k]));
-            }
-            if ($payload[$k] === null) {
-                $payload[$k] = '';
-            }
-            // fuerza string
-            $payload[$k] = (string) $payload[$k];
+        $fuente = FuentePt::find($id);
+        if (!$fuente) {
+            return response()->json(['message' => 'Fuente no encontrada'], 404);
         }
+
+        // Aplana si vino como { fuentes: [ {...} ] }
+        $payload = $request->all();
+        if (isset($payload['fuentes'][0]) && is_array($payload['fuentes'][0])) {
+            $payload = array_merge($payload, $payload['fuentes'][0]);
+        }
+
+        // Normalización defensiva
+        foreach (['elementoEntrada', 'descripcion', 'entregable'] as $k) {
+            if (array_key_exists($k, $payload)) {
+                if (is_array($payload[$k])) {
+                    // Une chips/listas en una sola cadena
+                    $payload[$k] = implode(' | ', array_map('trim', $payload[$k]));
+                }
+                if ($payload[$k] === null) {
+                    $payload[$k] = '';
+                }
+                // fuerza string
+                $payload[$k] = (string) $payload[$k];
+            }
+        }
+
+
+        // Validación
+        $validator = Validator::make($payload, [
+            'responsable' => 'sometimes|required|string|max:255',
+            'fechaInicio' => 'sometimes|required|date',
+            'fechaTermino' => 'sometimes|required|date|after_or_equal:fechaInicio',
+            'estado' => 'sometimes|required|in:En proceso,Cerrado',
+            'nombreFuente' => 'sometimes|required|string|max:255',
+            'elementoEntrada' => 'sometimes|nullable|string',
+            'descripcion' => 'sometimes|nullable|string',
+            'entregable' => 'sometimes|nullable|string',
+            'noActividad' => 'required|integer|min:1',
+        ]);
+
+        if ($validator->fails()) {
+            Log::warning('[FuentePt@update] Falla validación', ['errors' => $validator->errors()]);
+            return response()->json($validator->errors(), 422);
+        }
+
+        $fuente->update(collect($payload)->except('noActividad', 'fuentes')->toArray());
+
+        return response()->json([
+            'message' => 'Fuente actualizada exitosamente',
+            'fuente' => $fuente
+        ], 200);
     }
-
-
-    // Validación
-    $validator = Validator::make($payload, [
-        'responsable'     => 'sometimes|required|string|max:255',
-        'fechaInicio'     => 'sometimes|required|date',
-        'fechaTermino'    => 'sometimes|required|date|after_or_equal:fechaInicio',
-        'estado'          => 'sometimes|required|in:En proceso,Cerrado',
-        'nombreFuente'    => 'sometimes|required|string|max:255',
-        'elementoEntrada' => 'sometimes|nullable|string',
-        'descripcion'     => 'sometimes|nullable|string',
-        'entregable'      => 'sometimes|nullable|string',
-        'noActividad'     => 'required|integer|min:1',
-    ]);
-
-    if ($validator->fails()) {
-        Log::warning('[FuentePt@update] Falla validación', ['errors' => $validator->errors()]);
-        return response()->json($validator->errors(), 422);
-    }
-
-    $fuente->update(collect($payload)->except('noActividad','fuentes')->toArray());
-
-    return response()->json([
-        'message' => 'Fuente actualizada exitosamente',
-        'fuente'  => $fuente
-    ], 200);
-}
 
 
     public function destroy($id)
