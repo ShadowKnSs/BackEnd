@@ -207,9 +207,20 @@ class ProcessController extends Controller
     return response()->json($procesos);
 }
 
-    public function show($id)
+    /*public function show($id)
     {
         $proceso = Proceso::findOrFail($id);
+        return response()->json(['proceso' => $proceso], 200);
+    }*/
+    //Para poder consumir tambien el macroproceso, entidad y usuario
+    public function show($id)
+    {
+        $proceso = Proceso::with(['macroproceso', 'entidad', 'usuario'])->find($id);
+
+        if (!$proceso) {
+            return response()->json(['error' => 'Proceso no encontrado'], 404);
+        }
+
         return response()->json(['proceso' => $proceso], 200);
     }
 
