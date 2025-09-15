@@ -59,7 +59,7 @@ class ProcessController extends Controller
                         'idRegistro' => $registro->idRegistro
                     ]);
 
-                     PlanTrabajo::firstOrCreate(
+                    PlanTrabajo::firstOrCreate(
                         ['idActividadMejora' => $actividadMejora->idActividadMejora],
                         [
                             'fechaElaboracion' => now(),
@@ -172,7 +172,7 @@ class ProcessController extends Controller
                 }
             }
 
-            DB::commit(); 
+            DB::commit();
 
             return response()->json([
                 'message' => 'Proceso y registros creados exitosamente',
@@ -202,10 +202,10 @@ class ProcessController extends Controller
         return response()->json(['procesos' => $procesos], 200);
     }*/
     public function index()
-{
-    $procesos = Proceso::all(); // devuelve todos los procesos
-    return response()->json($procesos);
-}
+    {
+        $procesos = Proceso::all(); // devuelve todos los procesos
+        return response()->json($procesos);
+    }
 
     /*public function show($id)
     {
@@ -227,7 +227,6 @@ class ProcessController extends Controller
     public function update(Request $request, $id)
     {
         $proceso = Proceso::findOrFail($id);
-        //Me falta la validacion
         $proceso->update($request->all());
         return response()->json(['proceso' => $proceso], 200);
     }
@@ -270,18 +269,18 @@ class ProcessController extends Controller
         return response()->json($procesos);
     }*/
     public function obtenerProcesosPorEntidad($idEntidad)
-{
-    // Obtener solo los procesos activos de la entidad específica
-    $procesos = Proceso::where('idEntidad', $idEntidad)
-                        ->where('estado', 'Activo')
-                        ->get();
+    {
+        // Obtener solo los procesos activos de la entidad específica
+        $procesos = Proceso::where('idEntidad', $idEntidad)
+            ->where('estado', 'Activo')
+            ->get();
 
-    if ($procesos->isEmpty()) {
-        return response()->json(['message' => 'No se encontraron procesos activos para esta entidad'], 404);
+        if ($procesos->isEmpty()) {
+            return response()->json(['message' => 'No se encontraron procesos activos para esta entidad'], 404);
+        }
+
+        return response()->json($procesos);
     }
-
-    return response()->json($procesos);
-}
 
 
     public function obtenerProcesoPorUsuario($idUsuario)
@@ -342,7 +341,7 @@ class ProcessController extends Controller
             return response()->json(['error' => 'Proceso no encontrado'], 404);
         }
 
-        $liderProceso = $proceso->usuario 
+        $liderProceso = $proceso->usuario
             ? $proceso->usuario->nombre . ' ' . $proceso->usuario->apellidoPat . ' ' . $proceso->usuario->apellidoMat
             : null;
 

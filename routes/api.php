@@ -82,6 +82,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ManualController;
 
 use App\Http\Controllers\Api\AuditoresAsignadosController;
+use App\Models\ReporteSemestral;
 
 //*********************************************************/
 //                          Login
@@ -419,7 +420,23 @@ Route::post('/formatos', [FormatosController::class, 'store']);
 Route::get('/formatos', [FormatosController::class, 'index']);
 Route::delete('/formatos/{id}', [FormatosController::class, 'destroy']);
 
-Route::post('/generar-pdf', [ReporteSemestralController::class, 'generarPDF']); // generar archivo pdf reporte semestral
+Route::get('/descargar-reporte/{id}', function ($id) {
+    $reporte = ReporteSemestral::findOrFail($id);
+    $path = storage_path('app/public/' . $reporte->ubicacion);
+
+    if (!file_exists($path)) {
+        return response()->json(['error' => 'Archivo no encontrado'], 404);
+    }
+
+    return response()->download($path, basename($path), [
+        'Content-Type' => 'application/pdf',
+        'Content-Disposition' => 'attachment; filename="' . basename($path) . '"'
+    ]);
+});
+
+
+Route::post('/generar-pdf', [ReporteSemestralController::class, 'generarYRegistrar']); // generar archivo pdf reporte semestral
+Route::delete('/delte-repor-sem/{id}', [SaveReportSemController::class, 'eliminarReporteSemestral']);
 Route::get('/get-riesgos-sem', [dataSemController::class, 'obtenerData']); //obtener lista data semestral
 Route::get('/get-seguimiento-sem', [SeguimientoSemController::class, 'obtenerDatosSeguimiento']); //obtener la lista seguimiento semestral
 Route::get('/get-auditorias-sem', [AuditoriaSemController::class, 'obtenerDatosAuditorias']); //obtener la lista auditorias semestra
@@ -485,3 +502,6 @@ Route::get('/entidad-nombres2', [EntidadDependenciaController::class, 'getNombre
 //                 Descargar Manuales
 //*********************************************************/
 Route::get('/descargar-manual/{rol}', [ManualController::class, 'download'])->name('manual.download');
+
+
+Route::get('/reportes/{id}/descargar', [ReporteSemestralController::class, 'descargarReporte']);

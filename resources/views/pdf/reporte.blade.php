@@ -192,39 +192,40 @@
 
 
     <!-- Acciones de Mejora -->
-    @if(!empty($datosAccionesMejora))
-        <div class="section">
-            <h2>Acciones de Mejora</h2>
-            <p>Planes de trabajo evaluados este semestre.</p>
+@if(!empty($datosAccionesMejora))
+    <div class="section">
+        <h2>Acciones de Mejora</h2>
+        <p>Planes de trabajo evaluados este semestre.</p>
 
-            <table>
-                <thead>
+        <table>
+            <thead>
+                <tr>
+                    <th>No.</th>
+                    <th>Proceso</th>
+                    <th>Entidad</th>
+                    <th>Fuente</th>
+                    <th>Responsable</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($datosAccionesMejora as $index => $item)
                     <tr>
-                        <th>No.</th>
-                        <th>Proceso</th>
-                        <th>Entidad</th>
-                        <th>Fuente</th>
-                        <th>Responsable</th>
-                        <th>Estado</th>
+                        <td>{{ $index + 1 }}</td>
+                        <td>{{ $item['NombreProceso'] ?? 'Sin registro' }}</td>
+                        <td>{{ $item['Entidad'] ?? 'Sin registro' }}</td>
+                        <td>{{ $item['fuente'] ?? 'Sin registro' }}</td>
+                        <td>{{ $item['responsable'] ?? 'Sin registro' }}</td>
+                        <td class="{{ !empty($item['estado']) ? ($item['estado'] == 'En proceso' ? 'estado-en-proceso' : 'estado-cerrado') : '' }}">
+                            {{ $item['estado'] ?? 'Sin registro' }}
+                        </td>
                     </tr>
-                </thead>
-                <tbody>
-                    @foreach($datosAccionesMejora as $index => $item)
-                        <tr>
-                            <td>{{ $index + 1 }}</td>
-                            <td>{{ $item['NombreProceso'] }}</td>
-                            <td>{{ $item['Entidad'] }}</td>
-                            <td>{{ $item['fuente'] }}</td>
-                            <td>{{ $item['responsable'] }}</td>
-                            <td class="{{ $item['estado'] == 'En proceso' ? 'estado-en-proceso' : 'estado-cerrado' }}">
-                                {{ $item['estado'] }}
-                            </td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-    @endif
+                @endforeach
+            </tbody>
+        </table>
+    </div>
+@endif
+
 
 
     <!-- Auditorías Internas -->
@@ -250,7 +251,7 @@
                             <td>{{ $item['NombreProceso'] }}</td>
                             <td>{{ $item['Entidad'] }}</td>
                             <td>{{ $item['AuditorLider'] }}</td>
-                            <td>{{ $item['fecha'] }}</td>
+                            <td>{{ \Carbon\Carbon::parse($item['fecha'])->format('Y-m-d') }}</td>
                         </tr>
                     @endforeach
                 </tbody>
