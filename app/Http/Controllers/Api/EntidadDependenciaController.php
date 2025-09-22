@@ -93,36 +93,54 @@ class EntidadDependenciaController extends Controller
 
     public function entidadesPorUsuario(Request $request)
     {
-        \Log::info('📥 Petición a entidadesPorUsuario');
-        \Log::info('🔐 ID Usuario:', [$request->input('idUsuario')]);
-        \Log::info('🎭 Rol Activo:', [$request->input('rolActivo')]);
+        \Log::info('📥 Petición a entidadesPorUsuario', $request->all());
 
-        $idUsuario = $request->input('idUsuario');
-        $rolActivo = $request->input('rolActivo');
+        $idUsuario = (int) $request->input('idUsuario');
+        $rolActivo = (string) $request->input('rolActivo');
 
-        // Si es Admin u otro con acceso total
-        if (in_array($rolActivo, ['Admin', 'Coordinador', 'Auditor', 'Supervisor'])) {
+        // Admin, Coordinador y Auditor: ven todas las entidades activas
+        if (in_array($rolActivo, ['Admin', 'Coordinador de Calidad', 'Auditor'])) {
             $entidades = EntidadDependencia::select('idEntidadDependencia', 'nombreEntidad', 'icono', 'tipo')
-                ->where('activo', 1) // ✅ Solo activas
+                ->where('activo', 1)
                 ->orderBy('nombreEntidad')
                 ->get();
         }
-        // Si es Líder de Proceso, solo su entidad (desde proceso)
+        // Supervisor: SOLO entidades de procesos que supervisa
+        elseif ($rolActivo === 'Supervisor') {
+            $entidades = EntidadDependencia::select(
+                'entidaddependencia.idEntidadDependencia',
+                'entidaddependencia.nombreEntidad',
+                'entidaddependencia.icono',
+                'entidaddependencia.tipo'
+            )
+                ->whereIn('entidaddependencia.idEntidadDependencia', function ($q) use ($idUsuario) {
+                    $q->select('proceso.idEntidad')
+                        ->from('proceso')
+                        ->join('supervisor_proceso', 'supervisor_proceso.idProceso', '=', 'proceso.idProceso')
+                        ->where('supervisor_proceso.idUsuario', $idUsuario);
+                })
+                ->where('entidaddependencia.activo', 1)
+                ->orderBy('entidaddependencia.nombreEntidad')
+                ->get();
+        }
+        // Líder: sólo su entidad (los procesos donde él es dueño)
         elseif ($rolActivo === 'Líder') {
-            $entidades = EntidadDependencia::whereIn('idEntidadDependencia', function ($query) use ($idUsuario) {
-                $query->select('idEntidad')
-                    ->from('proceso')
-                    ->where('idUsuario', $idUsuario);
-            })
-                ->where('activo', 1) // ✅ Solo activas
+            $entidades = EntidadDependencia::select('idEntidadDependencia', 'nombreEntidad', 'icono', 'tipo')
+                ->whereIn('idEntidadDependencia', function ($query) use ($idUsuario) {
+                    $query->select('idEntidad')
+                        ->from('proceso')
+                        ->where('idUsuario', $idUsuario);
+                })
+                ->where('activo', 1)
+                ->orderBy('nombreEntidad')
                 ->get();
         } else {
-            // Si no tiene acceso, regresa vacío o 403
             return response()->json(['message' => 'Sin permisos para ver entidades.'], 403);
         }
 
-        return response()->json(['entidades' => $entidades]);
+        return response()->json(['entidades' => $entidades], 200);
     }
+
 
     //actualizar una entidad/dependecia
     public function update(Request $request, $id)
