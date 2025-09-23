@@ -16,16 +16,12 @@ use Illuminate\Database\Eloquent\Model;
  */
 class ReporteSemestral extends Model
 {
-    // Nombre de la tabla en la base de datos
     protected $table = 'ReporteSemestral';
-
-    // Clave primaria personalizada
     protected $primaryKey = 'idReporteSemestral';
-
-    // No se manejan created_at ni updated_at
+    public $incrementing = true; // <<<<< importante
+    protected $keyType = 'int';  // <<<<< importante
     public $timestamps = false;
 
-    // Campos que pueden ser asignados masivamente
     protected $fillable = [
         'anio',
         'periodo',
@@ -36,3 +32,4 @@ class ReporteSemestral extends Model
         'ubicacion'
     ];
 }
+
