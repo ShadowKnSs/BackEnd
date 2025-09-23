@@ -26,6 +26,16 @@ class ProcessController extends Controller
         DB::beginTransaction();
 
         try {
+            //Validar que no exista proceso con el mismo nombre en la misma entidad
+            $existe = Proceso::where('idEntidad', $request->idEntidad)
+                ->where('nombreProceso', $request->nombreProceso)
+                ->first();
+
+            if ($existe) {
+                return response()->json([
+                    'error' => 'Ya existe un proceso con este nombre en la misma entidad.'
+                ], 422); // 422 Unprocessable Entity
+            }
             // Crear proceso
             $proceso = Proceso::create($request->all());
 
