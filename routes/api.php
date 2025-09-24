@@ -117,6 +117,7 @@ Route::post('/entidades/{id}/toggleProcesos', [EntidadDependenciaController::cla
 //*********************************************************/
 Route::get('macroprocesos', [MacroProcesoController::class, 'index']);
 Route::get('lideres', [LiderController::class, 'index']); 
+Route::get('lideres-2', [LiderController::class, 'index2']); 
 Route::post('/procesos', [ProcessController::class, 'store']);
 Route::get('/procesos/entidad/{idEntidad}', [ProcessController::class, 'obtenerProcesosPorEntidad']);
 Route::get('/proceso-usuario/{idUsuario}', [ProcessController::class, 'obtenerProcesoPorUsuario']);

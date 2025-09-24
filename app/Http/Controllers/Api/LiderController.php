@@ -19,4 +19,23 @@ class LiderController extends Controller
 
         return response()->json(['leaders' => $leaders], 200);
     }
+    public function index2()
+{
+    // Obtener líderes que NO estén asignados en procesos
+    $leaders = Usuario::with(['roles'])
+        ->whereHas('roles', function ($q) {
+            $q->where('nombreRol', 'Líder');
+        })
+        ->whereDoesntHave('procesos') // 👈 relación con procesos
+        ->get();
+
+    if ($leaders->isEmpty()) {
+        return response()->json([
+            'message' => 'No hay líderes disponibles'
+        ], 200);
+    }
+
+    return response()->json(['leaders' => $leaders], 200);
+}
+
 }
