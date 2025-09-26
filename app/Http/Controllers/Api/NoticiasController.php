@@ -36,7 +36,7 @@ class NoticiasController extends Controller
             'idUsuario' => 'required|integer',
             'titulo' => 'required|string',
             'descripcion' => 'nullable|string',
-            'imagen' => 'nullable|file|mimes:jpg,png,jpeg|max:2048'
+            'imagen' => 'nullable|file|mimes:jpg,png,jpeg|max:4096'
         ]);
 
         // 2. Crear el registro SIN la imagen
