@@ -457,7 +457,7 @@ class ReporteProcesoController extends Controller
     public function indicadoresSatisfaccionCliente($idProceso, $anio)
     {
         try {
-            // 🔍 Obtener idRegistro del apartado "AnálisisDatos"
+            // Obtener idRegistro del apartado "AnálisisDatos"
             $registro = Registros::where('idProceso', $idProceso)
                 ->where('año', $anio)
                 ->where('apartado', 'Análisis de Datos')
@@ -467,7 +467,7 @@ class ReporteProcesoController extends Controller
                 return response()->json(['error' => 'Registro no encontrado'], 404);
             }
 
-            // 🔎 Buscar interpretación y necesidad para la sección "Satisfacción"
+            // Buscar interpretación y necesidad para la sección "Satisfacción"
             $analisis = AnalisisDatos::where('idRegistro', $registro->idRegistro)->first();
 
             $neceInter = null;
@@ -480,7 +480,7 @@ class ReporteProcesoController extends Controller
             $interpretacion = $neceInter->Interpretacion ?? null;
             $necesidad = $neceInter->Necesidad ?? null;
 
-            // 🔄 Buscar indicadores del tipo Encuesta y Retroalimentación
+            // Buscar indicadores del tipo Encuesta y Retroalimentación
             $indicadores = IndicadorConsolidado::where('idProceso', $idProceso)
                 ->whereIn('origenIndicador', ['Encuesta', 'Retroalimentacion'])
                 ->get();
@@ -536,7 +536,7 @@ class ReporteProcesoController extends Controller
 
             return response()->json($resultado, 200);
         } catch (\Exception $e) {
-            \Log::error("❌ Error en indicadoresSatisfaccionCliente:", ['error' => $e->getMessage()]);
+            \Log::error(" Error en indicadoresSatisfaccionCliente:", ['error' => $e->getMessage()]);
             return response()->json(['error' => 'Error interno'], 500);
         }
     }
@@ -950,7 +950,7 @@ class ReporteProcesoController extends Controller
 
             return response()->json($resultado);
         } catch (\Exception $e) {
-            \Log::error("❌ Error en obtenerPlanTrabajo()", ['error' => $e->getMessage()]);
+            \Log::error(" Error en obtenerPlanTrabajo()", ['error' => $e->getMessage()]);
             return response()->json(['error' => 'Error interno al obtener el plan de trabajo'], 500);
         }
     }
@@ -995,7 +995,7 @@ class ReporteProcesoController extends Controller
 
             return $resultado;
         } catch (\Exception $e) {
-            \Log::error("❌ Error en obtenerPlanTrabajoData()", ['error' => $e->getMessage()]);
+            \Log::error(" Error en obtenerPlanTrabajoData()", ['error' => $e->getMessage()]);
             return null;
         }
     }

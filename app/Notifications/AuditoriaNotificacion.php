@@ -65,6 +65,8 @@ class AuditoriaNotificacion extends Notification
         return [
             'type' => 'Auditoría Notificación',
             'data' => [
+                'idAuditoria' => $this->cronograma['idAuditoria'] ?? null,
+                'idProceso' => $this->cronograma['idProceso'] ?? null,
                 'accion' => $this->accion,
                 'tipoAuditoria' => $this->cronograma['tipoAuditoria'],
                 'fechaProgramada' => $this->cronograma['fechaProgramada'],

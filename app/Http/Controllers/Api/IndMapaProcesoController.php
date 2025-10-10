@@ -40,15 +40,15 @@ class IndMapaProcesoController extends Controller
         try {
             $data = $this->validarRequest($request);
 
-            // 1️⃣ Crear el nuevo registro de IndMapaProceso
+            // Crear el nuevo registro de IndMapaProceso
             $indMapa = IndMapaProceso::create($data);
 
-            // 2️⃣ Obtener registros del proceso (tipo: Análisis de Datos)
+            // Obtener registros del proceso (tipo: Análisis de Datos)
             $registros = Registros::where('idProceso', $data['idProceso'])
                 ->where('Apartado', 'Análisis de Datos')
                 ->get();
 
-            // 3️⃣ Verificamos qué idRegistro ya tienen indicadores exactamente iguales
+            // Verificamos qué idRegistro ya tienen indicadores exactamente iguales
             $idRegistros = $registros->pluck('idRegistro');
 
             $existentes = IndicadorConsolidado::whereIn('idRegistro', $idRegistros)
@@ -59,7 +59,7 @@ class IndMapaProcesoController extends Controller
                 ->pluck('idRegistro')
                 ->toArray();
 
-            // 4️⃣ Solo crear indicadores donde no existan duplicados exactos
+            // Solo crear indicadores donde no existan duplicados exactos
             foreach ($registros as $registro) {
                 if (!in_array($registro->idRegistro, $existentes)) {
                     IndicadorConsolidado::create([
@@ -73,7 +73,7 @@ class IndMapaProcesoController extends Controller
                 }
             }
 
-            // 5️⃣ Registrar cambio
+            // Registrar cambio
             ControlCambiosService::registrarCambio(
                 $data['idProceso'],
                 'Mapa de Proceso',

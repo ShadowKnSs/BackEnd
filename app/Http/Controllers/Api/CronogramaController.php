@@ -9,6 +9,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Proceso;
 use App\Models\EntidadDependencia;
 use App\Notifications\AuditoriaNotificacion;
+use Illuminate\Notifications\DatabaseNotification;
 use App\Models\Usuario;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Log;
@@ -16,21 +17,72 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
 
 
-
 class CronogramaController extends Controller
 {
-    // JRH - 05/09/25 - Filtro para ver solo un tipo de proceso
+
+    /** Borra notificaciones (canal database) de una auditoría para un set de usuarios */
+    private function deleteDbNotificationsForAudit(array $userIds, int $idAuditoria): void
+    {
+        if (empty($userIds))
+            return;
+
+        $deleted = DatabaseNotification::query()
+            ->whereIn('notifiable_id', $userIds)
+            ->where('notifiable_type', Usuario::class)
+            ->where('type', AuditoriaNotificacion::class)
+            ->where(function ($q) use ($idAuditoria) {
+                // Estructura actual (anidada): data->data->idAuditoria
+                $q->where('data->data->idAuditoria', $idAuditoria)
+                    // Fallback por si en algún momento aplanas la estructura
+                    ->orWhere('data->idAuditoria', $idAuditoria);
+            })
+            ->delete();
+
+        Log::info('deleteDbNotificationsForAudit', [
+            'userIds' => $userIds,
+            'idAuditoria' => $idAuditoria,
+            'deleted' => $deleted
+        ]);
+    }
+
+    /** Envía notificación (mail+database) a un set de users */
+    private function notifyUsers(array $userIds, array $cronogramaData, array $usersList, array $emails, string $accion): void
+    {
+        if (empty($userIds))
+            return;
+
+        $usuarios = Usuario::whereIn('idUsuario', $userIds)->get();
+        foreach ($usuarios as $u) {
+            try {
+                // via() = ['mail','database']; al notificar al modelo, dispara ambos canales
+                $u->notify(new AuditoriaNotificacion($cronogramaData, $usersList, $emails, $accion));
+            } catch (\Throwable $e) {
+                \Log::error("Error notificando a usuario {$u->idUsuario}", ['err' => $e->getMessage()]);
+            }
+        }
+    }
+
     public function index(Request $request)
     {
-        $data = $request->validate([
-            'idProceso' => 'required|integer'
+        // Validar idProceso + rango opcional
+        $validated = $request->validate([
+            'idProceso' => 'required|integer|exists:proceso,idProceso',
+            'from' => 'nullable|date_format:Y-m-d',
+            'to' => 'nullable|date_format:Y-m-d',
         ]);
-        $idProceso = $data['idProceso'];
 
-        \Log::info("🔍 Consultando auditorías para idProceso={$idProceso}");
+        $idProceso = (int) $validated['idProceso'];
+        $from = $validated['from'] ?? null;
+        $to = $validated['to'] ?? null;
 
-        // ⬇️ Trae nombres de Proceso, Entidad y nombre del líder, como en /todas
-        $rows = \DB::table('auditorias as a')
+        // Si mandan el rango invertido, lo normalizamos
+        if ($from && $to && $from > $to) {
+            [$from, $to] = [$to, $from];
+        }
+
+        \Log::info("Consultando auditorías para idProceso={$idProceso}, rango", compact('from', 'to'));
+
+        $q = \DB::table('auditorias as a')
             ->join('proceso as p', 'p.idProceso', '=', 'a.idProceso')
             ->join('entidaddependencia as e', 'e.idEntidadDependencia', '=', 'p.idEntidad')
             ->leftJoin('usuario as ul', 'ul.idUsuario', '=', 'a.auditorLider')
@@ -47,8 +99,20 @@ class CronogramaController extends Controller
                 'e.nombreEntidad',
                 'a.auditorLider',
                 \DB::raw("TRIM(CONCAT(COALESCE(ul.nombre,''),' ',COALESCE(ul.apellidoPat,''),' ',COALESCE(ul.apellidoMat,''))) as nombreAuditorLider")
-            ])
-            ->orderBy('a.fechaProgramada', 'desc')
+            ]);
+
+        // Filtro por rango visible si viene from/to
+        if ($from && $to) {
+            $q->whereBetween('a.fechaProgramada', [$from, $to]);
+        } elseif ($from) {
+            $q->whereDate('a.fechaProgramada', '>=', $from);
+        } elseif ($to) {
+            $q->whereDate('a.fechaProgramada', '<=', $to);
+        }
+
+        $rows = $q
+            ->orderBy('a.fechaProgramada', 'asc')
+            ->orderBy('a.horaProgramada', 'asc')
             ->get();
 
         return response()->json($rows, 200);
@@ -86,7 +150,15 @@ class CronogramaController extends Controller
                 'auditoresAdicionales.*' => 'integer|exists:usuario,idUsuario',
             ]);
 
-            // Resolver $proceso y $idProceso (una sola variable unificada)
+            // Validación adicional: hora dentro del horario SGC (08:00 - 17:00)
+            $hora = $validated['horaProgramada'] ?? $request->input('horaProgramada');
+            if ($hora) {
+                if ($hora < '08:00' || $hora > '17:00') {
+                    return response()->json(['success' => false, 'message' => 'La hora debe estar entre 08:00 y 17:00.'], 422);
+                }
+            }
+
+            // Resolver $proceso / $idProceso
             $proceso = null;
             if (!empty($validated['idProceso'])) {
                 $proceso = Proceso::with('entidad')->find($validated['idProceso']);
@@ -94,7 +166,6 @@ class CronogramaController extends Controller
                     return response()->json(['success' => false, 'message' => 'Proceso inválido'], 404);
                 }
             } else {
-                // Fallback por nombres
                 if (empty($validated['nombreProceso']) || empty($validated['nombreEntidad'])) {
                     return response()->json(['success' => false, 'message' => 'Falta idProceso o (nombreProceso + nombreEntidad)'], 422);
                 }
@@ -113,10 +184,20 @@ class CronogramaController extends Controller
             }
             $idProceso = $proceso->idProceso;
 
-            // Lista de auditores para validar solape (idAuditor ≡ idUsuario en tu tabla actual)
-            $idsAuditores = collect($request->input('auditoresAdicionales', []))
-                ->when($validated['auditorLider'] ?? null, fn($c) => $c->push((int) $validated['auditorLider']))
-                ->map(fn($v) => (int) $v)->unique()->values()->all();
+            // Invariante para EXTERNA
+            $isExterna = $validated['tipoAuditoria'] === 'externa';
+            if ($isExterna) {
+                // Fuerza líder nulo y NO considerar adicionales
+                $validated['auditorLider'] = null;
+            }
+
+            // Lista de auditores para validar solape (solo internas)
+            $idsAuditores = [];
+            if (!$isExterna) {
+                $idsAuditores = collect($request->input('auditoresAdicionales', []))
+                    ->when($validated['auditorLider'] ?? null, fn($c) => $c->push((int) $validated['auditorLider']))
+                    ->map(fn($v) => (int) $v)->unique()->values()->all();
+            }
 
             if (!empty($idsAuditores)) {
                 $conflicto = $this->existeChoque(
@@ -134,7 +215,7 @@ class CronogramaController extends Controller
             }
 
             // Crear + asignar en transacción
-            $auditoria = DB::transaction(function () use ($validated, $idProceso, $idsAuditores) {
+            $auditoria = DB::transaction(function () use ($validated, $idProceso, $idsAuditores, $isExterna) {
                 $auditoria = Cronograma::create([
                     'fechaProgramada' => $validated['fechaProgramada'],
                     'horaProgramada' => $validated['horaProgramada'],
@@ -142,15 +223,13 @@ class CronogramaController extends Controller
                     'estado' => $validated['estado'],
                     'descripcion' => $validated['descripcion'],
                     'idProceso' => $idProceso,
-                    'auditorLider' => $validated['auditorLider'] ?? null,
+                    'auditorLider' => $validated['auditorLider'] ?? null, // será null si es externa
                 ]);
 
-                // Asignaciones (incluye líder con rol)
+                // Asignaciones: SOLO si NO es externa
                 DB::table('auditoresasignados')->where('idAuditoria', $auditoria->idAuditoria)->delete();
-
-                $ids = collect($idsAuditores);
-                if ($ids->isNotEmpty()) {
-                    $rows = $ids->map(function ($idUsuario) use ($auditoria, $validated) {
+                if (!$isExterna && !empty($idsAuditores)) {
+                    $rows = collect($idsAuditores)->map(function ($idUsuario) use ($auditoria, $validated) {
                         return [
                             'idAuditoria' => $auditoria->idAuditoria,
                             'idUsuario' => $idUsuario,
@@ -158,14 +237,13 @@ class CronogramaController extends Controller
                             'rol' => ($validated['auditorLider'] ?? null) == $idUsuario ? 'Lider' : 'Auditor',
                         ];
                     })->all();
-
                     DB::table('auditoresasignados')->insert($rows);
                 }
 
                 return $auditoria;
             });
 
-            // Notificaciones (si las quieres mantener, sin usar $proc ni nombres guardados)
+            // Notificaciones
             $usersList = [];
             $emails = [];
 
@@ -177,7 +255,6 @@ class CronogramaController extends Controller
                 }
             }
 
-            // Usuario dueño del proceso (si aplica)
             if (!empty($proceso->idUsuario)) {
                 $usuarioProceso = Usuario::find($proceso->idUsuario);
                 if ($usuarioProceso) {
@@ -186,7 +263,6 @@ class CronogramaController extends Controller
                 }
             }
 
-            // Si quieres incluir nombres en el correo, tómalo de $proceso y su entidad
             $cronogramaData = [
                 'tipoAuditoria' => $validated['tipoAuditoria'],
                 'fechaProgramada' => $validated['fechaProgramada'],
@@ -210,7 +286,6 @@ class CronogramaController extends Controller
             if (isset($usuarioProceso))
                 $usuarioProceso->notify(new AuditoriaNotificacion($cronogramaData, $usersList, $emails, 'creado'));
 
-            // Respuesta
             return response()->json([
                 'success' => true,
                 'message' => 'Auditoría creada exitosamente',
@@ -221,7 +296,7 @@ class CronogramaController extends Controller
                     'horaProgramada' => $auditoria->horaProgramada,
                     'estado' => $auditoria->estado,
                     'descripcion' => $auditoria->descripcion,
-                    'auditorLider' => $auditoria->auditorLider,
+                    'auditorLider' => $auditoria->auditorLider, // null si externa
                     'idProceso' => $auditoria->idProceso,
                 ],
             ], 201);
@@ -242,8 +317,6 @@ class CronogramaController extends Controller
             ], 500);
         }
     }
-
-
     public function update(Request $request, $id)
     {
         Log::info('Iniciando update', ['id' => $id]);
@@ -261,10 +334,7 @@ class CronogramaController extends Controller
             'estado' => 'required|in:Pendiente,Finalizada,Cancelada',
             'descripcion' => 'required|string|max:512',
 
-            // ✅ tabla correcta
             'idProceso' => 'nullable|integer|exists:proceso,idProceso',
-
-            // compat: solo para resolver idProceso si aún llega
             'nombreProceso' => 'nullable|string|max:255',
             'nombreEntidad' => 'nullable|string|max:255',
 
@@ -273,7 +343,11 @@ class CronogramaController extends Controller
 
         $auditoria = Cronograma::with('asignados')->findOrFail($id);
 
-        // -------- Resolver $proceso y $idProceso (siempre definidos) --------
+        $oldProceso = Proceso::with('entidad')->find($auditoria->idProceso);
+        $oldOwnerId = $oldProceso?->idUsuario;           // líder del proceso X (antes)
+        $oldLeaderId = $auditoria->auditorLider;          // auditor líder anterior
+
+        // Resolver $proceso / $idProceso
         if (!empty($validated['idProceso'])) {
             $proceso = Proceso::with('entidad')->find($validated['idProceso']);
             if (!$proceso)
@@ -291,97 +365,117 @@ class CronogramaController extends Controller
             if (!$proceso)
                 return response()->json(['message' => 'Proceso inválido para la entidad'], 404);
         } else {
-            // Ni id ni nombres: usa el proceso actual de la auditoría
             $proceso = Proceso::with('entidad')->find($auditoria->idProceso);
             if (!$proceso)
                 return response()->json(['message' => 'Proceso actual no encontrado'], 404);
         }
         $idProceso = $proceso->idProceso;
 
-        // -------- Solapamiento por idAuditor (≡ idUsuario en tu esquema) --------
-        $idsAuditores = $auditoria->asignados()
-            ->pluck('idAuditor')->map(fn($v) => (int) $v)->filter()->unique()->values();
-
-        if (!empty($validated['auditorLider'])) {
-            $idsAuditores = $idsAuditores->push((int) $validated['auditorLider'])->unique()->values();
+        // Invariante para EXTERNA
+        $isExterna = $validated['tipoAuditoria'] === 'externa';
+        if ($isExterna) {
+            // Fuerza líder nulo si la auditoría es externa
+            $validated['auditorLider'] = null;
         }
 
-        if ($idsAuditores->isNotEmpty()) {
-            $conflicto = $this->existeChoque(
-                $idsAuditores->all(),
-                $validated['fechaProgramada'],
-                $validated['horaProgramada'],
-                (int) $auditoria->idAuditoria
-            );
-            if ($conflicto) {
-                return response()->json(['message' => 'Conflicto de horario al reprogramar.'], 422);
+        // Solapamiento: solo tiene sentido si NO es externa (porque externas no tendrán asignados)
+        $idsAuditores = collect();
+        if (!$isExterna) {
+            $idsAuditores = $auditoria->asignados()
+                ->pluck('idAuditor')->map(fn($v) => (int) $v)->filter()->unique()->values();
+
+            if (!empty($validated['auditorLider'])) {
+                $idsAuditores = $idsAuditores->push((int) $validated['auditorLider'])->unique()->values();
+            }
+
+            if ($idsAuditores->isNotEmpty()) {
+                $conflicto = $this->existeChoque(
+                    $idsAuditores->all(),
+                    $validated['fechaProgramada'],
+                    $validated['horaProgramada'],
+                    (int) $auditoria->idAuditoria
+                );
+                if ($conflicto) {
+                    return response()->json(['message' => 'Conflicto de horario al reprogramar.'], 422);
+                }
             }
         }
 
-        // -------- Persistencia --------
-        $auditoria->update([
-            'fechaProgramada' => $validated['fechaProgramada'],
-            'horaProgramada' => $validated['horaProgramada'],
-            'tipoAuditoria' => $validated['tipoAuditoria'],
-            'estado' => $validated['estado'],
-            'descripcion' => $validated['descripcion'],
-            'idProceso' => $idProceso,
-            'auditorLider' => $validated['auditorLider'] ?? $auditoria->auditorLider,
-        ]);
+        DB::beginTransaction();
+        try {
+            // Persistencia principal
+            $auditoria->update([
+                'fechaProgramada' => $validated['fechaProgramada'],
+                'horaProgramada' => $validated['horaProgramada'],
+                'tipoAuditoria' => $validated['tipoAuditoria'],
+                'estado' => $validated['estado'],
+                'descripcion' => $validated['descripcion'],
+                'idProceso' => $idProceso,
+                'auditorLider' => $validated['auditorLider'] ?? $auditoria->auditorLider, // será null si externa
+            ]);
 
-        // -------- Notificaciones (sin $proc) --------
-        $notificados = collect();
-        $emails = [];
+            // Sincronización de asignaciones
+            if ($isExterna) {
+                // Borrar TODAS las asignaciones si es externa
+                DB::table('auditoresasignados')
+                    ->where('idAuditoria', $auditoria->idAuditoria)
+                    ->delete();
+            } else {
 
-        if (!empty($validated['auditorLider'])) {
-            $auditorLider = Usuario::find($validated['auditorLider']);
-            if ($auditorLider) {
-                $notificados->push($auditorLider);
-                $emails[] = $auditorLider->correo;
             }
+
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            Log::error('Error en update()', ['error' => $e->getMessage()]);
+            return response()->json(['message' => 'Error al actualizar la auditoría'], 500);
         }
 
-        if (!empty($proceso->idUsuario)) {
-            $usuarioProceso = Usuario::find($proceso->idUsuario);
-            if ($usuarioProceso) {
-                $notificados->push($usuarioProceso);
-                $emails[] = $usuarioProceso->correo;
-            }
-        }
+        // Notificaciones
+        // ===== Sincronización de notificaciones (post-commit) =====
+        $newOwnerId = $proceso?->idUsuario;               // líder del proceso Y (nuevo)
+        $newLeaderId = $auditoria->auditorLider;           // líder auditor NUEVO
 
+        // Conjuntos a comparar (ignorando nulls)
+        $oldCore = collect([$oldOwnerId, $oldLeaderId])->filter()->unique()->values();
+        $newCore = collect([$newOwnerId, $newLeaderId])->filter()->unique()->values();
+
+        $toRemove = $oldCore->diff($newCore)->values()->all(); // quitar notificación
+        $toAdd = $newCore->diff($oldCore)->values()->all(); // crear notificación
+
+        // Prepara datos de la notificación
         $cronogramaData = [
+            'idAuditoria' => $auditoria->idAuditoria,
+            'idProceso' => $idProceso,
             'tipoAuditoria' => $validated['tipoAuditoria'],
             'fechaProgramada' => $validated['fechaProgramada'],
             'horaProgramada' => $validated['horaProgramada'],
-            // Nombres tomados del modelo, no del request
             'nombreProceso' => $proceso->nombreProceso ?? null,
             'nombreEntidad' => optional($proceso->entidad)->nombreEntidad ?? null,
-            'idProceso' => $idProceso,
-            'idAuditoria' => $auditoria->idAuditoria,
         ];
 
-        $userNames = $notificados->map(fn($u) => "{$u->nombre} {$u->apellidoPat} {$u->apellidoMat}")->toArray();
-
-        foreach ($emails as $email) {
-            try {
-                Notification::route('mail', $email)
-                    ->notify(new AuditoriaNotificacion($cronogramaData, $userNames, $emails, 'actualizado'));
-            } catch (\Throwable $e) {
-                Log::error("Error al enviar correo a {$email}", ['error' => $e->getMessage()]);
+        // (Opcional) nombres para el cuerpo del correo
+        $usersList = [];
+        $emails = [];
+        foreach ([$newLeaderId, $newOwnerId] as $uid) {
+            if (!$uid)
+                continue;
+            $u = Usuario::find($uid);
+            if ($u) {
+                $usersList[] = trim("{$u->nombre} {$u->apellidoPat} {$u->apellidoMat}");
+                $emails[] = $u->correo;
             }
         }
 
-        $notificados->each(function ($user) use ($cronogramaData, $userNames, $emails) {
-            try {
-                $user->notify(new AuditoriaNotificacion($cronogramaData, $userNames, $emails, 'actualizado'));
-            } catch (\Throwable $e) {
-                Log::error("Error al guardar notificación DB para usuario {$user->idUsuario}", ['error' => $e->getMessage()]);
-            }
-        });
+        // 1) Elimina notificación en DB a quienes ya no corresponde
+        $this->deleteDbNotificationsForAudit($toRemove, (int) $auditoria->idAuditoria);
 
-        Log::info('Finalizando el método update');
-        return response()->json(['message' => 'Auditoría actualizada y notificaciones enviadas']);
+        // 2) Notifica (DB + correo) a los nuevos receptores
+        $this->notifyUsers($toAdd, $cronogramaData, $usersList, $emails, 'actualizado');
+
+        return response()->json(['message' => 'Auditoría actualizada y notificaciones sincronizadas']);
     }
+
 
 
     public function destroy($id)
@@ -435,37 +529,54 @@ class CronogramaController extends Controller
 
     public function todas(Request $request)
     {
-        $rol = $request->query('rol');
-        if (!in_array($rol, ['Administrador', 'Coordinador'])) {
-            return response()->json(['message' => 'No autorizado'], 403);
-        }
+        $rol = $request->query('rol'); // Administrador | Coordinador
+        $from = $request->query('from'); // YYYY-MM-DD
+        $to = $request->query('to');   // YYYY-MM-DD
 
-        $rows = \DB::table('auditorias as a')
+        $request->validate([
+            'rol' => 'required|string|in:Administrador,Coordinador',
+            'from' => 'nullable|date_format:Y-m-d',
+            'to' => 'nullable|date_format:Y-m-d',
+        ]);
+
+        $q = DB::table('auditorias as a')
             ->join('proceso as p', 'p.idProceso', '=', 'a.idProceso')
             ->join('entidaddependencia as e', 'e.idEntidadDependencia', '=', 'p.idEntidad')
-            ->leftJoin('usuario as ul', 'ul.idUsuario', '=', 'a.auditorLider')
-            ->select([
-                'a.idAuditoria',
-                'a.fechaProgramada',
-                'a.horaProgramada',
-                'a.tipoAuditoria',
-                'a.estado',
-                'a.descripcion',
-                'a.idProceso',
-                'p.nombreProceso',
-                'e.nombreEntidad',
-                'a.auditorLider',
-                \DB::raw("TRIM(CONCAT(COALESCE(ul.nombre,''),' ',COALESCE(ul.apellidoPat,''),' ',COALESCE(ul.apellidoMat,''))) as nombreAuditorLider")
-            ])
-            ->orderBy('a.fechaProgramada', 'desc')
-            ->get();
+            ->leftJoin('usuario as u', 'u.idUsuario', '=', 'a.auditorLider')
+            ->selectRaw("
+            a.idAuditoria,
+            a.fechaProgramada,
+            a.horaProgramada,
+            a.tipoAuditoria,
+            a.estado,
+            a.descripcion,
+            a.idProceso,
+            p.nombreProceso as nombreProceso,
+            e.nombreEntidad as nombreEntidad,
+            a.auditorLider,
+            CONCAT(COALESCE(u.nombre,''),' ',COALESCE(u.apellidoPat,''),' ',COALESCE(u.apellidoMat,'')) as nombreAuditorLider
+        ")
+            ->orderBy('a.fechaProgramada', 'asc')
+            ->orderBy('a.horaProgramada', 'asc');
+
+        // Filtro por rango visible si viene from/to
+        if ($from && $to) {
+            $q->whereBetween('a.fechaProgramada', [$from, $to]);
+        } elseif ($from) {
+            $q->whereDate('a.fechaProgramada', '>=', $from);
+        } elseif ($to) {
+            $q->whereDate('a.fechaProgramada', '<=', $to);
+        }
+
+        $rows = $q->get();
 
         return response()->json($rows);
     }
 
+
     public function porLider($idUsuario)
     {
-        // ⬇️ Todas las auditorías de procesos cuyo dueño (idUsuario) es el líder dado
+        // Todas las auditorías de procesos cuyo dueño (idUsuario) es el líder dado
         $rows = \DB::table('auditorias as a')
             ->join('proceso as p', 'p.idProceso', '=', 'a.idProceso')
             ->join('entidaddependencia as e', 'e.idEntidadDependencia', '=', 'p.idEntidad')
@@ -491,7 +602,7 @@ class CronogramaController extends Controller
     }
     public function porSupervisor($idUsuario)
     {
-        // ⬇️ Mantén la lógica, pero devuelve los mismos campos que /todas
+        //  Mantén la lógica, pero devuelve los mismos campos que /todas
         $rows = \DB::table('auditorias as a')
             ->join('proceso as p', 'p.idProceso', '=', 'a.idProceso')
             ->join('entidaddependencia as e', 'e.idEntidadDependencia', '=', 'p.idEntidad')
@@ -547,25 +658,25 @@ class CronogramaController extends Controller
         return response()->json($rows);
     }
 
-    private function existeChoque(array $idAuditores, string $fecha, string $hora, ?int $excluirId = null): bool
+    private function existeChoque(array $idAuditores, string $fecha, string $hora, ?int $excluirId = null, int $durMins = 60): bool
     {
-        // Construir un DATETIME de referencia (inicio)
-        $inicio = Carbon::parse("{$fecha} {$hora}:00");
+        // Intervalo de la NUEVA auditoría
+        $newStart = Carbon::parse("{$fecha} {$hora}:00");
+        $newEnd = $newStart->copy()->addMinutes($durMins);
 
-        // Como no manejas 'fin', tratamos cada auditoría como un punto en el tiempo.
-        // Definimos una ventana de colisión de 1 minuto (mismo minuto = conflicto).
-        $min = $inicio->copy()->startOfMinute();
-        $max = $inicio->copy()->endOfMinute();
-
+        // Regla de solape (half-open): A < newEnd  &&  A+dur > newStart
+        // Y limitamos a MISMO DÍA por performance y por tu requerimiento
         return \DB::table('auditorias as a')
             ->join('auditoresasignados as aa', 'aa.idAuditoria', '=', 'a.idAuditoria')
             ->when($excluirId, fn($q) => $q->where('a.idAuditoria', '!=', $excluirId))
-            ->whereIn('aa.idAuditor', $idAuditores)        // <<< clave: por idAuditor
+            ->whereIn('aa.idAuditor', $idAuditores)           // en tu esquema ≡ idUsuario
             ->where('a.estado', '!=', 'Cancelada')
-            ->whereBetween(
-                \DB::raw("STR_TO_DATE(CONCAT(a.fechaProgramada,' ',a.horaProgramada), '%Y-%m-%d %H:%i:%s')"),
-                [$min->toDateTimeString(), $max->toDateTimeString()]
-            )
+            ->whereDate('a.fechaProgramada', $fecha)          // mismo día
+            ->whereRaw("
+            TIMESTAMP(a.fechaProgramada, a.horaProgramada) < ?
+            AND TIMESTAMPADD(MINUTE, ?, TIMESTAMP(a.fechaProgramada, a.horaProgramada)) > ?
+        ", [$newEnd->toDateTimeString(), $durMins, $newStart->toDateTimeString()])
             ->exists();
     }
+
 }

@@ -194,7 +194,7 @@ class EntidadDependenciaController extends Controller
 
     public function getNombres2()
     {
-        $entidades = Entidad::select('idEntidad', 'nombre')->get();
+        $entidades = EntidadDependencia::select('idEntidad', 'nombre')->get();
         return response()->json(['nombres' => $entidades]);
     }
 

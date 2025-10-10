@@ -3,37 +3,44 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-use App\Models\Cronograma;
-use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
 class FinalizarAuditoriasVencidas extends Command
 {
-    protected $signature = 'auditorias:finalizar-vencidas';
-    protected $description = 'Finaliza automáticamente auditorías pendientes si han pasado más de 3 horas de su programación.';
+    protected $signature = 'auditorias:finalizar-vencidas {--dry-run : Muestra cuántas se actualizarían sin guardar}';
+    protected $description = 'Marca como Finalizada toda auditoría Pendiente con >= 3 horas desde su hora programada.';
 
-    public function handle()
+    public function handle(): int
     {
+        // Usa la zona horaria de config/app.php
         $now = Carbon::now();
+        $threshold = $now->copy()->subHours(3); // ahora - 3h
 
-        $auditorias = Cronograma::where('estado', 'Pendiente')->get();
+        // Cuenta candidatas
+        $count = DB::table('auditorias as a')
+            ->where('a.estado', 'Pendiente')
+            ->whereRaw('TIMESTAMP(a.fechaProgramada, a.horaProgramada) <= ?', [$threshold->toDateTimeString()])
+            ->count();
 
-        foreach ($auditorias as $auditoria) {
-            $programacion = Carbon::parse("{$auditoria->fechaProgramada} {$auditoria->horaProgramada}");
-
-            // Verifica si han pasado al menos 3 horas desde la programación
-            if ($now->diffInHours($programacion, false) <= -3) {
-                $auditoria->estado = 'Finalizada';
-                $auditoria->save();
-
-                Log::info("🕒 Auditoría marcada como finalizada automáticamente", [
-                    'id' => $auditoria->id,
-                    'programacion' => $programacion->toDateTimeString(),
-                    'ahora' => $now->toDateTimeString(),
-                ]);
-            }
+        if ($this->option('dry-run')) {
+            $this->info("Candidatas a auto-finalizar: {$count}");
+            return self::SUCCESS;
         }
 
-        $this->info('✔ Auditorías vencidas actualizadas correctamente.');
+        // Actualiza en bloque
+        $affected = DB::table('auditorias as a')
+            ->where('a.estado', 'Pendiente')
+            ->whereRaw('TIMESTAMP(a.fechaProgramada, a.horaProgramada) <= ?', [$threshold->toDateTimeString()])
+            ->update(['estado' => 'Finalizada']);
+
+        Log::info('[FinalizarAuditoriasVencidas] Auditorías auto-finalizadas', [
+            'affected' => $affected,
+            'threshold' => $threshold->toDateTimeString(),
+        ]);
+
+        $this->info("Auditorías auto-finalizadas: {$affected}");
+        return self::SUCCESS;
     }
 }

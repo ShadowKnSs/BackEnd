@@ -19,13 +19,11 @@ class ReporteProceso extends Model
     // Nombre de la tabla
     protected $table = 'ReporteProceso';
 
-    // Clave primaria personalizada
+    // Clave primaria 
     protected $primaryKey = 'idReporteProceso';
 
-    // Desactiva timestamps automáticos
     public $timestamps = false;
 
-    // Campos asignables en masa
     protected $fillable = [
         'idProceso',
         'nombreReporte',

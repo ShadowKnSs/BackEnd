@@ -16,15 +16,9 @@ class BuscadorProcController extends Controller
     {
         $anio = $request->query('anio');
         $lider = $request->query('lider');
+        $proceso = $request->query('proceso');
 
-        if (!$anio || !is_numeric($anio)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Por favor ingrese un año válido (4 dígitos)'
-            ], 400);
-        }
-
-        // Procesos
+        // Procesos para el dropdown
         $procesos = DB::table('proceso')
             ->join('entidaddependencia', 'proceso.idEntidad', '=', 'entidaddependencia.idEntidadDependencia')
             ->select(
@@ -33,14 +27,24 @@ class BuscadorProcController extends Controller
             )
             ->get();
 
-        // Reportes
-        $query = BuscadorProc::with(['proceso.usuario.roles'])
-            ->whereYear('fechaElaboracion', $anio);
+        // Reportes - Consulta base
+        $query = BuscadorProc::with(['proceso.usuario.roles', 'proceso.entidad']);
 
+        // Filtro por año (si se proporciona)
+        if ($anio && is_numeric($anio)) {
+            $query->whereYear('fechaElaboracion', $anio);
+        }
+
+        // Filtro por líder (si se proporciona)
         if ($lider) {
             $query->whereHas('proceso.usuario', function ($q) use ($lider) {
                 $q->where('idUsuario', $lider);
             });
+        }
+
+        // Filtro por proceso (si se proporciona) - NUEVO FILTRO
+        if ($proceso) {
+            $query->where('idProceso', $proceso);
         }
 
         $reportes = $query->orderBy('fechaElaboracion', 'desc')
@@ -49,6 +53,7 @@ class BuscadorProcController extends Controller
                 'idProceso',
                 'nombreReporte as nombre',
                 'fechaElaboracion',
+                'ruta',
             ]);
 
         $reportes->transform(function ($reporte) {
@@ -56,9 +61,11 @@ class BuscadorProcController extends Controller
                 'id' => $reporte->id,
                 'idProceso' => $reporte->idProceso,
                 'nombreProceso' => $reporte->proceso->nombreProceso ?? 'Proceso no encontrado',
+                'nombreEntidad' => $reporte->proceso->entidad->nombreEntidad ?? 'Entidad no encontrada',
                 'liderProceso' => $reporte->proceso->usuario->nombre ?? 'Líder no asignado',
                 'nombre' => $reporte->nombre,
                 'fecha' => Carbon::parse($reporte->fechaElaboracion)->toDateString(),
+                'ruta' => $reporte->ruta,
             ];
         });
 
@@ -75,8 +82,10 @@ class BuscadorProcController extends Controller
         return response()->json([
             'success' => true,
             'anio' => $anio,
+            'lider' => $lider,
+            'proceso' => $proceso,
             'procesos' => $procesos,
-             'leaders' => $leaders,
+            'leaders' => $leaders,
             'total' => $reportes->count(),
             'data' => $reportes
         ]);

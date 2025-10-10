@@ -14,6 +14,7 @@ class Caratula extends Model
 
     protected $fillable = [
         'idProceso',
+        'version',
         'responsable_nombre',
         'responsable_cargo',
         'reviso_nombre',

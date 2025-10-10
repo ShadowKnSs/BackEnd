@@ -26,11 +26,11 @@ class MapaProcesoController extends Controller
         $mapaProceso = MapaProceso::where('idProceso', $idProceso)->first();
 
         if (!$mapaProceso) {
-            \Log::warning("⚠️ MapaProceso no encontrado con idProceso: $idProceso");
+            \Log::warning("MapaProceso no encontrado con idProceso: $idProceso");
             return response()->json(['message' => 'Mapa de proceso no encontrado'], 404);
         }
 
-        \Log::info("✅ MapaProceso encontrado con idProceso: $idProceso");
+        \Log::info("MapaProceso encontrado con idProceso: $idProceso");
 
         return response()->json($mapaProceso);
     }
@@ -102,26 +102,31 @@ class MapaProcesoController extends Controller
     public function subirDiagramaFlujo(Request $request, $idProceso)
     {
         $request->validate([
-            'imagen' => 'required|image|mimes:jpeg,png,jpg|max:2048',
+            'imagen' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:10240', // 10MB máximo
         ]);
 
         try {
             $mapa = MapaProceso::where('idProceso', $idProceso)->firstOrFail();
 
             $file = $request->file('imagen');
-            $filename = 'diagrama_flujo_proceso_' . $idProceso . '.' . $file->getClientOriginalExtension();
+            $filename = 'diagrama_flujo_proceso_' . $idProceso . '_' . time() . '.' . $file->getClientOriginalExtension();
             Storage::disk('public')->putFileAs('diagramas', $file, $filename);
 
             $publicPath = asset('storage/diagramas/' . $filename);
+
+            // Si ya existe un diagrama anterior, eliminarlo
+            if ($mapa->diagramaFlujo) {
+                $this->eliminarArchivoDiagrama($mapa->diagramaFlujo);
+            }
 
             $mapa->diagramaFlujo = $publicPath;
             $mapa->save();
 
             ControlCambiosService::registrarCambio(
                 $idProceso,
-                'Mapa de Proceso',
-                'editó',
-                'Se actualizó el diagrama de flujo'
+                'Diagrama de Flujo',
+                'subió',
+                'Se subió un nuevo diagrama de flujo: ' . $file->getClientOriginalName()
             );
 
             return response()->json([
@@ -129,7 +134,83 @@ class MapaProcesoController extends Controller
                 'url' => $publicPath
             ]);
         } catch (\Exception $e) {
-            return response()->json(['error' => 'Error al subir la imagen'], 500);
+            \Log::error('Error al subir diagrama de flujo: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'Error al subir la imagen: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Elimina el diagrama de flujo de un proceso
+     */
+    public function eliminarDiagramaFlujo($idProceso)
+    {
+        try {
+            $mapa = MapaProceso::where('idProceso', $idProceso)->first();
+
+            if (!$mapa) {
+                return response()->json([
+                    'message' => 'No se encontró el mapa de proceso'
+                ], 404);
+            }
+
+            if (!$mapa->diagramaFlujo) {
+                return response()->json([
+                    'message' => 'No hay diagrama de flujo para eliminar'
+                ], 404);
+            }
+
+            // Guardar información para el registro de cambios
+            $nombreArchivo = basename($mapa->diagramaFlujo);
+
+            // Eliminar el archivo físico
+            $this->eliminarArchivoDiagrama($mapa->diagramaFlujo);
+
+            // Limpiar el campo en la base de datos
+            $mapa->diagramaFlujo = null;
+            $mapa->save();
+
+            // Registrar el cambio
+            ControlCambiosService::registrarCambio(
+                $idProceso,
+                'Diagrama de Flujo',
+                'eliminó',
+                'Se eliminó el diagrama de flujo: ' . $nombreArchivo
+            );
+
+            return response()->json([
+                'message' => 'Diagrama de flujo eliminado correctamente'
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error al eliminar diagrama de flujo: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'Error al eliminar el diagrama de flujo: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Función auxiliar para eliminar el archivo físico del diagrama
+     */
+    private function eliminarArchivoDiagrama($diagramaPath)
+    {
+        try {
+            // Extraer el nombre del archivo de la URL completa
+            $filename = basename($diagramaPath);
+            $filePath = 'diagramas/' . $filename;
+
+            // Verificar si el archivo existe y eliminarlo
+            if (Storage::disk('public')->exists($filePath)) {
+                Storage::disk('public')->delete($filePath);
+                \Log::info("Archivo eliminado: " . $filePath);
+            } else {
+                \Log::warning("Archivo no encontrado para eliminar: " . $filePath);
+            }
+        } catch (\Exception $e) {
+            \Log::error('Error al eliminar archivo físico del diagrama: ' . $e->getMessage());
+            // No lanzamos excepción aquí para no interrumpir el flujo principal
         }
     }
 }

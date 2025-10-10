@@ -22,6 +22,7 @@ class Cronograma extends Model
         'tipoAuditoria',
         'estado',
         'descripcion',
+        'auditorLider'
     ];
 
      public function auditoresAsignados()
