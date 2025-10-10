@@ -301,9 +301,33 @@
         .small {
             font-size: 10px;
         }
+
+        .section-empty {
+            margin-top: 12px;
+            border: 1px dashed #cbd5e1;
+            border-left: 6px solid #94a3b8;
+            padding: 10px 12px;
+            border-radius: 6px;
+            background: #f8fafc;
+            color: #64748b;
+            font-style: italic;
+        }
+
+        .section-empty .section-title {
+            color: #475569;
+            margin-bottom: 6px;
+        }
     </style>
 </head>
+@php
+    // Controla si quieres mostrar tarjetas "vacías" o simplemente omitir secciones
+    $mostrarVacias = $mostrarVacias ?? false;
 
+    // Helper para strings tipo "No disponible" o vacíos
+    $hasVal = function ($v) {
+        return isset($v) && $v !== '' && $v !== 'No disponible';
+    };
+@endphp
 <body>
 
     {{-- Header fijo --}}
@@ -329,8 +353,7 @@
         <table class="no-border" style="width:100%;">
             <tr>
                 <td class="small">Entidad: <strong>{{ $entidad }}</strong></td>
-                <td class="small text-right">Página <span class="page-number"></span> de <span
-                        class="page-count"></span></td>
+                <td class="small text-right">Página <span class="page-number">
             </tr>
         </table>
     </footer>
@@ -396,56 +419,65 @@
             ($salidas && $salidas !== 'No disponible') ||
             ($receptores && $receptores !== 'No disponible')
         )
-        <div class="section-card">
-            <h2 class="section-title">Mapa de Proceso</h2>
+            <div class="section-card">
+                <h2 class="section-title">Mapa de Proceso</h2>
 
-            <div class="grid-2">
-                <div><strong>Documentos relacionados:</strong> {{ $documentos ?? 'No disponible' }}</div>
-                <div><strong>Puestos involucrados:</strong> {{ $puestosInvolucrados ?? 'No disponible' }}</div>
+                <div class="grid-2">
+                    <div><strong>Documentos relacionados:</strong> {{ $documentos ?? 'No disponible' }}</div>
+                    <div><strong>Puestos involucrados:</strong> {{ $puestosInvolucrados ?? 'No disponible' }}</div>
+                </div>
+
+                <table class="table mt-10">
+                    <thead class="thead-primary">
+                        <tr>
+                            <th style="width:28%;">Fuente de entrada</th>
+                            <th style="width:36%;">Material y/o Información</th>
+                            <th style="width:36%;">Requisito de entrada</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>{{ $fuente ?? 'No disponible' }}</td>
+                            <td>{{ $material ?? 'No disponible' }}</td>
+                            <td>{{ $requisitos ?? 'No disponible' }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <table class="table mt-10">
+                    <thead class="thead-primary">
+                        <tr>
+                            <th style="width:50%;">Salidas</th>
+                            <th style="width:50%;">Receptores de salida / Cliente</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>{{ $salidas ?? 'No disponible' }}</td>
+                            <td>{{ $receptores ?? 'No disponible' }}</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
-
-            <table class="table mt-10">
-                <thead class="thead-primary">
-                    <tr>
-                        <th style="width:28%;">Fuente de entrada</th>
-                        <th style="width:36%;">Material y/o Información</th>
-                        <th style="width:36%;">Requisito de entrada</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>{{ $fuente ?? 'No disponible' }}</td>
-                        <td>{{ $material ?? 'No disponible' }}</td>
-                        <td>{{ $requisitos ?? 'No disponible' }}</td>
-                    </tr>
-                </tbody>
-            </table>
-
-            <table class="table mt-10">
-                <thead class="thead-primary">
-                    <tr>
-                        <th style="width:50%;">Salidas</th>
-                        <th style="width:50%;">Receptores de salida / Cliente</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>{{ $salidas ?? 'No disponible' }}</td>
-                        <td>{{ $receptores ?? 'No disponible' }}</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
     @endif
 
     {{-- Diagrama de Flujo --}}
     @php
-        $rutaFlujo = !empty($diagramaFlujo) ? public_path(str_replace('/storage/', 'storage/', parse_url($diagramaFlujo, PHP_URL_PATH))) : null;
-      @endphp
-    @if(!empty($diagramaFlujo) && $rutaFlujo && file_exists($rutaFlujo))
+        $rutaFlujo = !empty($diagramaFlujo)
+            ? public_path(str_replace('/storage/', 'storage/', parse_url($diagramaFlujo, PHP_URL_PATH)))
+            : null;
+        $hayFlujo = !empty($diagramaFlujo) && $rutaFlujo && file_exists($rutaFlujo);
+    @endphp
+
+    @if($hayFlujo)
         <div class="section-card text-center">
             <h2 class="section-title">Diagrama de Flujo</h2>
             <img src="{{ $rutaFlujo }}" alt="Diagrama de Flujo" class="img-contained" />
+        </div>
+    @elseif($mostrarVacias)
+        <div class="section-empty avoid-break">
+            <h2 class="section-title">Diagrama de Flujo</h2>
+            <div>No hay diagrama de flujo disponible.</div>
         </div>
     @endif
 
@@ -765,10 +797,16 @@
         </div>
     @endif
 
-    @if(isset($graficaEncuesta) && file_exists($graficaEncuesta))
+    @php $hayGrafEncuesta = isset($graficaEncuesta) && file_exists($graficaEncuesta); @endphp
+
+    @if($hayGrafEncuesta)
         <div class="section-card text-center">
             <h3 class="section-subtitle">Gráfica de Encuesta</h3>
             <img src="{{ $graficaEncuesta }}" class="img-contained" alt="Gráfica Encuesta">
+        </div>
+    @elseif($mostrarVacias)
+        <div class="section-empty avoid-break">
+            <div>No hay gráfica de encuesta.</div>
         </div>
     @endif
 
