@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\ReporteSemestral;
+use Illuminate\Support\Facades\Log;
 
 
 class SaveReportSemController extends Controller
@@ -62,7 +63,7 @@ class SaveReportSemController extends Controller
         return response()->json(['exists' => false, 'message' => 'No existe un reporte para este año y periodo'], 200);
     }
 
-    public function obtenerReportesSemestrales()
+    /*public function obtenerReportesSemestrales()
     {
         $reportes = ReporteSemestral::select('idReporteSemestral', 'anio', 'periodo', 'fechaGeneracion', 'ubicacion')->get();
 
@@ -71,7 +72,39 @@ class SaveReportSemController extends Controller
         }
 
         return response()->json($reportes);
+    }*/
+    public function obtenerReportesSemestrales()
+    {
+        Log::info('Iniciando método obtenerReportesSemestrales');
+
+        try {
+            $reportes = ReporteSemestral::select('idReporteSemestral', 'anio', 'periodo', 'fechaGeneracion', 'ubicacion')->get();
+
+            Log::info('Consulta ejecutada correctamente', [
+                'total_reportes' => $reportes->count()
+            ]);
+
+            if ($reportes->isEmpty()) {
+                Log::warning('No se encontraron reportes semestrales en la base de datos');
+                return response()->json(['message' => 'No hay reportes semestrales disponibles'], 404);
+            }
+
+            Log::info('Retornando respuesta con reportes', [
+                'primer_reporte' => $reportes->first()
+            ]);
+
+            return response()->json($reportes);
+        } catch (\Exception $e) {
+            Log::error('Error en obtenerReportesSemestrales', [
+                'mensaje' => $e->getMessage(),
+                'linea' => $e->getLine(),
+                'archivo' => $e->getFile(),
+            ]);
+
+            return response()->json(['error' => 'Ocurrió un error al obtener los reportes semestrales'], 500);
+        }
     }
+
 
     public function eliminarReporteSemestral($id)
     {
