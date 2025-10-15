@@ -74,39 +74,46 @@
     </style>
 </head>
 
-<!--<htmlpageheader name="page-header">
-    <table width="100%">
-        <tr>
-            <td><img src="{{ public_path('images/logo1.png') }}" style="height: 50px;"></td>
-            <td style="text-align: right;"><img src="{{ public_path('images/logo2.jpg') }}" style="height: 40px;"></td>
-        </tr>
-    </table>
-</htmlpageheader>-->
-
 <body>
-
-    <!--<div style="display: flex; justify-content: space-between; align-items: center;">
-    <img src="{{ public_path('images/logo1.png') }}" style="height: 70px;">
-    <img src="{{ public_path('images/logo2.jpg') }}" style="height: 70px;">
-</div>-->
-
     <!-- Header con logos -->
+    @php
+        $periodoTexto = '';
+
+        switch ($periodo) {
+            case '01-06':
+            case '01-16': // por si el formato varía
+                $periodoTexto = 'Enero - Junio';
+                break;
+            case '07-12':
+                $periodoTexto = 'Julio - Diciembre';
+                break;
+            default:
+                $periodoTexto = $periodo; // muestra el valor tal cual si no coincide
+                break;
+        }
+    @endphp
+
     <header>
-        <table width="100%">
+        <table width="100%" style="border-collapse: collapse; vertical-align: middle;">
             <tr>
-                <!--IMPORTANTE!, revisar el tamaño de los logos, no pude probarlos-->
-                <td style="width: 25%; text-align: left;">
-                    <img src="{{ public_path('images/logo3.png') }}" alt="Logo 3" style="height: 160px;">
+                <td style="width: 25%; text-align: left; vertical-align: middle;">
+                    <img src="{{ public_path('images/logo3.png') }}" alt="Logo 3"
+                        style="height: 70px; object-fit: contain;">
                 </td>
-                <td style="width: 50%; text-align: center;">
-                    <h1>Reporte Semestral {{ $periodo }} {{ $anio }}</h1>
+                <td style="width: 50%; text-align: center; vertical-align: middle;">
+                    <h1 style="font-size: 20px; margin: 0;">
+                        Reporte Semestral {{ $anio }} {{ $periodoTexto }}
+                    </h1>
                 </td>
-                <td style="width: 25%; text-align: right;">
-                    <img src="{{ public_path('images/logo4.jpg') }}" alt="Logo 4" style="height: 160px;">
+                <td style="width: 25%; text-align: right; vertical-align: middle;">
+                    <img src="{{ public_path('images/logo4.jpg') }}" alt="Logo 4"
+                        style="height: 70px; object-fit: contain;">
                 </td>
             </tr>
         </table>
     </header>
+
+
 
     <!-- Gestión de Riesgos -->
     @if(!empty($datosRiesgos))
@@ -146,7 +153,8 @@
     @if(!empty($datosIndicadores))
         <div class="section">
             <h2>Indicadores</h2>
-            <p>Resultado de los indicadores evaluados este semestre, con resultados numéricos del 1 al 100.</p>
+            <p>Gráfica que presenta el promedio porcentual de los resultados obtenidos en los indicadores evaluados durante
+                el semestre, agrupados según su origen o tipo de indicador.</p>
 
             @if(isset($imagenes['indicadores']))
                 <img src="{{ $imagenes['indicadores'] }}" alt="Indicadores">
@@ -192,39 +200,40 @@
 
 
     <!-- Acciones de Mejora -->
-@if(!empty($datosAccionesMejora))
-    <div class="section">
-        <h2>Acciones de Mejora</h2>
-        <p>Planes de trabajo evaluados este semestre.</p>
+    @if(!empty($datosAccionesMejora))
+        <div class="section">
+            <h2>Acciones de Mejora</h2>
+            <p>Descripción de los planes de trabajo evaluados este semestre.</p>
 
-        <table>
-            <thead>
-                <tr>
-                    <th>No.</th>
-                    <th>Proceso</th>
-                    <th>Entidad</th>
-                    <th>Fuente</th>
-                    <th>Responsable</th>
-                    <th>Estado</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($datosAccionesMejora as $index => $item)
+            <table>
+                <thead>
                     <tr>
-                        <td>{{ $index + 1 }}</td>
-                        <td>{{ $item['NombreProceso'] ?? 'Sin registro' }}</td>
-                        <td>{{ $item['Entidad'] ?? 'Sin registro' }}</td>
-                        <td>{{ $item['fuente'] ?? 'Sin registro' }}</td>
-                        <td>{{ $item['responsable'] ?? 'Sin registro' }}</td>
-                        <td class="{{ !empty($item['estado']) ? ($item['estado'] == 'En proceso' ? 'estado-en-proceso' : 'estado-cerrado') : '' }}">
-                            {{ $item['estado'] ?? 'Sin registro' }}
-                        </td>
+                        <th>No.</th>
+                        <th>Proceso</th>
+                        <th>Entidad</th>
+                        <th>Fuente</th>
+                        <th>Responsable</th>
+                        <th>Estado</th>
                     </tr>
-                @endforeach
-            </tbody>
-        </table>
-    </div>
-@endif
+                </thead>
+                <tbody>
+                    @foreach($datosAccionesMejora as $index => $item)
+                        <tr>
+                            <td>{{ $index + 1 }}</td>
+                            <td>{{ $item['NombreProceso'] ?? 'Sin registro' }}</td>
+                            <td>{{ $item['Entidad'] ?? 'Sin registro' }}</td>
+                            <td>{{ $item['fuente'] ?? 'Sin registro' }}</td>
+                            <td>{{ $item['responsable'] ?? 'Sin registro' }}</td>
+                            <td
+                                class="{{ !empty($item['estado']) ? ($item['estado'] == 'En proceso' ? 'estado-en-proceso' : 'estado-cerrado') : '' }}">
+                                {{ $item['estado'] ?? 'Sin registro' }}
+                            </td>
+                        </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+    @endif
 
 
 
@@ -232,7 +241,7 @@
     @if(!empty($datosAuditorias))
         <div class="section">
             <h2>Auditorías Internas</h2>
-            <p>Auditorías internas realizadas este semestre.</p>
+            <p>Descripción de las auditorías internas realizadas este semestre.</p>
 
             <table>
                 <thead>
@@ -273,7 +282,7 @@
     @if(!empty($datosSeguimiento))
         <div class="section">
             <h2>Seguimiento</h2>
-            <p>Reuniones de seguimiento realizadas este semestre.</p>
+            <p>Descripción de las reuniones de seguimiento realizadas este semestre.</p>
             <table>
                 <thead>
                     <tr>
