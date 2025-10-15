@@ -85,6 +85,11 @@ use App\Http\Controllers\Api\AuditoresAsignadosController;
 use App\Models\ReporteSemestral;
 
 //*********************************************************/
+//                          Comporbación
+//*********************************************************/
+Route::get('/health', fn() => response()->json(['ok'=>true,'t'=>now()], 200));
+
+//*********************************************************/
 //                          Login
 //*********************************************************/
 Route::post('/login', [AuthController::class, 'login']);
