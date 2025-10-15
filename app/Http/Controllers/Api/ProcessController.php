@@ -15,6 +15,7 @@ use App\Models\PlanTrabajo;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
+use Throwable;
 
 
 class ProcessController extends Controller
@@ -315,29 +316,36 @@ class ProcessController extends Controller
 
     public function procesosConEntidad()
     {
-        // 1. Usar caché para datos que no cambian frecuentemente
         $cacheKey = 'procesos_con_entidad_active';
         $cacheTime = 3600; // 1 hora
 
-        $procesos = Cache::remember($cacheKey, $cacheTime, function () {
-            return DB::table('proceso as p')
-                ->join('entidaddependencia as e', 'p.idEntidad', '=', 'e.idEntidadDependencia')
-                ->select(
-                    'p.idProceso',
-                    'e.nombreEntidad',
-                    'p.nombreProceso',
-                    DB::raw("CONCAT(e.nombreEntidad, ' - ', p.nombreProceso) AS nombreCompleto")
-                )
-                ->where('p.estado', 'Activo')
-                // 2. Asegurar índices
-                ->whereRaw('p.idEntidad = e.idEntidadDependencia')
-                // 3. Orden consistente
-                ->orderBy('e.nombreEntidad')
-                ->orderBy('p.nombreProceso')
-                ->get();
-        });
+        try {
+            $procesos = Cache::remember($cacheKey, $cacheTime, function () {
+                return DB::table('proceso as p')
+                    ->join('entidaddependencia as e', 'p.idEntidad', '=', 'e.idEntidadDependencia')
+                    ->select(
+                        'p.idProceso',
+                        'e.nombreEntidad',
+                        'p.nombreProceso',
+                        DB::raw("CONCAT(e.nombreEntidad, ' - ', p.nombreProceso) AS nombreCompleto")
+                    )
+                    // OJO: si 'estado' no existe o tiene otros valores, quita este where o ajústalo.
+                    ->where('p.estado', '=', 'Activo')
+                    ->orderBy('e.nombreEntidad')
+                    ->orderBy('p.nombreProceso')
+                    ->get();
+            });
 
-        return response()->json(['procesos' => $procesos]);
+            // Nunca 500 por "sin datos"
+            return response()->json(['procesos' => $procesos], 200);
+
+        } catch (Throwable $e) {
+            Log::error('GET /api/procesos-con-entidad failed', [
+                'msg' => $e->getMessage(),
+            ]);
+            // Fallback estable para no romper UI
+            return response()->json(['procesos' => []], 200);
+        }
     }
 
 
