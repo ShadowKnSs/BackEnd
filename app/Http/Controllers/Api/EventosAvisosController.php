@@ -9,17 +9,18 @@ use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver as GdDriver;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Carbon\Carbon;
 
 class EventosAvisosController extends Controller
 {
-        // GET /api/eventos-avisos?tipo=Evento|Aviso
+    // GET /api/eventos-avisos?tipo=Evento|Aviso
     public function index(Request $request)
     {
         $tipo = $request->query('tipo');
-        
-        $query = EventoAviso::select('idEventosAvisos', 'fechaPublicacion','rutaImg', 'tipo'); // puedes quitar 'tipo' si no lo usas
-        
+
+        $query = EventoAviso::select('idEventosAvisos', 'fechaPublicacion', 'rutaImg', 'tipo'); // puedes quitar 'tipo' si no lo usas
+
         if ($tipo) {
             $query->where('tipo', $tipo); // filtro dinámico
         }
@@ -27,25 +28,32 @@ class EventosAvisosController extends Controller
         $result = $query->get();
 
         return response()
-        ->json($result, 200)
-        ->header('Cache-Control', 'public, max-age=300');
+            ->json($result, 200)
+            ->header('Cache-Control', 'public, max-age=300');
     }
 
     // POST /api/eventos-avisos
     public function store(Request $request)
     {
         $request->validate([
-    'idUsuario' => ['required','integer','exists:usuario,idUsuario'],
-    'tipo'      => ['required','in:Evento,Aviso'],
-    'imagen'    => ['nullable','image','mimes:jpeg,png,jpg,gif','max:2048'],
-]);
+            'idUsuario' => ['required', 'integer', 'exists:usuario,idUsuario'],
+            'tipo' => ['required', 'in:Evento,Aviso'],
+            'imagen' => ['nullable', 'image', 'mimes:jpeg,png,jpg,gif', 'max:4096'],
+        ]);
 
         $rutaImg = null;
 
         // Si hay imagen, se redimensiona antes de guardar
         if ($request->hasFile('imagen')) {
+            // Asegura directorio
+            if (!Storage::exists('public/img')) {
+                Storage::makeDirectory('public/img');
+            }
             $file = $request->file('imagen');
-            $fileName = time() . '_' . $file->getClientOriginalName();
+            $orig = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+            $ext = strtolower($file->getClientOriginalExtension());
+            $slug = Str::slug($orig);
+            $fileName = time() . '_' . $slug . '.' . $ext;
             $filePath = storage_path('app/public/img/' . $fileName);
 
             //  Redimensionar y guardar la imagen
@@ -56,7 +64,7 @@ class EventosAvisosController extends Controller
                 $constraint->upsize();
             })->save($filePath, 80); // 80% calidad
 
-            $rutaImg = config('app.url') . Storage::url('img/' . $fileName);
+            $rutaImg = Storage::url('img/' . $fileName); // => "/storage/img/..."
         }
 
         // Se crea el registro
@@ -95,13 +103,21 @@ class EventosAvisosController extends Controller
         if ($request->hasFile('imagen')) {
             // Eliminar imagen anterior si existe
             if ($item->rutaImg) {
-                $oldPath = str_replace(config('app.url') . '/storage', 'public', $item->rutaImg);
-                Storage::delete($oldPath);
+                if ($path = $this->storagePathFromUrlOrRelative($item->rutaImg)) {
+                    Storage::delete($path);
+                }
+            }
+
+            if (!Storage::exists('public/img')) {
+                Storage::makeDirectory('public/img');
             }
 
             // Guardar nueva imagen redimensionada
             $file = $request->file('imagen');
-            $fileName = time() . '_' . $file->getClientOriginalName();
+            $orig = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+            $ext = strtolower($file->getClientOriginalExtension());
+            $slug = Str::slug($orig);
+            $fileName = time() . '_' . $slug . '.' . $ext;
             $filePath = storage_path('app/public/img/' . $fileName);
 
             $manager = new ImageManager(new GdDriver());
@@ -111,7 +127,7 @@ class EventosAvisosController extends Controller
                 $constraint->upsize();
             })->save($filePath, 80);
 
-            $rutaImg = config('app.url') . Storage::url('img/' . $fileName);
+            $rutaImg = Storage::url('img/' . $fileName); // relativa
         }
 
         $item->update([
@@ -130,11 +146,30 @@ class EventosAvisosController extends Controller
         $item = EventoAviso::findOrFail($id);
 
         if ($item->rutaImg) {
-            $oldPath = str_replace('/storage', 'public', $item->rutaImg);
-            Storage::delete($oldPath);
+            if ($path = $this->storagePathFromUrlOrRelative($item->rutaImg)) {
+                Storage::delete($path);
+            }
         }
 
         $item->delete();
         return response()->json(['message' => 'Eliminado correctamente']);
+    }
+
+    /**
+     * Convierte URL absoluta o ruta relativa de /storage/... a path interno "public/..."
+     */
+    private function storagePathFromUrlOrRelative(string $ruta): ?string
+    {
+        if (str_starts_with($ruta, 'public/')) {
+            return $ruta;
+        }
+        $path = parse_url($ruta, PHP_URL_PATH) ?: $ruta;
+        if (str_starts_with($path, '/storage/')) {
+            return 'public/' . ltrim(substr($path, strlen('/storage/')), '/');
+        }
+        if (str_starts_with($path, 'storage/')) {
+            return 'public/' . ltrim(substr($path, strlen('storage/')), '/');
+        }
+        return null;
     }
 }
