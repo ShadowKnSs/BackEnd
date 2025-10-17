@@ -9,7 +9,9 @@ use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver as GdDriver;
 use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Log; 
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
+
 
 class NoticiasController extends Controller
 {
@@ -29,44 +31,60 @@ class NoticiasController extends Controller
     }
 
     // POST /api/noticias
+
     public function store(Request $request)
     {
-        // 1. Validar
         $request->validate([
             'idUsuario' => 'required|integer',
             'titulo' => 'required|string',
             'descripcion' => 'nullable|string',
-            'imagen' => 'nullable|file|mimes:jpg,png,jpeg|max:4096'
+            'imagen' => 'nullable|file|mimes:jpg,jpeg,png|max:4096'
         ]);
 
-        // 2. Crear el registro SIN la imagen
-        $noticia = Noticia::create([
-            'idUsuario' => $request->idUsuario,
-            'titulo' => $request->titulo,
-            'descripcion' => $request->descripcion,
-            'fechaPublicacion' => now(),
-            'rutaImg' => null
-        ]);
+        DB::beginTransaction();
+        try {
+            // Crear base
+            $noticia = Noticia::create([
+                'idUsuario' => $request->idUsuario,
+                'titulo' => $request->titulo,
+                'descripcion' => $request->descripcion,
+                'fechaPublicacion' => now(),
+                'rutaImg' => null,
+            ]);
 
-        //  Imagen redimensionada si fue enviada
-        if ($request->hasFile('imagen')) {
-            $file = $request->file('imagen');
-            $fileName = time() . '_' . $file->getClientOriginalName();
-            $filePath = storage_path('app/public/img/' . $fileName);
+            if ($request->hasFile('imagen')) {
+                // Asegura directorio
+                if (!Storage::exists('public/img')) {
+                    Storage::makeDirectory('public/img');
+                }
 
-            // ✅ Redimensionar sin facade
-            $manager = new ImageManager(new GdDriver());
-            $image = $manager->read($file->getRealPath());
-            $image->resize(800, 600, function ($constraint) {
-                $constraint->aspectRatio();
-                $constraint->upsize();
-            })->save($filePath, 80);
+                $file = $request->file('imagen');
+                $fileName = time() . '_' . $file->getClientOriginalName();
+                $targetPath = storage_path('app/public/img/' . $fileName);
 
-            $rutaImg = config('app.url') . Storage::url('img/' . $fileName);
-            $noticia->update(['rutaImg' => $rutaImg]);
+                // Procesar imagen (Intervention v3 + GD)
+                $manager = new ImageManager(new GdDriver()); // requiere ext-gd
+                $image = $manager->read($file->getRealPath());
+                $image->resize(800, 600, function ($c) {
+                    $c->aspectRatio();
+                    $c->upsize(); })
+                    ->save($targetPath, 80);
+
+                $publicUrl = config('app.url') . Storage::url('img/' . $fileName);
+                $noticia->update(['rutaImg' => $publicUrl]);
+            }
+
+            DB::commit();
+            return response()->json($noticia, 201);
+
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            Log::error('POST /api/noticias failed', ['msg' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return response()->json([
+                'message' => 'No se pudo crear la noticia',
+                'error' => app()->environment('production') ? null : $e->getMessage(),
+            ], 500);
         }
-
-        return response()->json($noticia, 201);
     }
 
 
