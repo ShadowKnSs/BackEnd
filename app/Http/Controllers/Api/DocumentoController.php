@@ -36,9 +36,9 @@ class DocumentoController extends Controller
     // Crear
     public function store(Request $request)
     {
-        \Log::debug('📥 Iniciando creación de documento');
-        \Log::debug('📦 Datos recibidos', $request->all());
-        \Log::debug('📎 Archivos recibidos', $request->allFiles());
+        \Log::debug(' Iniciando creación de documento');
+        \Log::debug('Datos recibidos', $request->all());
+        \Log::debug('Archivos recibidos', $request->allFiles());
 
         try {
             $data = $request->validate([
@@ -50,7 +50,7 @@ class DocumentoController extends Controller
                 'fechaVersion' => 'nullable|date',
                 'noRevision' => 'nullable|integer',
                 'noCopias' => 'nullable|integer',
-                'tiempoRetencion' => 'nullable|integer',
+                'tiempoRetencion' => 'nullable|string|max:50',
                 'lugarAlmacenamiento' => 'nullable|string',
                 'medioAlmacenamiento' => 'nullable|in:Físico,Digital,Ambos',
                 'disposicion' => 'nullable|string',
@@ -58,32 +58,39 @@ class DocumentoController extends Controller
                 'archivo' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,zip|max:5120'
             ]);
 
-            \Log::debug('✅ Datos validados correctamente', $data);
+            \Log::debug(' Datos validados correctamente', $data);
 
-            // convertir vacíos a null
-foreach ([
-  'codigoDocumento','fechaRevision','fechaVersion','noRevision','noCopias',
-  'tiempoRetencion','lugarAlmacenamiento','disposicion','responsable','urlArchivo'
-] as $k) {
-    if (!array_key_exists($k, $data) || $data[$k] === '') {
-        $data[$k] = null;
-    }
-}
+            foreach ([
+                'codigoDocumento',
+                'fechaRevision',
+                'fechaVersion',
+                'noRevision',
+                'noCopias',
+                'tiempoRetencion',
+                'lugarAlmacenamiento',
+                'disposicion',
+                'responsable',
+                'urlArchivo'
+            ] as $k) {
+                if (!array_key_exists($k, $data) || $data[$k] === '') {
+                    $data[$k] = null;
+                }
+            }
             // Generar código automáticamente queda pendiente
 
 
             if ($request->hasFile('archivo') && $request->tipoDocumento === 'interno') {
-                \Log::debug('📂 Subiendo archivo...');
+                \Log::debug(' Subiendo archivo...');
                 $file = $request->file('archivo');
                 $path = $file->store('documentos', 'public');
                 $data['urlArchivo'] = asset('storage/' . $path);
-                \Log::debug('✅ Archivo almacenado en: ' . $data['urlArchivo']);
+                \Log::debug(' Archivo almacenado en: ' . $data['urlArchivo']);
             } else {
-                \Log::debug('⚠️ No se subió archivo o tipoDocumento no es interno');
+                \Log::debug(' No se subió archivo o tipoDocumento no es interno');
             }
 
             $documento = Documento::create($data);
-            \Log::debug('✅ Documento creado con ID: ' . $documento->idDocumento);
+            \Log::debug(' Documento creado con ID: ' . $documento->idDocumento);
 
             ControlCambiosService::registrarCambio(
                 $data['idProceso'],
@@ -94,7 +101,7 @@ foreach ([
 
             return response()->json($documento, 201);
         } catch (\Throwable $e) {
-            \Log::error('❌ Error al crear documento: ' . $e->getMessage(), [
+            \Log::error('Error al crear documento: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString()
             ]);
             return response()->json(['message' => 'Error al crear el documento.'], 500);
@@ -104,16 +111,16 @@ foreach ([
     // Actualizar
     public function update(Request $request, $id)
     {
-        Log::debug("🔧 Iniciando actualización de documento ID: {$id}");
+        Log::debug("Iniciando actualización de documento ID: {$id}");
 
         $documento = Documento::find($id);
         if (!$documento) {
-            Log::error("❌ Documento no encontrado con ID: {$id}");
+            Log::error(" Documento no encontrado con ID: {$id}");
             return response()->json(['message' => 'Documento no encontrado'], 404);
         }
 
         try {
-            Log::debug("📥 Datos recibidos para actualización", $request->all());
+            Log::debug("Datos recibidos para actualización", $request->all());
 
             $data = $request->validate([
                 'idProceso' => 'sometimes|required|integer',
@@ -124,7 +131,7 @@ foreach ([
                 'fechaVersion' => 'nullable|date',
                 'noRevision' => 'nullable|integer',
                 'noCopias' => 'nullable|integer',
-                'tiempoRetencion' => 'nullable|integer',
+                'tiempoRetencion' => 'nullable|string|max:50',
                 'lugarAlmacenamiento' => 'nullable|string',
                 'medioAlmacenamiento' => 'nullable|in:Físico,Digital,Ambos',
                 'disposicion' => 'nullable|string',
@@ -133,7 +140,7 @@ foreach ([
             ]);
 
             $documento->update($data);
-            Log::debug("✅ Datos actualizados en el modelo", $data);
+            Log::debug("Datos actualizados en el modelo", $data);
 
             if ($request->hasFile('archivo') && $documento->tipoDocumento === 'interno') {
                 $file = $request->file('archivo');
@@ -143,7 +150,7 @@ foreach ([
                 $documento->urlArchivo = asset('storage/' . $path);
                 $documento->save();
 
-                Log::debug("✅ Archivo almacenado en: {$documento->urlArchivo}");
+                Log::debug("Archivo almacenado en: {$documento->urlArchivo}");
             }
 
             ControlCambiosService::registrarCambio(
@@ -155,7 +162,7 @@ foreach ([
 
             return response()->json($documento);
         } catch (\Throwable $e) {
-            Log::error("❌ Error al actualizar documento: {$e->getMessage()}", [
+            Log::error(" Error al actualizar documento: {$e->getMessage()}", [
                 'trace' => $e->getTraceAsString()
             ]);
             return response()->json(['message' => 'Error al actualizar documento'], 500);
