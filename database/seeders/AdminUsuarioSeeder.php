@@ -30,7 +30,7 @@ class AdminUsuarioSeeder extends Seeder
                 'apellidoMat' => null,
                 'telefono' => null,
                 'gradoAcademico' => null,
-                'RPE' => '230303',
+                'RPE' => '280303',
                 'pass' => Hash::make('Admin123!'),
                 'activo' => 1,
             ]

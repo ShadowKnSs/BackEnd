@@ -17,7 +17,7 @@ class GraficaController extends Controller
         'nombre' => 'nullable|string',
     ]);
 
-    Log::info("📥 Recibido en guardar():", [
+    Log::info("Recibido en guardar():", [
         'nombre' => $request->input('nombre'),
         'base64_length' => strlen($request->input('imagenBase64', '')),
         'base64_inicio' => substr($request->input('imagenBase64', ''), 0, 60)
@@ -33,16 +33,16 @@ class GraficaController extends Controller
             $extension = strtolower($type[1]);
 
             if (!in_array($extension, ['png', 'jpg', 'jpeg', 'gif'])) {
-                Log::warning("⚠️ Extensión no soportada", ['extensión' => $extension]);
+                Log::warning("Extensión no soportada", ['extensión' => $extension]);
                 return response()->json(['error' => 'Extensión no soportada'], 422);
             }
         } else {
             // Si no tiene el formato esperado, verificar si es base64 válido
-            Log::warning("⚠️ Formato base64 sin prefijo, verificando si es base64 válido");
+            Log::warning("Formato base64 sin prefijo, verificando si es base64 válido");
             
             // Verificar si es una cadena base64 válida
             if (base64_decode($base64, true) === false) {
-                Log::warning("⚠️ Cadena base64 inválida", ['base64' => substr($base64, 0, 100)]);
+                Log::warning("Cadena base64 inválida", ['base64' => substr($base64, 0, 100)]);
                 return response()->json(['error' => 'Base64 inválida'], 422);
             }
             
@@ -63,7 +63,7 @@ class GraficaController extends Controller
         Storage::disk('public')->put($ruta, $decodedImage);
         $url = asset("storage/graficas/$filename");
 
-        Log::info("✅ Imagen guardada correctamente", [
+        Log::info("Imagen guardada correctamente", [
             'archivo' => $filename,
             'url' => $url,
             'tamaño' => strlen($decodedImage)
@@ -75,7 +75,7 @@ class GraficaController extends Controller
             'filename' => $filename
         ], 201);
     } catch (\Exception $e) {
-        Log::error("❌ Error al guardar la imagen", [
+        Log::error(" Error al guardar la imagen", [
             'exception' => $e->getMessage(),
             'trace' => $e->getTraceAsString()
         ]);

@@ -518,7 +518,7 @@
         </div>
     @endif
 
-    @if(isset($graficaPlanControl) && file_exists($graficaPlanControl))
+    @if(!empty($graficaPlanControl))
         <div class="section-card text-center">
             <h3 class="section-subtitle">Gráfica de Plan de Control</h3>
             <img src="{{ $graficaPlanControl }}" class="img-contained" alt="Gráfica Plan de Control">
@@ -631,7 +631,7 @@
         </div>
     @endif
 
-    @if(isset($graficaRiesgos) && file_exists($graficaRiesgos))
+    @if(!empty($graficaRiesgos))
         <div class="section-card text-center">
             <h3 class="section-subtitle">Gráfica de Riesgos</h3>
             <img src="{{ $graficaRiesgos }}" class="img-contained" alt="Gráfica de Riesgos">
@@ -797,7 +797,7 @@
         </div>
     @endif
 
-    @php $hayGrafEncuesta = isset($graficaEncuesta) && file_exists($graficaEncuesta); @endphp
+    @php $hayGrafEncuesta = !empty($graficaEncuesta); @endphp
 
     @if($hayGrafEncuesta)
         <div class="section-card text-center">
@@ -810,7 +810,7 @@
         </div>
     @endif
 
-    @if(isset($graficaRetroalimentacion) && file_exists($graficaRetroalimentacion))
+    @if(!empty($graficaRetroalimentacion))
         <div class="section-card text-center">
             <h3 class="section-subtitle">Gráfica de Retroalimentación</h3>
             <img src="{{ $graficaRetroalimentacion }}" class="img-contained" alt="Gráfica Retroalimentación">
@@ -867,7 +867,7 @@
         </div>
     @endif
 
-    @if(isset($graficaMP) && file_exists($graficaMP))
+    @if(!empty($graficaMP))
         <div class="section-card text-center">
             <h3 class="section-subtitle">Gráfica de Mapa de Proceso</h3>
             <img src="{{ $graficaMP }}" class="img-contained" alt="Gráfica Mapa de Proceso">
@@ -909,7 +909,7 @@
         </div>
     @endif
 
-    @if(isset($graficaRiesgos) && file_exists($graficaRiesgos))
+   @if(!empty($graficaRiesgos))
         <div class="section-card text-center">
             <h3 class="section-subtitle">Gráfica de Eficacia</h3>
             <img src="{{ $graficaRiesgos }}" class="img-contained" alt="Gráfica de Eficacia">
@@ -953,7 +953,7 @@
         </div>
     @endif
 
-    @if(isset($graficaEvaluacion) && file_exists($graficaEvaluacion))
+    @if(!empty($graficaEvaluacion))
         <div class="section-card text-center">
             <h3 class="section-subtitle">Gráfica de Evaluación de Proveedores</h3>
             <img src="{{ $graficaEvaluacion }}" class="img-contained" alt="Gráfica de Evaluación de Proveedores">

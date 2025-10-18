@@ -79,7 +79,7 @@ class ReporteProcesoController extends Controller
             'idProceso' => 'required|integer|exists:proceso,idProceso',
             'nombreReporte' => 'required|string|max:255',
             'anio' => ['required', 'regex:/^\d{4}$/'],
-            'ruta' => 'nullable|url|max:2048',     
+            'ruta' => 'nullable|url|max:2048',
         ]);
 
         try {
@@ -182,12 +182,13 @@ class ReporteProcesoController extends Controller
 
         }
 
-        $graficaPlanControl = $this->verificaGrafica("planControl_{$idProceso}_{$anio}");
-        $graficaEncuesta = $this->verificaGrafica("encuesta_{$idProceso}_{$anio}");
-        $graficaRetroalimentacion = $this->verificaGrafica("retroalimentacion_{$idProceso}_{$anio}");
-        $graficaMP = $this->verificaGrafica("mapaProceso_{$idProceso}_{$anio}");
-        $graficaRiesgos = $this->verificaGrafica("riesgos_{$idProceso}_{$anio}");
-        $graficaEvaluacion = $this->verificaGrafica("evaluacionProveedores_{$idProceso}_{$anio}");
+        $graficaPlanControl = $this->graficaBase64("planControl_{$idProceso}_{$anio}");
+        $graficaEncuesta = $this->graficaBase64("encuesta_{$idProceso}_{$anio}");
+        $graficaRetroalimentacion = $this->graficaBase64("retroalimentacion_{$idProceso}_{$anio}");
+        $graficaMP = $this->graficaBase64("mapaProceso_{$idProceso}_{$anio}");
+        $graficaRiesgos = $this->graficaBase64("riesgos_{$idProceso}_{$anio}");
+        $graficaEvaluacion = $this->graficaBase64("evaluacionProveedores_{$idProceso}_{$anio}");
+
 
         $registroSeg = $this->getRegistro($idProceso, $anio, 'Seguimiento');
         $seguimientos = $registroSeg ? SeguimientoMinuta::where('idRegistro', $registroSeg->idRegistro)->get() : collect();
@@ -740,7 +741,7 @@ class ReporteProcesoController extends Controller
 
             return response()->json($resultado, 200);
         } catch (\Exception $e) {
-            \Log::error("❌ Error en eficaciaRiesgos()", ['error' => $e->getMessage()]);
+            \Log::error(" Error en eficaciaRiesgos()", ['error' => $e->getMessage()]);
             return response()->json(['error' => 'Error interno al obtener los indicadores de eficacia'], 500);
         }
     }
@@ -799,7 +800,7 @@ class ReporteProcesoController extends Controller
 
             return response()->json($resultado, 200);
         } catch (\Exception $e) {
-            \Log::error("❌ Error en evaluacionProveedores()", ['error' => $e->getMessage()]);
+            \Log::error(" Error en evaluacionProveedores()", ['error' => $e->getMessage()]);
             return response()->json(['error' => 'Error interno al obtener evaluación de proveedores'], 500);
         }
     }
@@ -865,7 +866,7 @@ class ReporteProcesoController extends Controller
                 'necesidad' => $necesidad
             ];
         } catch (\Exception $e) {
-            \Log::error("❌ Error en getEvaluacionProveedoresData()", ['error' => $e->getMessage()]);
+            \Log::error("Error en getEvaluacionProveedoresData()", ['error' => $e->getMessage()]);
             return null;
         }
     }
@@ -999,4 +1000,17 @@ class ReporteProcesoController extends Controller
             return null;
         }
     }
+    private function graficaBase64(string $nombre): ?string
+    {
+        foreach (['png', 'jpg', 'jpeg', 'gif'] as $ext) {
+            $path = storage_path("app/public/graficas/{$nombre}.{$ext}");
+            if (is_file($path)) {
+                $mime = $ext === 'jpg' ? 'jpeg' : $ext;
+                $data = base64_encode(file_get_contents($path));
+                return "data:image/{$mime};base64,{$data}";
+            }
+        }
+        return null;
+    }
+
 }
