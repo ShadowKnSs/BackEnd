@@ -83,7 +83,7 @@ class DocumentoController extends Controller
                 \Log::debug(' Subiendo archivo...');
                 $file = $request->file('archivo');
                 $path = $file->store('documentos', 'public');
-                $data['urlArchivo'] = asset('storage/' . $path);
+                $data['urlArchivo'] = $path;
                 \Log::debug(' Archivo almacenado en: ' . $data['urlArchivo']);
             } else {
                 \Log::debug(' No se subió archivo o tipoDocumento no es interno');
@@ -144,10 +144,10 @@ class DocumentoController extends Controller
 
             if ($request->hasFile('archivo') && $documento->tipoDocumento === 'interno') {
                 $file = $request->file('archivo');
-                Log::debug("📎 Archivo recibido para actualizar", ['archivo' => $file->getClientOriginalName()]);
+                Log::debug(" Archivo recibido para actualizar", ['archivo' => $file->getClientOriginalName()]);
 
                 $path = $file->store('documentos', 'public');
-                $documento->urlArchivo = asset('storage/' . $path);
+                $documento->urlArchivo = $path;
                 $documento->save();
 
                 Log::debug("Archivo almacenado en: {$documento->urlArchivo}");

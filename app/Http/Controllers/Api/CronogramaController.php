@@ -534,7 +534,7 @@ class CronogramaController extends Controller
         $to = $request->query('to');   // YYYY-MM-DD
 
         $request->validate([
-            'rol' => 'required|string|in:Administrador,Coordinador',
+            'rol' => 'required|string|in:Administrador,Coordinador de Calidad',
             'from' => 'nullable|date_format:Y-m-d',
             'to' => 'nullable|date_format:Y-m-d',
         ]);
