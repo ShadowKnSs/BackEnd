@@ -42,4 +42,8 @@ class GestionRiesgos extends Model
     {
         return $this->belongsTo(Registros::class, 'idRegistro', 'idRegistro');
     }
+
+    public function riesgos() {
+        return $this->hasMany(Riesgo::class, 'idGesRies', 'idGesRies');
+    }
 }

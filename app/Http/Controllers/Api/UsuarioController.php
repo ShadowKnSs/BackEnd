@@ -359,6 +359,7 @@ public function destroy($id)
     }
 
 
+
     public function getAuditoresBasico()
     {
         try {

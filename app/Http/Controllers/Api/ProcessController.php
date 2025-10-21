@@ -316,38 +316,29 @@ class ProcessController extends Controller
 
     public function procesosConEntidad()
     {
-        $cacheKey = 'procesos_con_entidad_active';
-        $cacheTime = 3600; // 1 hora
-
         try {
-            $procesos = Cache::remember($cacheKey, $cacheTime, function () {
-                return DB::table('proceso as p')
-                    ->join('entidaddependencia as e', 'p.idEntidad', '=', 'e.idEntidadDependencia')
-                    ->select(
-                        'p.idProceso',
-                        'e.nombreEntidad',
-                        'p.nombreProceso',
-                        DB::raw("CONCAT(e.nombreEntidad, ' - ', p.nombreProceso) AS nombreCompleto")
-                    )
-                    // OJO: si 'estado' no existe o tiene otros valores, quita este where o ajústalo.
-                    ->where('p.estado', '=', 'Activo')
-                    ->orderBy('e.nombreEntidad')
-                    ->orderBy('p.nombreProceso')
-                    ->get();
-            });
+            $procesos = DB::table('proceso as p')
+                ->join('entidaddependencia as e', 'p.idEntidad', '=', 'e.idEntidadDependencia')
+                ->select(
+                    'p.idProceso',
+                    'e.nombreEntidad',
+                    'p.nombreProceso',
+                    DB::raw("CONCAT(e.nombreEntidad, ' - ', p.nombreProceso) AS nombreCompleto")
+                )
+                ->where('p.estado', '=', 'Activo')
+                ->orderBy('e.nombreEntidad')
+                ->orderBy('p.nombreProceso')
+                ->get();
 
-            // Nunca 500 por "sin datos"
             return response()->json(['procesos' => $procesos], 200);
 
         } catch (Throwable $e) {
             Log::error('GET /api/procesos-con-entidad failed', [
                 'msg' => $e->getMessage(),
             ]);
-            // Fallback estable para no romper UI
             return response()->json(['procesos' => []], 200);
         }
     }
-
 
     public function obtenerProcesoConLider($idProceso)
     {

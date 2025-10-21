@@ -353,7 +353,9 @@
         <table class="no-border" style="width:100%;">
             <tr>
                 <td class="small">Entidad: <strong>{{ $entidad }}</strong></td>
-                <td class="small text-right">Página <span class="page-number">
+<td class="small text-right">
+  Página <span class="page-number"></span> de <span class="page-count"></span>
+</td>
             </tr>
         </table>
     </footer>
@@ -463,22 +465,48 @@
 
     {{-- Diagrama de Flujo --}}
     @php
-        $rutaFlujo = !empty($diagramaFlujo)
-            ? public_path(str_replace('/storage/', 'storage/', parse_url($diagramaFlujo, PHP_URL_PATH)))
-            : null;
-        $hayFlujo = !empty($diagramaFlujo) && $rutaFlujo && file_exists($rutaFlujo);
-    @endphp
+    $srcFlujo = null;
 
-    @if($hayFlujo)
-        <div class="section-card text-center">
-            <h2 class="section-title">Diagrama de Flujo</h2>
-            <img src="{{ $rutaFlujo }}" alt="Diagrama de Flujo" class="img-contained" />
-        </div>
-    @elseif($mostrarVacias)
-        <div class="section-empty avoid-break">
-            <h2 class="section-title">Diagrama de Flujo</h2>
-            <div>No hay diagrama de flujo disponible.</div>
-        </div>
+    if (!empty($diagramaFlujo)) {
+        // 1) data URL (base64) -> úsalo directo
+        if (is_string($diagramaFlujo) && str_starts_with($diagramaFlujo, 'data:image/')) {
+            $srcFlujo = $diagramaFlujo;
+        } else {
+            // 2) Intentar ruta local en public/storage
+            $pathFromUrl = parse_url($diagramaFlujo, PHP_URL_PATH) ?? '';
+            // normaliza: /storage/...  -> storage/...
+            $relative = ltrim(str_replace('/storage/', 'storage/', $pathFromUrl), '/');
+            $localPath = public_path($relative);
+
+            if (is_file($localPath)) {
+                $srcFlujo = $localPath; // DomPDF acepta ruta absoluta local
+            } elseif (filter_var($diagramaFlujo, FILTER_VALIDATE_URL)) {
+                // 3) URL absoluta: requiere remote_enabled = true
+                $srcFlujo = $diagramaFlujo;
+            }
+        }
+    }
+
+    // Valida extensión imagen para evitar PDFs/ZIPs
+    $extOk = false;
+    if ($srcFlujo) {
+        $ext = strtolower(pathinfo(is_string($srcFlujo) ? $srcFlujo : '', PATHINFO_EXTENSION));
+        $extOk = in_array($ext, ['png','jpg','jpeg','gif']) || str_starts_with($srcFlujo, 'data:image/');
+    }
+@endphp
+
+@if($srcFlujo && $extOk)
+  <div class="section-card text-center">
+    <h2 class="section-title">Diagrama de Flujo</h2>
+    <img src="{{ $srcFlujo }}" alt="Diagrama de Flujo" class="img-contained" />
+  </div>
+@elseif($mostrarVacias)
+  <div class="section-empty avoid-break">
+    <h2 class="section-title">Diagrama de Flujo</h2>
+    <div>No hay diagrama de flujo disponible.</div>
+  </div>
+@endif
+v>
     @endif
 
     {{-- Plan de Control (tabla + gráfica) --}}

@@ -13,9 +13,23 @@ use App\Models\Registros;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class FuentePtController extends Controller
 {
+    private function esFuenteGestionRiesgos(?string $nombre): bool
+    {
+        if (!$nombre)
+            return false;
+        // Normaliza: minúsculas + sin acentos
+        $norm = Str::of(Str::ascii($nombre))->lower()->trim()->value();
+        // Acepta variantes típicas
+        return in_array($norm, [
+            'gestion de riesgos',
+            'gestion de riesgo',    // por si lo capturan en singular
+            'gdr',                  // si usan siglas internas
+        ], true);
+    }
     public function index($id)
     {
         $plan = PlanTrabajo::with('fuentes')->findOrFail($id);
@@ -34,8 +48,8 @@ class FuentePtController extends Controller
             'fuentes.*.estado' => 'required|in:En proceso,Cerrado',
             'fuentes.*.nombreFuente' => 'required|string|max:255',
             'fuentes.*.elementoEntrada' => 'required|string',   // TEXT
-            'fuentes.*.descripcion' => 'required|string',       // TEXT
-            'fuentes.*.entregable' => 'required|string',        // TEXT
+            'fuentes.*.descripcion' => 'nullable|string',       // TEXT
+            'fuentes.*.entregable' => 'nullable|string',        // TEXT
             // 'fuentes.*.noActividad' => 'sometimes|integer|min:1', // si lo envías desde el front
             // 'fuentes.*.numero' => 'sometimes|integer|min:1',       // opcional, si existe la columna
         ]);
@@ -64,12 +78,13 @@ class FuentePtController extends Controller
                     'descripcion' => $f['descripcion'],
                     'entregable' => $f['entregable'],
                 ];
-                // (Opcional) si tu tabla también tiene columna 'numero':
-                if (\Schema::hasColumn('fuentept', 'numero')) {
-                    $payload['numero'] = $noActividad;
-                }
 
                 $nuevaFuente = FuentePt::create($payload);
+
+                if (!$this->esFuenteGestionRiesgos($f['nombreFuente'] ?? '')) {
+                    Log::info("Fuente no es 'Gestión de Riesgos'; no se crea/actualiza Riesgo. idFuente={$nuevaFuente->idFuente}");
+                    continue;
+                }
 
                 // === Vincular/propagar a RIESGOS ===
                 // Ubicar idGesRies para el mismo proceso/año del plan (actividadMejora -> registro -> proceso|año)
@@ -198,10 +213,13 @@ class FuentePtController extends Controller
 
         $fuente->update(collect($payload)->except('noActividad', 'fuentes')->toArray());
 
-        return response()->json([
-            'message' => 'Fuente actualizada exitosamente',
-            'fuente' => $fuente
-        ], 200);
+
+        if (!$this->esFuenteGestionRiesgos($fuente->nombreFuente ?? '')) {
+            return response()->json([
+                'message' => 'Fuente actualizada exitosamente (sin propagación a Riesgos por tipo de fuente)',
+                'fuente' => $fuente
+            ], 200);
+        }
     }
 
 

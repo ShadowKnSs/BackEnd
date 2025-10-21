@@ -28,7 +28,7 @@ class FuentePt extends Model
     // Atributos asignables en masa
     protected $fillable = [
         'idPlanTrabajo',
-        'numero',
+        'noActividad',
         'responsable',
         'fechaInicio',
         'fechaTermino',

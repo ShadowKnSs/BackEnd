@@ -50,20 +50,20 @@ class GestionRiesgoController extends Controller
      *    - Si existe, retornar la fila.
      */
     public function showByRegistro($idRegistro)
-{
-    try {
-        $gestion = GestionRiesgos::where('idRegistro', $idRegistro)->first();
+    {
+        try {
+            $gestion = GestionRiesgos::where('idRegistro', $idRegistro)->first();
 
-        if (!$gestion) {
-            return response()->json(['message' => 'No existe un registro en gestionriesgos para este idRegistro'], 404);
+            if (!$gestion) {
+                return response()->json(['message' => 'No existe un registro en gestionriesgos para este idRegistro'], 404);
+            }
+
+            return response()->json($gestion, 200);
+        } catch (\Exception $e) {
+            Log::error("Error in showByRegistro: " . $e->getMessage());
+            return response()->json(['message' => 'Internal Server Error'], 500);
         }
-
-        return response()->json($gestion, 200);
-    } catch (\Exception $e) {
-        Log::error("Error in showByRegistro: " . $e->getMessage());
-        return response()->json(['message' => 'Internal Server Error'], 500);
     }
-}
 
 
     /**
@@ -71,10 +71,17 @@ class GestionRiesgoController extends Controller
      *    POST /api/gestionriesgos
      *    - Esperamos en el body: { "idRegistro": X, "elaboro": "...", "fechaelaboracion": "YYYY-MM-DD" }
      */
-    protected function validarDatos(Request $request)
+    protected function validarStore(Request $r)
     {
-        return $request->validate([
+        return $r->validate([
             'idRegistro' => 'required|integer',
+            'elaboro' => 'nullable|string',
+            'fechaelaboracion' => 'nullable|date',
+        ]);
+    }
+    protected function validarUpdate(Request $r)
+    {
+        return $r->validate([
             'elaboro' => 'nullable|string',
             'fechaelaboracion' => 'nullable|date',
         ]);
@@ -82,7 +89,7 @@ class GestionRiesgoController extends Controller
 
     public function store(Request $request)
     {
-        $data = $this->validarDatos($request);
+        $data = $this->validarStore($request);
 
         DB::beginTransaction();
         try {
@@ -107,7 +114,7 @@ class GestionRiesgoController extends Controller
      */
     public function update(Request $request, $idGesRies)
     {
-        $data = $this->validarDatos($request);
+        $data = $this->validarUpdate($request);
 
         DB::beginTransaction();
         try {
