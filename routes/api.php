@@ -130,6 +130,8 @@ Route::get('/proceso-entidad/{idProceso}', [ProcessController::class, 'getInfoPo
 Route::get('/procesos-con-entidad', [ProcessController::class, 'procesosConEntidad']);
 Route::get('procesos-nombres', [ProcessController::class, 'getNombres']);
 Route::get('/procesos/{id}/lider', [ProcessController::class, 'obtenerProcesoConLider']);
+Route::put('procesos/{id}/activar', [ProcessController::class, 'activar']);
+Route::delete('procesos/{id}/force', [ProcessController::class, 'forceDelete']);
 
 Route::get('procesos', [ProcessController::class, 'index']);
 

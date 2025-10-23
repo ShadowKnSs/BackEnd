@@ -102,7 +102,7 @@ class MapaProcesoController extends Controller
     public function subirDiagramaFlujo(Request $request, $idProceso)
     {
         $request->validate([
-            'imagen' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:10240', // 10MB máximo
+            'imagen' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:10240',
         ]);
 
         try {
@@ -110,17 +110,16 @@ class MapaProcesoController extends Controller
 
             $file = $request->file('imagen');
             $filename = 'diagrama_flujo_proceso_' . $idProceso . '_' . time() . '.' . $file->getClientOriginalExtension();
-            Storage::disk('public')->putFileAs('diagramas', $file, $filename);
 
-            $publicPath = asset('storage/diagramas/' . $filename);
+            // Guardar en storage
+            $filePath = $file->storeAs('diagramas', $filename, 'public');
 
-            // Si ya existe un diagrama anterior, eliminarlo
-            if ($mapa->diagramaFlujo) {
-                $this->eliminarArchivoDiagrama($mapa->diagramaFlujo);
-            }
-
-            $mapa->diagramaFlujo = $publicPath;
+            // Guardar la ruta relativa en la base de datos
+            $mapa->diagramaFlujo = $filePath; // Guardar ruta relativa, no URL completa
             $mapa->save();
+
+            // Para respuestas API, devolver la URL completa
+            $publicUrl = Storage::disk('public')->url($filePath);
 
             ControlCambiosService::registrarCambio(
                 $idProceso,
@@ -131,7 +130,8 @@ class MapaProcesoController extends Controller
 
             return response()->json([
                 'message' => 'Imagen subida exitosamente',
-                'url' => $publicPath
+                'url' => $publicUrl,
+                'path' => $filePath // También devolver la ruta relativa
             ]);
         } catch (\Exception $e) {
             \Log::error('Error al subir diagrama de flujo: ' . $e->getMessage());

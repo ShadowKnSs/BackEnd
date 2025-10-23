@@ -20,70 +20,79 @@ class PlanCorrectivoController extends Controller
     {
         $request->validate([
             'fechaInicio' => 'required|date',
-            'origenConformidad' => 'required|string|',
-            'equipoMejora' => 'required|string|',
-            'requisito' => 'required|string|',
-            'incumplimiento' => 'required|string|',
-            'evidencia' => 'required|string|',
-            'coordinadorPlan' => 'required|string'
+            'origenConformidad' => 'required|string',
+            'equipoMejora' => 'required|string',
+            'requisito' => 'required|string',
+            'incumplimiento' => 'required|string',
+            'evidencia' => 'required|string',
+            'coordinadorPlan' => 'required|string',
+            'actividades' => 'sometimes|array',
+            'actividades.*.descripcionAct' => 'required|string',
+            'actividades.*.responsable' => 'required|string|max:255',
+            'actividades.*.fechaProgramada' => 'required|date',
+            'actividades.*.tipo' => 'required|in:reaccion,planaccion'
         ]);
 
-
-        // 🔍 Buscar idActividadMejora relacionado al idRegistro
+        //  Buscar idActividadMejora relacionado al idRegistro
         $actividad = ActividadMejora::where('idRegistro', $request->idRegistro)->first();
 
         if (!$actividad) {
             return response()->json(['error' => 'No se encontró ActividadMejora asociada'], 422);
         }
 
-        // Obtener el último número de secuencia para este año
-    $year = date('y');
-    $lastPlan = PlanCorrectivo::where('codigo', 'like', "PAC-%-$year")
-        ->orderBy('codigo', 'desc')
-        ->first();
+        //  Encontrar el primer número disponible
+        $year = date('y');
+        $maxSequence = 99; // Máximo 99 planes por año
 
-    $nextNumber = 1;
-    if ($lastPlan) {
-        // Extraer el número del código (ej: PAC-03-25 → 03)
-        preg_match('/PAC-(\d{2})-\d{2}/', $lastPlan->codigo, $matches);
-        if (isset($matches[1])) {
-            $nextNumber = (int)$matches[1] + 1;
-        }
-    }
+        // Obtener todos los números usados este año
+        $usedNumbers = PlanCorrectivo::where('codigo', 'like', "PAC-%-$year")
+            ->pluck('codigo')
+            ->map(function ($code) {
+                preg_match('/PAC-(\d{2})-\d{2}/', $code, $matches);
+                return isset($matches[1]) ? (int) $matches[1] : 0;
+            })
+            ->filter()
+            ->toArray();
 
-    $codigo = "PAC-" . str_pad($nextNumber, 2, '0', STR_PAD_LEFT) . "-" . $year;
-
-    // ✅ Agregar manualmente el campo
-    $data = $request->all();
-    $data['idActividadMejora'] = $actividad->idActividadMejora;
-    $data['codigo'] = $codigo;
-
-    $plan = PlanCorrectivo::create($data);
-    
-
-        // Si se envían actividades de reacción, guardarlas
-        if ($request->has('reaccion')) {
-            foreach ($request->input('reaccion') as $act) {
-                $act['idPlanCorrectivo'] = $plan->idPlanCorrectivo;
-                $act['descripcionAct'] = isset($act['actividad']) ? $act['actividad'] : null;
-                $act['tipo'] = 'reaccion';
-                ActividadPlan::create($act);
+        // Encontrar el primer número disponible
+        $nextNumber = 1;
+        for ($i = 1; $i <= $maxSequence; $i++) {
+            if (!in_array($i, $usedNumbers)) {
+                $nextNumber = $i;
+                break;
             }
         }
 
-        // Si se envían actividades del plan de acción, guardarlas
-        if ($request->has('planAccion')) {
-            foreach ($request->input('planAccion') as $act) {
-                $act['idPlanCorrectivo'] = $plan->idPlanCorrectivo;
-                $act['descripcionAct'] = isset($act['actividad']) ? $act['actividad'] : null;
-                $act['tipo'] = 'planaccion';
-                ActividadPlan::create($act);
+        // Si todos los números están usados, usar el siguiente al máximo
+        if ($nextNumber > $maxSequence) {
+            $nextNumber = count($usedNumbers) > 0 ? max($usedNumbers) + 1 : 1;
+        }
+
+        $codigo = "PAC-" . str_pad($nextNumber, 2, '0', STR_PAD_LEFT) . "-" . $year;
+
+        // Agregar manualmente el campo
+        $data = $request->all();
+        $data['idActividadMejora'] = $actividad->idActividadMejora;
+        $data['codigo'] = $codigo;
+
+        $plan = PlanCorrectivo::create($data);
+
+        // Usar el array 'actividades' que viene del frontend
+        if ($request->has('actividades') && is_array($request->actividades)) {
+            foreach ($request->actividades as $act) {
+                $actividadData = [
+                    'idPlanCorrectivo' => $plan->idPlanCorrectivo,
+                    'descripcionAct' => $act['descripcionAct'] ?? null,
+                    'responsable' => $act['responsable'] ?? '',
+                    'fechaProgramada' => $act['fechaProgramada'] ?? null,
+                    'tipo' => $act['tipo'] ?? 'planaccion'
+                ];
+                ActividadPlan::create($actividadData);
             }
         }
 
-        return response()->json($plan, 201);
+        return response()->json($plan->load('actividades'), 201);
     }
-
 
     public function show($id)
     {
@@ -107,28 +116,21 @@ class PlanCorrectivoController extends Controller
         // Eliminamos las actividades actuales asociadas al plan
         $plan->actividades()->delete();
 
-        // Creamos las nuevas actividades de reacción
-        if ($request->has('reaccion')) {
-            foreach ($request->input('reaccion') as $act) {
-                $act['idPlanCorrectivo'] = $plan->idPlanCorrectivo;
-                // Mapeamos el campo 'actividad' al campo 'descripcionAct'
-                $act['descripcionAct'] = isset($act['actividad']) ? $act['actividad'] : null;
-                $act['tipo'] = 'reaccion';
-                ActividadPlan::create($act);
+        // Usar el array 'actividades' que viene del frontend
+        if ($request->has('actividades') && is_array($request->actividades)) {
+            foreach ($request->actividades as $act) {
+                $actividadData = [
+                    'idPlanCorrectivo' => $plan->idPlanCorrectivo,
+                    'descripcionAct' => $act['descripcionAct'] ?? null,
+                    'responsable' => $act['responsable'] ?? '',
+                    'fechaProgramada' => $act['fechaProgramada'] ?? null,
+                    'tipo' => $act['tipo'] ?? 'planaccion'
+                ];
+                ActividadPlan::create($actividadData);
             }
         }
 
-        // Creamos las nuevas actividades del plan de acción
-        if ($request->has('planAccion')) {
-            foreach ($request->input('planAccion') as $act) {
-                $act['idPlanCorrectivo'] = $plan->idPlanCorrectivo;
-                $act['descripcionAct'] = isset($act['actividad']) ? $act['actividad'] : null;
-                $act['tipo'] = 'planaccion';
-                ActividadPlan::create($act);
-            }
-        }
-
-        return response()->json($plan);
+        return response()->json($plan->load('actividades'));
     }
 
     public function destroy($id)

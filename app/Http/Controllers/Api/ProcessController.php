@@ -265,18 +265,6 @@ class ProcessController extends Controller
         return response()->json(['procesos' => $nombres], 200);
     }
 
-
-    /*public function obtenerProcesosPorEntidad($idEntidad)
-    {
-        // Obtener todos los procesos de la entidad específica
-        $procesos = Proceso::where('idEntidad', $idEntidad )->get();
-
-        if ($procesos->isEmpty()) {
-            return response()->json(['message' => 'No se encontraron procesos para esta entidad'], 404);
-        }
-
-        return response()->json($procesos);
-    }*/
     public function obtenerProcesosPorEntidad($idEntidad)
     {
         // Obtener solo los procesos activos de la entidad específica
@@ -357,6 +345,43 @@ class ProcessController extends Controller
             'entidad' => $proceso->entidad->nombreEntidad ?? null,
             'liderProceso' => $liderProceso
         ]);
+    }
+
+    public function activar($id)
+    {
+        try {
+            $proceso = Proceso::findOrFail($id);
+            $proceso->update(['estado' => 'Activo']);
+
+            return response()->json([
+                'success' => true,
+                'proceso' => $proceso,
+                'message' => 'Proceso activado exitosamente'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al activar el proceso'
+            ], 500);
+        }
+    }
+
+    public function forceDelete($id)
+    {
+        try {
+            $proceso = Proceso::findOrFail($id);
+            $proceso->delete(); // Esto hará eliminación permanente
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Proceso eliminado permanentemente'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al eliminar el proceso'
+            ], 500);
+        }
     }
 
 }

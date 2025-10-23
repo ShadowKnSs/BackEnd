@@ -265,7 +265,7 @@ class ReporteProcesoController extends Controller
             'requisitos' => $mapa->requisitos ?? 'No disponible',
             'salidas' => $mapa->salidas ?? 'No disponible',
             'receptores' => $mapa->receptores ?? 'No disponible',
-            'diagramaFlujo' => $mapa->diagramaFlujo ?? 'No disponible',
+            'diagramaFlujo' => $this->getDiagramaFlujoPath($mapa->diagramaFlujo ?? null),
             'planControlActividades' => $planControlActividades,
             'planControlIndicadores' => $planControlIndicadores,
             'interpretacionPlanControl' => $interpretacion,
@@ -907,7 +907,7 @@ class ReporteProcesoController extends Controller
                 'indicadoresExito' => $indicadoresExito,
             ];
         } catch (\Exception $e) {
-            \Log::error("❌ Error en getProyectoMejoraData()", ['error' => $e->getMessage()]);
+            \Log::error("Error en getProyectoMejoraData()", ['error' => $e->getMessage()]);
             return null;
         }
     }
@@ -1013,4 +1013,40 @@ class ReporteProcesoController extends Controller
         return null;
     }
 
+
+    private function getDiagramaFlujoPath($diagramaFlujo)
+    {
+        if (empty($diagramaFlujo)) {
+            return null;
+        }
+
+        // Si ya es una data URL (base64)
+        if (str_starts_with($diagramaFlujo, 'data:image/')) {
+            return $diagramaFlujo;
+        }
+
+        // Si es una URL, extraer la ruta relativa
+        if (filter_var($diagramaFlujo, FILTER_VALIDATE_URL)) {
+            $path = parse_url($diagramaFlujo, PHP_URL_PATH);
+            // Remover '/storage/' del inicio si existe
+            $relativePath = str_replace('/storage/', '', $path);
+
+            // Verificar si el archivo existe en storage
+            if (Storage::disk('public')->exists($relativePath)) {
+                // Convertir a base64 para incluirlo en el PDF
+                $imageContent = Storage::disk('public')->get($relativePath);
+                $mimeType = Storage::disk('public')->mimeType($relativePath);
+                return 'data:' . $mimeType . ';base64,' . base64_encode($imageContent);
+            }
+        }
+
+        // Si es una ruta relativa directa
+        if (Storage::disk('public')->exists($diagramaFlujo)) {
+            $imageContent = Storage::disk('public')->get($diagramaFlujo);
+            $mimeType = Storage::disk('public')->mimeType($diagramaFlujo);
+            return 'data:' . $mimeType . ';base64,' . base64_encode($imageContent);
+        }
+
+        return null;
+    }
 }
