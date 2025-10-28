@@ -117,8 +117,6 @@ class UsuarioController extends Controller
         }
     }
 
-    // App/Http/Controllers/Api/UsuarioController.php
-
     // En el método index, optimizar la carga de relaciones
     public function index(Request $request)
     {
@@ -233,7 +231,7 @@ class UsuarioController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => $usuario->load(['roles']) // Remover 'tipoPrincipal' si no existe
+                'data' => $usuario->load(['roles']) 
             ]);
 
         } catch (\Exception $e) {
