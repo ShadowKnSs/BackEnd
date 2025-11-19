@@ -60,6 +60,15 @@ return [
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
+
+            'dump' => [
+                // SOLO la carpeta, sin `mysqldump.exe`
+                'dump_binary_path' => 'C:\\xampp\\mysql\\bin',
+                'use_single_transaction' => true,
+                'timeout' => 60 * 5, // 5 minutos
+                // 'exclude_tables' => ['table1', 'table2'],
+                // 'add_extra_option' => '--column-statistics=0',
+            ],
         ],
 
         'mariadb' => [
@@ -147,7 +156,7 @@ return [
 
         'options' => [
             'cluster' => env('REDIS_CLUSTER', 'redis'),
-            'prefix' => env('REDIS_PREFIX', Str::slug(env('APP_NAME', 'laravel'), '_').'_database_'),
+            'prefix' => env('REDIS_PREFIX', Str::slug(env('APP_NAME', 'laravel'), '_') . '_database_'),
         ],
 
         'default' => [

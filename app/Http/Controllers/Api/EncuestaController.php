@@ -15,11 +15,11 @@ class EncuestaController extends Controller
     public function store(Request $request, $idIndicador)
     {
         try {
-            Log::info("📌 Datos recibidos para guardar Encuesta", ['request' => $request->all(), 'idIndicador' => $idIndicador]);
+            Log::info("Datos recibidos para guardar Encuesta", ['request' => $request->all(), 'idIndicador' => $idIndicador]);
 
             // Verificar si idIndicador es válido
             if (!$idIndicador || !is_numeric($idIndicador)) {
-                Log::error("❌ Error: idIndicador no válido", ['idIndicador' => $idIndicador]);
+                Log::error(" Error: idIndicador no válido", ['idIndicador' => $idIndicador]);
                 return response()->json(['message' => 'ID de indicador inválido'], 400);
             }
 
@@ -28,7 +28,7 @@ class EncuestaController extends Controller
 
             // Validar que los datos de la encuesta existen
             if (!$data) {
-                Log::error("❌ Error: Datos de encuesta no recibidos.");
+                Log::error(" Error: Datos de encuesta no recibidos.");
                 return response()->json(['message' => 'No se enviaron datos de la encuesta'], 400);
             }
 
@@ -44,14 +44,14 @@ class EncuestaController extends Controller
                 ]
             );
 
-            Log::info("✅ Encuesta guardada correctamente", ['idIndicador' => $idIndicador, 'datos' => $encuesta]);
+            Log::info("Encuesta guardada correctamente", ['idIndicador' => $idIndicador, 'datos' => $encuesta]);
 
             return response()->json([
                 'message' => 'Encuesta guardada exitosamente',
                 'encuesta' => $encuesta
             ], 201);
         } catch (\Exception $e) {
-            Log::error("❌ Error al guardar Encuesta", ['idIndicador' => $idIndicador, 'error' => $e->getMessage()]);
+            Log::error(" Error al guardar Encuesta", ['idIndicador' => $idIndicador, 'error' => $e->getMessage()]);
             return response()->json([
                 'message' => 'Error al guardar encuesta',
                 'error' => $e->getMessage()
@@ -65,12 +65,12 @@ class EncuestaController extends Controller
     public function show($idIndicador)
     {
         try {
-            Log::info("📌 Obteniendo resultados de Encuesta para idIndicador:", ['idIndicador' => $idIndicador]);
+            Log::info("Obteniendo resultados de Encuesta para idIndicador:", ['idIndicador' => $idIndicador]);
 
             $encuesta = Encuesta::where('idIndicador', $idIndicador)->first();
 
             if (!$encuesta) {
-                Log::warning("⚠️ No se encontraron datos de encuesta para este indicador", ['idIndicador' => $idIndicador]);
+                Log::warning(" No se encontraron datos de encuesta para este indicador", ['idIndicador' => $idIndicador]);
                 return response()->json([
                     'message' => 'No se encontraron resultados para este indicador',
                     'encuesta' => null
@@ -79,7 +79,7 @@ class EncuestaController extends Controller
 
             return response()->json(['encuesta' => $encuesta], 200);
         } catch (\Exception $e) {
-            Log::error("❌ Error al obtener Encuesta", ['idIndicador' => $idIndicador, 'error' => $e->getMessage()]);
+            Log::error(" Error al obtener Encuesta", ['idIndicador' => $idIndicador, 'error' => $e->getMessage()]);
             return response()->json([
                 'message' => 'Error al obtener encuesta',
                 'error' => $e->getMessage()

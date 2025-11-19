@@ -17,7 +17,6 @@ class DeleteExpiredTokens extends Command
         
         $this->info("Se eliminaron {$count} tokens expirados.");
         
-        // Opcional: Registrar en el log
         \Log::info("Tokens eliminados automáticamente: {$count}");
     }
 }

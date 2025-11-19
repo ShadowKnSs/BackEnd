@@ -21,24 +21,24 @@ class IndicadorResultadoController extends Controller
     public function store(Request $request, $idIndicador)
     {
         try {
-            Log::info("📌 Datos recibidos en backend:", ['request' => $request->all()]);
+            Log::info("Datos recibidos en backend:", ['request' => $request->all()]);
 
             if (!is_numeric($idIndicador)) {
-                Log::error("❌ ID de indicador no válido", ['idIndicador' => $idIndicador]);
+                Log::error("ID de indicador no válido", ['idIndicador' => $idIndicador]);
                 return response()->json(['message' => 'ID de indicador no válido'], 400);
             }
 
             $data = $request->get('result') ?? [];  // Evita error si result es null
-            Log::info("📌 Datos procesados en backend:", ['data' => $data]);
+            Log::info("Datos procesados en backend:", ['data' => $data]);
 
             $indicador = IndicadorConsolidado::find($idIndicador);
             if (!$indicador) {
-                Log::error("❌ Indicador no encontrado", ['idIndicador' => $idIndicador]);
+                Log::error("Indicador no encontrado", ['idIndicador' => $idIndicador]);
                 return response()->json(['message' => 'Indicador no encontrado'], 404);
             }
 
             $origen = $indicador->origenIndicador;
-            Log::info("📌 Procesando resultado para origen: " . $origen);
+            Log::info("Procesando resultado para origen: " . $origen);
 
             switch ($origen) {
                 case 'Encuesta':
@@ -93,11 +93,11 @@ class IndicadorResultadoController extends Controller
                     break;
 
                 default:
-                    Log::error("❌ Origen del indicador desconocido", ['origen' => $origen]);
+                    Log::error("Origen del indicador desconocido", ['origen' => $origen]);
                     return response()->json(['message' => 'Origen del indicador desconocido'], 400);
             }
 
-            Log::info("✅ Resultado guardado con éxito", ['idIndicador' => $idIndicador, 'resultado' => $resultado]);
+            Log::info("Resultado guardado con éxito", ['idIndicador' => $idIndicador, 'resultado' => $resultado]);
 
             return response()->json([
                 'message' => 'Resultado registrado exitosamente',
@@ -105,7 +105,7 @@ class IndicadorResultadoController extends Controller
             ], 200);
 
         } catch (\Exception $e) {
-            Log::error("❌ Error al registrar resultado", ['error' => $e->getMessage()]);
+            Log::error("Error al registrar resultado", ['error' => $e->getMessage()]);
             return response()->json(['message' => 'Error al registrar el resultado'], 500);
         }
     }
@@ -119,7 +119,7 @@ class IndicadorResultadoController extends Controller
             $indicador = IndicadorConsolidado::find($idIndicador);
 
             if (!$indicador) {
-                Log::warning("❌ Indicador no encontrado", ['id' => $idIndicador]);
+                Log::warning("Indicador no encontrado", ['id' => $idIndicador]);
                 return response()->json(['message' => 'Indicador no encontrado'], 404);
             }
 
@@ -146,16 +146,16 @@ class IndicadorResultadoController extends Controller
                     break;
 
                 default:
-                    Log::warning("❌ Tipo de indicador desconocido", ['origenIndicador' => $origen]);
+                    Log::warning(" Tipo de indicador desconocido", ['origenIndicador' => $origen]);
                     return response()->json(['message' => 'Tipo de indicador no reconocido'], 400);
             }
 
             if (!$resultado) {
-                Log::warning("❌ No se encontraron resultados", ['idIndicador' => $idIndicador]);
+                Log::warning(" No se encontraron resultados", ['idIndicador' => $idIndicador]);
                 return response()->json(['message' => 'No se encontraron resultados para este indicador'], 404);
             }
 
-            Log::info("✅ Resultados obtenidos", [
+            Log::info(" Resultados obtenidos", [
                 'idIndicador' => $idIndicador,
                 'resultado' => $resultado
             ]);
@@ -163,7 +163,7 @@ class IndicadorResultadoController extends Controller
             return response()->json(['resultado' => $resultado], 200);
 
         } catch (\Exception $e) {
-            Log::error("❌ Error al obtener los resultados", [
+            Log::error("Error al obtener los resultados", [
                 'idIndicador' => $idIndicador,
                 'error' => $e->getMessage()
             ]);

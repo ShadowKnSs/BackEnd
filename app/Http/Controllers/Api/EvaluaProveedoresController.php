@@ -12,7 +12,7 @@ class EvaluaProveedoresController extends Controller
     public function store(Request $request, $idIndicador)
     {
         try {
-            Log::info("📌 Datos recibidos para guardar Evaluación de Proveedores", [
+            Log::info("Datos recibidos para guardar Evaluación de Proveedores", [
                 'idIndicador' => $idIndicador,
                 'request' => $request->all()
             ]);
@@ -27,7 +27,7 @@ class EvaluaProveedoresController extends Controller
             }
 
             // **Verificación previa de los datos**
-            Log::info("✅ Procesando datos para guardar", [
+            Log::info("Procesando datos para guardar", [
                 'confiableSem1' => $data['confiableSem1'] ?? 'No recibido',
                 'confiableSem2' => $data['confiableSem2'] ?? 'No recibido',
                 'condicionadoSem1' => $data['condicionadoSem1'] ?? 'No recibido',
@@ -49,7 +49,7 @@ class EvaluaProveedoresController extends Controller
                 ]
             );
 
-            Log::info("✅ Evaluación de proveedores guardada correctamente", [
+            Log::info("Evaluación de proveedores guardada correctamente", [
                 'idIndicador' => $idIndicador,
                 'datos' => $evaluacion->toArray()  // **Verificar los valores guardados**
             ]);
@@ -59,7 +59,7 @@ class EvaluaProveedoresController extends Controller
                 'resultado' => $evaluacion
             ], 200);
         } catch (\Exception $e) {
-            Log::error("❌ Error al guardar Evaluación de Proveedores", [
+            Log::error("Error al guardar Evaluación de Proveedores", [
                 'idIndicador' => $idIndicador,
                 'error' => $e->getMessage()
             ]);
@@ -74,14 +74,14 @@ class EvaluaProveedoresController extends Controller
     public function show($idIndicador)
     {
         try {
-            Log::info("📌 Buscando resultados de Evaluación de Proveedores", [
+            Log::info("Buscando resultados de Evaluación de Proveedores", [
                 'idIndicador' => $idIndicador
             ]);
 
             $evaluacion = EvaluaProveedores::where('idIndicador', $idIndicador)->first();
 
             if (!$evaluacion) {
-                Log::warning("❌ No se encontraron resultados de Evaluación de Proveedores", [
+                Log::warning(" No se encontraron resultados de Evaluación de Proveedores", [
                     'idIndicador' => $idIndicador
                 ]);
                 return response()->json([
@@ -90,14 +90,14 @@ class EvaluaProveedoresController extends Controller
                 ], 404);
             }
 
-            Log::info("✅ Resultados obtenidos", [
+            Log::info("Resultados obtenidos", [
                 'idIndicador' => $idIndicador,
                 'resultado' => $evaluacion->toArray()  // **Confirmar valores correctos**
             ]);
 
             return response()->json(['resultado' => $evaluacion], 200);
         } catch (\Exception $e) {
-            Log::error("❌ Error al obtener los resultados de Evaluación de Proveedores", [
+            Log::error("Error al obtener los resultados de Evaluación de Proveedores", [
                 'idIndicador' => $idIndicador,
                 'error' => $e->getMessage()
             ]);

@@ -16,7 +16,7 @@ class RetroalimentacionController extends Controller
     public function store(Request $request, $idIndicador)
     {
         try {
-            Log::info("📌 Datos recibidos para guardar Retroalimentación", [
+            Log::info(" Datos recibidos para guardar Retroalimentación", [
                 'idIndicador' => $idIndicador,
                 'request' => $request->all()
             ]);
@@ -34,7 +34,7 @@ class RetroalimentacionController extends Controller
                 ]
             );
 
-            Log::info("✅ Retroalimentación guardada correctamente", [
+            Log::info(" Retroalimentación guardada correctamente", [
                 'idIndicador' => $idIndicador,
                 'datos' => $retroalimentacion
             ]);
@@ -44,7 +44,7 @@ class RetroalimentacionController extends Controller
                 'resultado' => $retroalimentacion
             ], 200);
         } catch (\Exception $e) {
-            Log::error("❌ Error al guardar Retroalimentación", [
+            Log::error("Error al guardar Retroalimentación", [
                 'idIndicador' => $idIndicador,
                 'error' => $e->getMessage()
             ]);
@@ -61,14 +61,14 @@ class RetroalimentacionController extends Controller
     public function show($idIndicador)
     {
         try {
-            Log::info("📌 Buscando resultados de Retroalimentación", [
+            Log::info("Buscando resultados de Retroalimentación", [
                 'idIndicador' => $idIndicador
             ]);
 
             $resultado = Retroalimentacion::where('idIndicador', $idIndicador)->first();
 
             if (!$resultado) {
-                Log::warning("⚠️ No se encontraron resultados para el indicador", [
+                Log::warning("No se encontraron resultados para el indicador", [
                     'idIndicador' => $idIndicador
                 ]);
                 return response()->json([
@@ -77,14 +77,14 @@ class RetroalimentacionController extends Controller
                 ], 404);
             }
 
-            Log::info("✅ Resultados obtenidos", [
+            Log::info("Resultados obtenidos", [
                 'idIndicador' => $idIndicador,
                 'resultado' => $resultado
             ]);
 
             return response()->json(['resultado' => $resultado], 200);
         } catch (\Exception $e) {
-            Log::error("❌ Error al obtener los resultados de Retroalimentación", [
+            Log::error(" Error al obtener los resultados de Retroalimentación", [
                 'idIndicador' => $idIndicador,
                 'error' => $e->getMessage()
             ]);

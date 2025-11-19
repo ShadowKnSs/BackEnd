@@ -5,6 +5,8 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
 use App\Console\Commands\FinalizarAuditoriasVencidas;
 use App\Console\Commands\PurgeAuditoriasAntiguas;
+use App\Console\Commands\RunBackupCommand;
+
 
 
 Artisan::command('inspire', function () {
@@ -23,3 +25,10 @@ Schedule::command(PurgeAuditoriasAntiguas::class, ['--months=3'])
     ->dailyAt('02:15')  
     ->withoutOverlapping()
     ->onOneServer();
+
+    Schedule::command(RunBackupCommand::class)
+    ->dailyAt('02:00')
+    ->withoutOverlapping()
+    ->onOneServer()
+    ->appendOutputTo(storage_path('logs/backup.log'));
+    

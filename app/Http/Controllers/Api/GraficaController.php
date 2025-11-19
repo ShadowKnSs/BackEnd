@@ -52,7 +52,7 @@ class GraficaController extends Controller
 
         $decodedImage = base64_decode($imagen, true);
         if ($decodedImage === false) {
-            Log::warning("⚠️ Fallo en la decodificación base64");
+            Log::warning(" Fallo en la decodificación base64");
             return response()->json(['error' => 'Base64 inválida'], 422);
         }
 
